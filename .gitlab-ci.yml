@@ -1,0 +1,75 @@
+stages:
+  - stop_app
+  - install_packages
+  - update_code
+  - start_app
+  - notify
+  - notify_fail
+
+stop_app:
+  stage: stop_app
+  tags:
+    - rpup_pak_updater
+  script:
+    - nssm stop AnalyticsTaskManagerApp
+  only:
+    - master
+  dependencies: []
+
+deploy_packages:
+  stage: install_packages
+  tags:
+    - rpup_pak_updater
+  script:
+    - Rscript -e "install.packages(c('ps', 'purrr', 'telegram.bot', 'dplyr', 'httr2'), repos='https://cran.r-project.org')"
+  only:
+    - master
+  dependencies:
+    - stop_app
+
+update_code:
+  stage: update_code
+  tags:
+    - rpup_pak_updater
+  script:
+    - cd C:\scripts\alsey\netpeak_core\nc_analytics_team\shiny_task_service_manager
+    - git -c safe.directory="*" reset --hard
+    - git -c safe.directory="*" pull origin master
+  only:
+    - master
+  dependencies:
+    - deploy_packages
+
+start_app:
+  stage: start_app
+  tags:
+    - rpup_pak_updater
+  script:
+    - nssm start AnalyticsTaskManagerApp
+  only: 
+    - master
+  dependencies:
+    - update_code
+
+notify:
+  stage: notify
+  when: on_success
+  tags:
+    - rpup_pak_updater
+  script:
+    - Rscript ci_command/success.R
+  only:
+    - master
+  dependencies:
+    - start_app
+
+notify_fail:
+  stage: notify_fail
+  script:
+    - Rscript ci_command/fail.R
+  when: on_failure
+  only:
+    - master
+  tags:
+    - rpup_pak_updater
+  dependencies: []

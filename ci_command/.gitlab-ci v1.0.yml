@@ -1,0 +1,90 @@
+# 1ая версия CI/CD когда бот запускался из планировщика заданий
+# и крутился просто как отдельный процесс
+
+stages:
+  - stop_bot
+  - install_packages
+  - kill_process
+  - update_code
+  - start_bot
+  - notify
+  - notify_fail
+
+stop_bot:
+  stage: stop_bot
+  tags:
+    - rpup_pak_updater
+  script:
+    - schtasks /End /TN "alsey\netpeak_core\nc_analytics_team\als_tg_bot"
+  only:
+    - master
+  dependencies: []
+
+deploy_packages:
+  stage: install_packages
+  tags:
+    - rpup_pak_updater
+  script:
+    - Rscript -e "install.packages(c('ps', 'purrr', 'telegram.bot', 'dplyr', 'httr2'), repos='https://cran.r-project.org')"
+  only:
+    - master
+  dependencies:
+    - stop_bot
+
+kill_process:
+  stage: kill_process
+  tags:
+    - rpup_pak_updater
+  script:
+    - Rscript ci_command/proc_killer.R
+  only:
+    - master
+  dependencies:
+    - deploy_packages
+
+update_code:
+  stage: update_code
+  tags:
+    - rpup_pak_updater
+  script:
+    - cd C:\scripts\alsey\netpeak_core\nc_analytics_team\telegram_bot
+    - git -c safe.directory="*" reset --hard
+    - git -c safe.directory="*" pull origin master
+  only:
+    - master
+  dependencies:
+    - kill_process
+
+start_bot:
+  stage: start_bot
+  tags:
+    - rpup_pak_updater
+  script:
+    - schtasks /Run /TN "alsey\netpeak_core\nc_analytics_team\als_tg_bot"
+  only: 
+    - master
+  dependencies:
+    - update_code
+
+notify:
+  stage: notify
+  when: on_success
+  tags:
+    - rpup_pak_updater
+  script:
+    - Rscript ci_command/success.R
+  only:
+    - master
+  dependencies:
+    - start_bot
+
+notify_fail:
+  stage: notify_fail
+  script:
+    - Rscript ci_command/fail.R
+  when: on_failure
+  only:
+    - master
+  tags:
+    - rpup_pak_updater
+  dependencies: []
