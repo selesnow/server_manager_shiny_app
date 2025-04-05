@@ -4,61 +4,81 @@ library(dplyr)
 library(taskscheduleR)
 library(stringr)
 library(readr)
+library(glue)
 
-# Вспомогательная функция для получения задач
-get_tasks <- reactive({
+# Получение задач (обычная функция)
+get_tasks <- function() {
   analysts_team <- dept::dp_get_team()
   analysts <- names(analysts_team)
   analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
   
-  task <- taskscheduleR::taskscheduler_ls(fill = TRUE) %>%
+  taskscheduler_ls(fill = TRUE) %>%
     mutate(
-      `Run As User` = str_remove_all(`Run As User`, 'ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\'),
-      `Author` = str_remove_all(`Author`, 'ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\')
+      `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
+      Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
+      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
     ) %>%
-    mutate(`Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")) %>%
-    filter(str_detect(string = tolower(`Run As User`), analyst_filter)) %>%
+    filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
     filter(`Scheduled Task State` == "Enabled")
-  
-  task
-})
+}
 
-# Получение служб
-get_services <- reactive({
+# Получение служб с описанием
+get_services <- function() {
   service_data <- system("sc query state= all", intern = TRUE)
   service_lines <- grep("SERVICE_NAME: Analytics", service_data, value = TRUE)
-  service_names <- str_extract(service_lines, "Analytics[\u0410-\u042F\u0430-\u044F\\w\\-_]+")
+  service_names <- str_extract(service_lines, "Analytics[А-Яа-я\\w\\-_]+")
   
-  service_statuses <- sapply(service_names, function(s) {
-    status <- system(str_glue("sc query \"{s}\""), intern = TRUE)
-    state_line <- grep("STATE", status, value = TRUE)
-    str_trim(str_replace(state_line, ".*STATE.*: ", ""))
-  })
-  
-  tibble(Service = service_names, Status = service_statuses)
-})
+  tibble(Service = service_names) %>%
+    rowwise() %>%
+    mutate(
+      Status = {
+        status <- system(glue("sc query \"{Service}\""), intern = TRUE)
+        state_line <- grep("STATE", status, value = TRUE)
+        str_trim(str_replace(state_line, ".*STATE.*: ", ""))
+      },
+      DisplayName = {
+        info <- system(glue("sc qc \"{Service}\""), intern = TRUE)
+        display_line <- grep("DISPLAY_NAME", info, value = TRUE)
+        if (length(display_line) > 0) {
+          str_trim(str_remove(display_line, "DISPLAY_NAME *:"))
+        } else {
+          "Нет DisplayName"
+        }
+      },
+      Description = {
+        desc_info <- suppressWarnings(system(glue("nssm get \"{Service}\" Description"), intern = TRUE))
+        if (length(desc_info) > 0 && desc_info != "") {
+          str_trim(desc_info)
+        } else {
+          "Нет описания"
+        }
+      }
+    ) %>%
+    ungroup()
+}
 
 ui <- fluidPage(
-  titlePanel("Task Scheduler & Service Manager"),
+  titlePanel("Управление задачами и службами"),
+  
   sidebarLayout(
     sidebarPanel(
       uiOutput("author_filter"),
       uiOutput("runas_filter"),
       uiOutput("last_result_filter"),
-      selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '100%'),
+      selectInput("selected_task", "Выберите задачу:", choices = NULL),
       actionButton("run_task", "Запустить задачу"),
-      hr(),
+      tags$hr(),
       selectInput("selected_service", "Выберите службу:", choices = NULL),
       textOutput("service_status"),
       actionButton("start_service", "Запустить"),
       actionButton("stop_service", "Остановить"),
       actionButton("restart_service", "Перезапустить")
     ),
+    
     mainPanel(
-      h3("Список задач планировщика"),
+      h3("Задачи"),
       DTOutput("task_table"),
-      hr(),
-      h3("Список служб"),
+      h3("Службы"),
       DTOutput("service_table")
     )
   )
@@ -68,7 +88,6 @@ server <- function(input, output, session) {
   
   task_data <- reactive({
     task <- get_tasks()
-    
     if (!is.null(input$filter_author)) {
       task <- task %>% filter(Author %in% input$filter_author)
     }
@@ -78,7 +97,6 @@ server <- function(input, output, session) {
     if (!is.null(input$filter_last_result)) {
       task <- task %>% filter(`Last Result` %in% input$filter_last_result)
     }
-    
     task
   })
   
@@ -112,22 +130,26 @@ server <- function(input, output, session) {
     showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
   })
   
+  services_data <- reactive({
+    get_services()
+  })
+  
   service_info <- reactive({
-    get_services() %>% filter(Service == input$selected_service)
+    services_data() %>% filter(Service == input$selected_service)
   })
   
   output$service_table <- renderDT({
-    datatable(get_services(), options = list(pageLength = 5))
+    datatable(services_data(), options = list(pageLength = 5))
   })
   
   observe({
-    updateSelectInput(session, "selected_service", choices = get_services()$Service)
+    updateSelectInput(session, "selected_service", choices = services_data()$Service)
   })
   
   output$service_status <- renderText({
     req(input$selected_service)
     current <- service_info()
-    if (nrow(current) > 0) paste("Статус:", current$Status) else "Статус неизвестен"
+    if (nrow(current) > 0) paste("Статус:", current$Status, "|", current$Description) else "Статус неизвестен"
   })
   
   observeEvent(input$start_service, {
