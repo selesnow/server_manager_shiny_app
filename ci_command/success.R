@@ -75,10 +75,11 @@ message <- paste0(
   "🚀 *Обновление Server Task & Service Manager Shiny App!*\n\n",
   "_Что было доработано:_\n\n",
   escape_markdown(commit_raw), "\n\n",
+  "🔗 Открыть [Server Task & Service Manager Shiny App](http://94.130.22.47:3838/)", "\n\n",
   "● Автор: ", author, "\n",
   "● Ветка: ", branch, "\n",
   "● *Pipeline:* [#", pipeline_id, "](", pipeline_url, ")\n\n",
-  "#netpeak\\_bi\\_bot\n"
+  "#shiny\\_task\\_service\\_manager\n"
 )
 
 # Отправка сообщения в Telegram
