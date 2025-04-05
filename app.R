@@ -86,8 +86,15 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  all_tasks <- reactiveVal(NULL)
+  
+  observe({
+    all_tasks(get_tasks())
+  })
+  
   task_data <- reactive({
-    task <- get_tasks()
+    req(all_tasks())
+    task <- all_tasks()
     if (!is.null(input$filter_author)) {
       task <- task %>% filter(Author %in% input$filter_author)
     }
@@ -109,15 +116,18 @@ server <- function(input, output, session) {
   })
   
   output$author_filter <- renderUI({
-    selectInput("filter_author", "Author:", choices = unique(get_tasks()$Author), multiple = TRUE)
+    req(all_tasks())
+    selectInput("filter_author", "Author:", choices = unique(all_tasks()$Author), multiple = TRUE)
   })
   
   output$runas_filter <- renderUI({
-    selectInput("filter_runas", "Run As User:", choices = unique(get_tasks()$`Run As User`), multiple = TRUE)
+    req(all_tasks())
+    selectInput("filter_runas", "Run As User:", choices = unique(all_tasks()$`Run As User`), multiple = TRUE)
   })
   
   output$last_result_filter <- renderUI({
-    selectInput("filter_last_result", "Last Result:", choices = unique(get_tasks()$`Last Result`), multiple = TRUE)
+    req(all_tasks())
+    selectInput("filter_last_result", "Last Result:", choices = unique(all_tasks()$`Last Result`), multiple = TRUE)
   })
   
   output$task_table <- renderDT({
