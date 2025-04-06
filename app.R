@@ -176,8 +176,6 @@ get_services <- function() {
 
 ui <- fluidPage(
   
-  titlePanel("Авторизация"),
-  
   # Динамический вывод UI
   uiOutput("login_ui"),  # Форма логина
   
@@ -209,13 +207,54 @@ server <- function(input, output, session) {
   output$login_ui <- renderUI({
     if (!logged_in()) {
       fluidPage(
-        textInput("login", "Логин"),
-        passwordInput("password", "Пароль"),
-        actionButton("login_btn", "Войти"),
-        textOutput("login_message")
+        # Добавляем стили для центрирования и увеличения ширины полей
+        tags$style(HTML("
+        .login-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+        
+        .login-container .form-container {
+          width: 100%;
+          max-width: 400px;  /* Максимальная ширина формы */
+          padding: 20px;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          background-color: #f9f9f9;
+        }
+        
+        .login-container .form-container input, 
+        .login-container .form-container button {
+          width: 100%;  /* Делаем поля ввода и кнопки на всю ширину */
+          padding: 10px;
+          margin-bottom: 10px;
+        }
+        
+        #title-panel {
+          text-align: center;
+        }
+      ")),
+        
+        # Контейнер с классом для выравнивания
+        div(class = "login-container",
+            fluidRow(
+              column(12, class = "form-container",
+                     # Заголовок "Авторизация" по центру
+                     tags$h2(id = "title-panel", "Авторизация"),
+                     textInput("login", "Логин"),
+                     passwordInput("password", "Пароль"),
+                     actionButton("login_btn", "Войти"),
+                     textOutput("login_message")
+              )
+            )
+        )
       )
     }
   })
+  
+  
   
   
   # UI для основного контента
