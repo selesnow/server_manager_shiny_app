@@ -58,30 +58,213 @@ get_services <- function() {
 }
 
 ui <- fluidPage(
-  titlePanel("Управление задачами и службами"),
+  # Добавляем возможность переключения темной темы
+  tags$head(
+    tags$style(HTML("
+      body {
+        background-color: #333;
+        color: #f5f5f5;
+      }
+      .card {
+        background-color: #444;
+        border-color: #555;
+        margin-bottom: 20px;
+      }
+      .card-header {
+        background-color: #555;
+        border-color: #666;
+      }
+      .btn-primary {
+        background-color: #007bff;
+      }
+      .btn-success {
+        background-color: #28a745;
+      }
+      .btn-danger {
+        background-color: #dc3545;
+      }
+      .btn-warning {
+        background-color: #ffc107;
+        color: #333;
+      }
+      .btn-info {
+        background-color: #17a2b8;
+      }
+      select, input {
+        background-color: #555;
+        color: #f5f5f5;
+        border-color: #666;
+      }
+      table {
+        color: #f5f5f5;
+      }
+      .dataTables_wrapper {
+        color: #f5f5f5;
+      }
+      .dataTables_info, 
+      .dataTables_paginate,
+      .dataTables_filter,
+      .dataTables_length {
+        color: #f5f5f5 !important;
+      }
+      
+      /* Стили для светлой темы */
+      .light-mode {
+        background-color: #ffffff;
+        color: #333;
+      }
+      .light-mode .card {
+        background-color: #f9f9f9;
+        border-color: #ddd;
+      }
+      .light-mode .card-header {
+        background-color: #f1f1f1;
+        border-color: #ddd;
+      }
+      .light-mode select, .light-mode input {
+        background-color: #ffffff;
+        color: #333;
+        border-color: #ccc;
+      }
+      .light-mode table {
+        color: #333;
+      }
+      .light-mode .dataTables_wrapper {
+        color: #333;
+      }
+      .light-mode .dataTables_info, 
+      .light-mode .dataTables_paginate,
+      .light-mode .dataTables_filter,
+      .light-mode .dataTables_length {
+        color: #333 !important;
+      }
+      
+      /* Стиль для header */
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .controls-container {
+        display: flex;
+        align-items: center;
+      }
+    "))
+  ),
   
-  sidebarLayout(
-    sidebarPanel(
-      uiOutput("author_filter"),
-      uiOutput("runas_filter"),
-      uiOutput("last_result_filter"),
-      selectInput("selected_task", "Выберите задачу:", choices = NULL),
-      actionButton("run_task", "Запустить задачу"),
-      tags$hr(),
-      selectInput("selected_service", "Выберите службу:", choices = NULL),
-      textOutput("service_status"),
-      actionButton("start_service", "Запустить"),
-      actionButton("stop_service", "Остановить"),
-      actionButton("restart_service", "Перезапустить")
-    ),
-    
-    mainPanel(
-      h3("Задачи"),
-      DTOutput("task_table"),
-      h3("Службы"),
-      DTOutput("service_table")
+  # Используем правильную структуру заголовка без встроенных стилей
+  titlePanel(
+    title = "Server Task & Service Manager",
+    windowTitle = "Server Task & Service Manager"
+  ),
+  
+  # Добавляем элементы управления отдельно, после заголовка
+  div(class = "header-container",
+      div(), # Пустой элемент для правильного выравнивания
+      div(class = "controls-container",
+          checkboxInput("dark_mode", "Светлая тема", FALSE),
+          actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2")
+      )
+  ),
+  
+  # Первый вертикальный блок - фильтры и управление задачами
+  fluidRow(
+    column(
+      width = 12,
+      div(class = "card", 
+          div(class = "card-header", "Фильтры и управление"),
+          div(class = "card-body",
+              fluidRow(
+                # Блок с фильтрами
+                column(
+                  width = 6,
+                  div(class = "mb-3", 
+                      h4("Фильтры задач"),
+                      uiOutput("author_filter"),
+                      uiOutput("runas_filter"),
+                      uiOutput("last_result_filter")
+                  )
+                ),
+                # Блок с управлением задачами и службами
+                column(
+                  width = 6,
+                  div(class = "mb-3",
+                      h4("Управление задачами"),
+                      selectInput("selected_task", "Выберите задачу:", choices = NULL),
+                      div(class = "action-buttons",
+                          actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-primary"),
+                          actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+                      )
+                  ),
+                  tags$hr(),
+                  div(
+                    h4("Управление службами"),
+                    selectInput("selected_service", "Выберите службу:", choices = NULL),
+                    textOutput("service_status"),
+                    div(class = "action-buttons",
+                        actionButton("start_service", "Запустить", icon = icon("play"), class = "btn-success"),
+                        actionButton("stop_service", "Остановить", icon = icon("stop"), class = "btn-danger"),
+                        actionButton("restart_service", "Перезапустить", icon = icon("sync"), class = "btn-warning")
+                    )
+                  )
+                )
+              )
+          )
+      )
     )
-  )
+  ),
+  
+  # Второй вертикальный блок - таблица задач
+  fluidRow(
+    column(
+      width = 12,
+      div(class = "card",
+          div(class = "card-header", "Задачи"),
+          div(class = "card-body",
+              DTOutput("task_table")
+          )
+      )
+    )
+  ),
+  
+  # Третий вертикальный блок - таблица служб
+  fluidRow(
+    column(
+      width = 12,
+      div(class = "card",
+          div(class = "card-header", "Службы"),
+          div(class = "card-body",
+              DTOutput("service_table")
+          )
+      )
+    )
+  ),
+  
+  # Добавляем CSS для кнопок действий
+  tags$head(
+    tags$style(HTML("
+      .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+    "))
+  ),
+  
+  # JavaScript для переключения темной/светлой темы
+  tags$script(HTML("
+    $(document).ready(function() {
+      // Темная тема по умолчанию
+      $('#dark_mode').on('change', function() {
+        if($(this).is(':checked')) {
+          $('body').addClass('light-mode');
+        } else {
+          $('body').removeClass('light-mode');
+        }
+      });
+    });
+  "))
 )
 
 server <- function(input, output, session) {
