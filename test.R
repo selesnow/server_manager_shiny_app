@@ -375,160 +375,160 @@ server <- function(input, output, session) {
               margin-bottom: 10px;
             }
           "))
-        ),
-        
-        # Используем правильную структуру заголовка без встроенных стилей
-        titlePanel(
-          title = "Server Task & Service Manager",
-          windowTitle = "Server Task & Service Manager"
-        ),
-        
-        # Добавляем элементы управления отдельно, после заголовка
-        div(class = "header-container",
-            div(), # Пустой элемент для правильного выравнивания
-            div(class = "controls-container",
-                checkboxInput("dark_mode", "Светлая тема", FALSE),
-                actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2")
-            )
-        ),
-        
-        # Начало вкладок
-        tabsetPanel(
-          id = "main_tabs",
-          
-          # Вкладка "Задачи"
-          tabPanel(
-            title = "Задачи",
-            
-            # Первый вертикальный блок - фильтры и управление задачами
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", 
-                    div(class = "card-header", "Фильтры и управление задачами"),
-                    div(class = "card-body",
-                        fluidRow(
-                          # Блок с фильтрами
-                          column(
-                            width = 6,
-                            div(class = "mb-3", 
-                                h4("Фильтры задач"),
-                                uiOutput("author_filter"),
-                                uiOutput("runas_filter"),
-                                uiOutput("last_result_filter"),
-                                uiOutput("client_filter") # Добавляем фильтр по клиенту
-                            )
-                          ),
-                          # Блок с управлением задачами
-                          column(
-                            width = 6,
-                            div(class = "mb-3",
-                                h4("Управление задачами"),
-                                selectInput("selected_task", "Выберите задачу:", choices = NULL),
-                                div(class = "action-buttons",
-                                    actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
-                                    actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+              ),
+              
+              # Используем правильную структуру заголовка без встроенных стилей
+              titlePanel(
+                title = "Server Task & Service Manager",
+                windowTitle = "Server Task & Service Manager"
+              ),
+              
+              # Добавляем элементы управления отдельно, после заголовка
+              div(class = "header-container",
+                  div(), # Пустой элемент для правильного выравнивания
+                  div(class = "controls-container",
+                      checkboxInput("dark_mode", "Светлая тема", FALSE),
+                      actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2")
+                  )
+              ),
+              
+              # Начало вкладок
+              tabsetPanel(
+                id = "main_tabs",
+                
+                # Вкладка "Задачи"
+                tabPanel(
+                  title = "Задачи",
+                  
+                  # Первый вертикальный блок - фильтры и управление задачами
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card", 
+                          div(class = "card-header", "Фильтры и управление задачами"),
+                          div(class = "card-body",
+                              fluidRow(
+                                # Блок с фильтрами
+                                column(
+                                  width = 6,
+                                  div(class = "mb-3", 
+                                      h4("Фильтры задач"),
+                                      uiOutput("author_filter"),
+                                      uiOutput("runas_filter"),
+                                      uiOutput("last_result_filter"),
+                                      uiOutput("client_filter") # Добавляем фильтр по клиенту
+                                  )
+                                ),
+                                # Блок с управлением задачами
+                                column(
+                                  width = 6,
+                                  div(class = "mb-3",
+                                      h4("Управление задачами"),
+                                      selectInput("selected_task", "Выберите задачу:", choices = NULL),
+                                      div(class = "action-buttons",
+                                          actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
+                                          actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+                                      )
+                                  )
                                 )
-                            )
+                              )
                           )
-                        )
+                      )
                     )
-                )
-              )
-            ),
-            
-            # Блок с выводом лога
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", style = "display: none;", id = "log_card",
-                    div(class = "card-header", "Логи задачи"),
-                    div(class = "card-body",
-                        h4(textOutput("log_task_name")),
-                        tags$div(
-                          style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                          class = "light-mode-log",
-                          verbatimTextOutput("task_log_content")
-                        )
-                    )
-                )
-              )
-            ),
-            
-            # Таблица задач
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Задачи"),
-                    div(class = "card-body",
-                        DTOutput("task_table")
-                    )
-                )
-              )
-            )
-          ),
-          
-          # Вкладка "Службы"
-          tabPanel(
-            title = "Службы",
-            
-            # Блок с управлением службами
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", 
-                    div(class = "card-header", "Управление службами"),
-                    div(class = "card-body",
-                        div(
-                          h4("Выбор и управление службами"),
-                          selectInput("selected_service", "Выберите службу:", choices = NULL),
-                          textOutput("service_status"),
-                          div(class = "action-buttons",
-                              actionButton("start_service", "Запустить", icon = icon("play"), class = "btn-success"),
-                              actionButton("stop_service", "Остановить", icon = icon("stop"), class = "btn-danger"),
-                              actionButton("restart_service", "Перезапустить", icon = icon("sync"), class = "btn-warning")
+                  ),
+                  
+                  # Блок с выводом лога
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card", style = "display: none;", id = "log_card",
+                          div(class = "card-header", "Логи задачи"),
+                          div(class = "card-body",
+                              h4(textOutput("log_task_name")),
+                              tags$div(
+                                style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                                class = "light-mode-log",
+                                verbatimTextOutput("task_log_content")
+                              )
                           )
-                        )
+                      )
                     )
-                )
-              )
-            ),
-            
-            # Таблица служб
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Службы"),
-                    div(class = "card-body",
-                        DTOutput("service_table")
+                  ),
+                  
+                  # Таблица задач
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card",
+                          div(class = "card-header", "Задачи"),
+                          div(class = "card-body",
+                              DTOutput("task_table")
+                          )
+                      )
                     )
-                )
-              )
-            )
-          ),
-          
-          # Улучшенная вкладка "Статистика"
-          tabPanel(
-            title = "Статистика",
-            
-            # Добавляем блок с общей статистикой
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Общая статистика задач"),
-                    div(class = "card-body",
-                        # Секция с общими показателями
-                        div(class = "stats-summary",
-                            uiOutput("overall_stats_summary")
-                        ),
-                        
-                        # Секция с описанием показателей
-                        div(class = "stats-description",
-                            h4("Показатели:"),
-                            HTML("
+                  )
+                ),
+                
+                # Вкладка "Службы"
+                tabPanel(
+                  title = "Службы",
+                  
+                  # Блок с управлением службами
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card", 
+                          div(class = "card-header", "Управление службами"),
+                          div(class = "card-body",
+                              div(
+                                h4("Выбор и управление службами"),
+                                selectInput("selected_service", "Выберите службу:", choices = NULL),
+                                textOutput("service_status"),
+                                div(class = "action-buttons",
+                                    actionButton("start_service", "Запустить", icon = icon("play"), class = "btn-success"),
+                                    actionButton("stop_service", "Остановить", icon = icon("stop"), class = "btn-danger"),
+                                    actionButton("restart_service", "Перезапустить", icon = icon("sync"), class = "btn-warning")
+                                )
+                              )
+                          )
+                      )
+                    )
+                  ),
+                  
+                  # Таблица служб
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card",
+                          div(class = "card-header", "Службы"),
+                          div(class = "card-body",
+                              DTOutput("service_table")
+                          )
+                      )
+                    )
+                  )
+                ),
+                
+                # Улучшенная вкладка "Статистика"
+                tabPanel(
+                  title = "Статистика",
+                  
+                  # Добавляем блок с общей статистикой
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card",
+                          div(class = "card-header", "Общая статистика задач"),
+                          div(class = "card-body",
+                              # Секция с общими показателями
+                              div(class = "stats-summary",
+                                  uiOutput("overall_stats_summary")
+                              ),
+                              
+                              # Секция с описанием показателей
+                              div(class = "stats-description",
+                                  h4("Показатели:"),
+                                  HTML("
                               <ul>
                                 <li><strong>crons</strong> - К-во активных задач в планировщике заданий</li>
                                 <li><strong>rate</strong> - Доля скриптов от общего активных количества по пользователю или клиенту</li>
@@ -536,54 +536,54 @@ server <- function(input, output, session) {
                                 <li><strong>new cron rate</strong> - Доля перенесённых в папку C:\\scripts от активных по пользователю</li>
                               </ul>
                             ")
-                        )
+                              )
+                          )
+                      )
                     )
-                )
-              )
-            ),
-            
-            # Таблица статистики по клиентам
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Статистика по клиентам"),
-                    div(class = "card-body",
-                        DTOutput("client_stats_table")
+                  ),
+                  
+                  # Таблица статистики по клиентам
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card",
+                          div(class = "card-header", "Статистика по клиентам"),
+                          div(class = "card-body",
+                              DTOutput("client_stats_table")
+                          )
+                      )
                     )
-                )
-              )
-            ),
-            
-            # Таблица статистики по авторам
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Статистика по авторам"),
-                    div(class = "card-body",
-                        DTOutput("author_stats_table")
+                  ),
+                  
+                  # Таблица статистики по авторам
+                  fluidRow(
+                    column(
+                      width = 12,
+                      div(class = "card",
+                          div(class = "card-header", "Статистика по авторам"),
+                          div(class = "card-body",
+                              DTOutput("author_stats_table")
+                          )
+                      )
                     )
+                  ),
+                  # графики
+                  fluidRow(
+                    column(6, plotOutput("task_log_plot")),
+                    column(6, plotOutput("task_info_plot"))
+                  ),
+                  hr(),
+                  fluidRow(
+                    column(12,
+                           DTOutput("statistics_table")
+                    )
+                  )
                 )
-              )
-            ),
-            # графики
-            fluidRow(
-              column(6, plotOutput("task_log_plot")),
-              column(6, plotOutput("task_info_plot"))
-            ),
-            hr(),
-            fluidRow(
-              column(12,
-                     DTOutput("statistics_table")
-              )
-            )
-          )
-        ),
-        
-        # Добавляем CSS для кнопок действий
-        tags$head(
-          tags$style(HTML("
+              ),
+              
+              # Добавляем CSS для кнопок действий
+              tags$head(
+                tags$style(HTML("
             .action-buttons {
               display: flex;
               gap: 10px;
@@ -591,11 +591,11 @@ server <- function(input, output, session) {
               margin-top: 10px;
             }
           "))
-        ),
-        actionButton("logout_btn", "Выйти"),
-        
-        # JavaScript для переключения темной/светлой темы
-        tags$script(HTML("
+              ),
+              actionButton("logout_btn", "Выйти"),
+              
+              # JavaScript для переключения темной/светлой темы
+              tags$script(HTML("
           $(document).ready(function() {
             // Темная тема по умолчанию
             $('#dark_mode').on('change', function() {
@@ -632,7 +632,7 @@ server <- function(input, output, session) {
   # Основная логика приложения, запускается после логина
   observeEvent(logged_in(), {
     if (logged_in()) {
-      
+  
       all_tasks <- reactiveVal(NULL)
       
       # Добавляем реактивное значение для отслеживания обновлений
