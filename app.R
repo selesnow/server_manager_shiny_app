@@ -169,6 +169,31 @@ get_services <- function() {
         } else {
           "Нет описания"
         }
+      },
+      AppDirectory = {
+        dir_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
+        if (length(dir_info) > 0 && dir_info != "") {
+          str_trim(dir_info)
+        } else {
+          "Нет описания"
+        }
+      },
+      Client = {
+      client_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
+        if (length(client_info) > 0 && client_info != "") {
+          str_trim(client_info)
+          str_split(client_info, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
+        } else {
+          "Нет описания"
+        }
+      },
+      AppParameters = {
+        param_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppParameters"), intern = TRUE))
+        if (length(param_info) > 0 && param_info != "") {
+          str_trim(param_info)
+        } else {
+          "Нет описания"
+        }
       }
     ) %>%
     ungroup()
