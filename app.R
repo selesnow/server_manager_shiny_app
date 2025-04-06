@@ -9,7 +9,6 @@ library(glue)
 library(snakecase)
 
 # Функция поиска и чтения логов
-# Функция поиска и чтения логов
 find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
   
   file_ext <- tools::file_ext(unique(trimws(task_to_run)))
@@ -67,6 +66,75 @@ get_tasks <- function() {
     ) %>% 
     ungroup()
   
+}
+
+# Функция для получения общей статистики
+get_overall_stats <- function(tasks) {
+  tasks <- tasks %>%
+    select(TaskName, Client, Author, `New Structure`) %>% 
+    unique()
+  
+  total_crons <- length(unique(tasks$TaskName))
+  new_structure_crons <- length(unique(filter(tasks, `New Structure`)$TaskName))
+  crons_to_move <- total_crons - new_structure_crons
+  
+  new_structure_percent <- round(new_structure_crons / total_crons * 100, 0)
+  to_move_percent <- round(crons_to_move / total_crons * 100, 0)
+  
+  list(
+    total_crons = total_crons,
+    new_structure_crons = new_structure_crons,
+    new_structure_percent = new_structure_percent,
+    crons_to_move = crons_to_move,
+    to_move_percent = to_move_percent
+  )
+}
+
+# Функция для создания статистики по клиентам
+get_client_stats <- function(tasks) {
+  
+  tasks <- tasks %>%
+    select(TaskName, Client, Author, `New Structure`) %>% 
+    unique()
+  
+  tasks %>%
+    filter(`New Structure`) %>%
+    group_by(Client) %>%
+    summarise(crons = n()) %>%
+    ungroup() %>%
+    mutate(
+      rate = round(crons / length(unique(filter(tasks, `New Structure`)$TaskName)) * 100, 0)
+    ) %>%
+    arrange(desc(crons))
+}
+
+# Функция для создания статистики по авторам
+get_author_stats <- function(tasks) {
+  
+  tasks <- tasks %>%
+    select(TaskName, Client, Author, `New Structure`) %>% 
+    unique()
+  
+  tasks %>% 
+    mutate(new_crons = if_else(`New Structure`, 1, 0)) %>%
+    group_by(Author) %>%
+    summarise(
+      crons = n(),
+      'new crons' = sum(new_crons)
+    ) %>%
+    ungroup() %>%
+    mutate(
+      rate = round(crons / length(unique(tasks$TaskName)) * 100, 0),
+      'new cron rate' = round(`new crons` / crons * 100, 0)
+    ) %>%
+    arrange(desc(crons)) %>%
+    select(
+      Author,
+      crons,
+      rate,
+      'new crons',
+      'new cron rate'
+    )
 }
 
 # Получение служб с описанием
@@ -229,6 +297,32 @@ ui <- fluidPage(
         background-color: #ffffff;
         border-color: #ddd;
       }
+      
+      /* Стили для статистики */
+      .stats-summary {
+        margin-bottom: 20px;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #555;
+      }
+      .light-mode .stats-summary {
+        background-color: #f1f1f1;
+      }
+      .stats-item {
+        margin-bottom: 8px;
+      }
+      .stats-description {
+        margin-top: 15px;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #555;
+      }
+      .light-mode .stats-description {
+        background-color: #f1f1f1;
+      }
+      .stats-description h4 {
+        margin-bottom: 10px;
+      }
     "))
   ),
   
@@ -362,6 +456,66 @@ ui <- fluidPage(
           )
         )
       )
+    ),
+    
+    # Улучшенная вкладка "Статистика"
+    tabPanel(
+      title = "Статистика",
+      
+      # Добавляем блок с общей статистикой
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card",
+              div(class = "card-header", "Общая статистика задач"),
+              div(class = "card-body",
+                  # Секция с общими показателями
+                  div(class = "stats-summary",
+                      uiOutput("overall_stats_summary")
+                  ),
+                  
+                  # Секция с описанием показателей
+                  div(class = "stats-description",
+                      h4("Показатели:"),
+                      HTML("
+                        <ul>
+                          <li><strong>crons</strong> - К-во активных задач в планировщике заданий</li>
+                          <li><strong>rate</strong> - Доля скриптов от общего активных количества по пользователю или клиенту</li>
+                          <li><strong>new crons</strong> - К-во активных задач, скрипты которых перенесены в папку C:\\scripts</li>
+                          <li><strong>new cron rate</strong> - Доля перенесённых в папку C:\\scripts от активных по пользователю</li>
+                        </ul>
+                      ")
+                  )
+              )
+          )
+        )
+      ),
+      
+      # Таблица статистики по клиентам
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card",
+              div(class = "card-header", "Статистика по клиентам"),
+              div(class = "card-body",
+                  DTOutput("client_stats_table")
+              )
+          )
+        )
+      ),
+      
+      # Таблица статистики по авторам
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card",
+              div(class = "card-header", "Статистика по авторам"),
+              div(class = "card-body",
+                  DTOutput("author_stats_table")
+              )
+          )
+        )
+      )
     )
   ),
   
@@ -420,6 +574,43 @@ server <- function(input, output, session) {
     }
     
     task
+  })
+  
+  # Реактивные значения для статистики
+  overall_stats <- reactive({
+    req(all_tasks())
+    get_overall_stats(all_tasks())
+  })
+  
+  client_stats <- reactive({
+    req(all_tasks())
+    get_client_stats(all_tasks())
+  })
+  
+  author_stats <- reactive({
+    req(all_tasks())
+    get_author_stats(all_tasks())
+  })
+  
+  # Выводим общую статистику
+  output$overall_stats_summary <- renderUI({
+    stats <- overall_stats()
+    HTML(paste0(
+      "<div class='stats-item'>◦ Активных кронов: ", stats$total_crons, "</div>",
+      "<div class='stats-item'>◦ Активных кронов в новой файловой структуре: ", 
+      stats$new_structure_crons, " (", stats$new_structure_percent, " %)</div>",
+      "<div class='stats-item'>◦ Активных кронов которые надо перенести: ", 
+      stats$crons_to_move, " (", stats$to_move_percent, " %)</div>"
+    ))
+  })
+  
+  # Рендеринг таблиц статистики
+  output$client_stats_table <- renderDT({
+    datatable(client_stats(), options = list(pageLength = 10, scrollX = TRUE))
+  })
+  
+  output$author_stats_table <- renderDT({
+    datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
   })
   
   filtered_task_names <- reactive({
