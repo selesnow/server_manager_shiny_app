@@ -515,6 +515,17 @@ ui <- fluidPage(
               )
           )
         )
+      ),
+      # графики
+      fluidRow(
+        column(6, plotOutput("task_log_plot")),
+        column(6, plotOutput("task_info_plot"))
+      ),
+      hr(),
+      fluidRow(
+        column(12,
+               DTOutput("statistics_table")
+        )
       )
     )
   ),
@@ -784,6 +795,29 @@ server <- function(input, output, session) {
   # Заменим обработчик таблицы служб, чтобы использовать фильтрацию
   output$service_table <- renderDT({
     datatable(filtered_service_data(), options = list(pageLength = 5))
+  })
+  
+  # Графики
+  con <- dbConnect(SQLite(), r"(C:\\scripts\\alsey\\netpeak_core\\nc_analytics_team\\telegram_bot\\bot_db.db)")
+  
+  output$task_log_plot <- renderPlot({
+    dbReadTable(con, "task_log") %>% 
+      mutate(log_time = str_sub(log_time, 1, 10) %>% as.Date()) %>% 
+      summarise(failed_tasks = n_distinct(task_name), .by = log_time) %>% 
+      filter(between(log_time, Sys.Date() - 90, Sys.Date())) %>% 
+      ggplot(aes(x = log_time, y = failed_tasks)) + 
+      geom_line() + geom_point() + 
+      labs(title = 'Динамика сбоев планировщика заданий', x = '', y = '')
+  })
+  
+  output$task_info_plot <- renderPlot({
+    dbReadTable(con, "task_info_daily") %>% 
+      mutate(log_time = str_sub(log_time, 1, 10) %>% as.Date()) %>% 
+      summarise(failed_tasks = n_distinct(task_name), .by = log_time) %>% 
+      filter(between(log_time, Sys.Date() - 90, Sys.Date())) %>% 
+      ggplot(aes(x = log_time, y = failed_tasks)) + 
+      geom_line() + geom_point() + 
+      labs(title = 'Динамика количества настроенных заданий в планировщике', x = '', y = '')
   })
 }
 
