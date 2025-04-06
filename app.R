@@ -176,7 +176,7 @@ get_services <- function() {
 
 ui <- fluidPage(
   
-  titlePanel("Пример авторизации"),
+  titlePanel("Авторизация"),
   
   # Динамический вывод UI
   uiOutput("login_ui"),  # Форма логина
@@ -629,14 +629,15 @@ server <- function(input, output, session) {
     user_role(NULL)
   })
   
+  # Инфо по задачам
+  all_tasks <- reactiveVal(NULL)
+  
+  # Добавляем реактивное значение для отслеживания обновлений
+  refresh_trigger <- reactiveVal(0)
+  
   # Основная логика приложения, запускается после логина
   observeEvent(logged_in(), {
     if (logged_in()) {
-      
-      all_tasks <- reactiveVal(NULL)
-      
-      # Добавляем реактивное значение для отслеживания обновлений
-      refresh_trigger <- reactiveVal(0)
       
       observe({
         all_tasks(get_tasks())
@@ -703,42 +704,6 @@ server <- function(input, output, session) {
         task_data()$TaskName
       })
       
-      # Поиск и чтение лога
-      observeEvent(input$view_task_logs, {
-        req(input$selected_task)
-        
-        # Находим выбранную задачу в таблице
-        selected_task_data <- all_tasks() %>% 
-          filter(TaskName == input$selected_task)
-        
-        if(nrow(selected_task_data) > 0) {
-          # Получаем нужные поля
-          task_to_run <- selected_task_data$`Task To Run`
-          start_in <- selected_task_data$`Start In`
-          
-          # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
-          if(!is.null(task_to_run) && !is.null(start_in)) {
-            log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
-            
-            if(inherits(log_content, "try-error")) {
-              output$task_log_content <- renderText({ "Ошибка при чтении лога" })
-            } else {
-              output$task_log_content <- renderText({ log_content })
-            }
-            
-            # Показываем имя задачи
-            output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
-            
-            # Показываем блок с логами
-            shinyjs::show(id = "log_card")
-          } else {
-            showNotification("Не удалось найти данные для задачи", type = "error")
-          }
-        } else {
-          showNotification("Задача не найдена", type = "error")
-        }
-      })
-      
       observe({
         updateSelectInput(session, "selected_task", choices = filtered_task_names())
       })
@@ -768,12 +733,6 @@ server <- function(input, output, session) {
         datatable(task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
       })
       
-      observeEvent(input$run_task, {
-        req(input$selected_task)
-        taskscheduler_runnow(taskname = input$selected_task)
-        showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
-      })
-      
       # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
       services_data <- reactive({
         # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
@@ -800,42 +759,6 @@ server <- function(input, output, session) {
           paste("Статус:", current$Status, "|", current$Description)
         else
           "Статус неизвестен"
-      })
-      
-      observeEvent(input$start_service, {
-        req(input$selected_service)
-        system(str_glue("nssm start {input$selected_service}"), intern = TRUE)
-        showNotification("Служба запущена", type = "message")
-        # Обновляем триггер для обновления данных о службах
-        refresh_trigger(refresh_trigger() + 1)
-      })
-      
-      observeEvent(input$stop_service, {
-        req(input$selected_service)
-        system(str_glue("nssm stop {input$selected_service}"), intern = TRUE)
-        showNotification("Служба остановлена", type = "warning")
-        # Обновляем триггер для обновления данных о службах
-        refresh_trigger(refresh_trigger() + 1)
-      })
-      
-      observeEvent(input$restart_service, {
-        req(input$selected_service)
-        system(str_glue("nssm restart {input$selected_service}"), intern = TRUE)
-        showNotification("Служба перезапущена", type = "message")
-        # Обновляем триггер для обновления данных о службах
-        refresh_trigger(refresh_trigger() + 1)
-      })
-      
-      # Модифицируем обработчик для кнопки обновления данных
-      observeEvent(input$refresh_data, {
-        # Обновляем данные о задачах
-        all_tasks(get_tasks())
-        
-        # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
-        refresh_trigger(refresh_trigger() + 1)
-        
-        # Показываем уведомление об успешном обновлении
-        showNotification("Данные успешно обновлены", type = "message", duration = 3)
       })
       
       # Добавим обработчик для поиска в таблице задач, если он нужен
@@ -897,6 +820,86 @@ server <- function(input, output, session) {
     }
   }
   )
+  
+  # Модифицируем обработчик для кнопки обновления данных
+  observeEvent(input$refresh_data, {
+    # Обновляем данные о задачах
+    all_tasks(get_tasks())
+    
+    # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
+    refresh_trigger(refresh_trigger() + 1)
+    
+    # Показываем уведомление об успешном обновлении
+    showNotification("Данные успешно обновлены", type = "message", duration = 3)
+  })
+  
+  observeEvent(input$start_service, {
+    req(input$selected_service)
+    system(str_glue("nssm start {input$selected_service}"), intern = TRUE)
+    showNotification("Служба запущена", type = "message")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
+  })
+  
+  observeEvent(input$stop_service, {
+    req(input$selected_service)
+    system(str_glue("nssm stop {input$selected_service}"), intern = TRUE)
+    showNotification("Служба остановлена", type = "warning")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
+  })
+  
+  observeEvent(input$restart_service, {
+    req(input$selected_service)
+    system(str_glue("nssm restart {input$selected_service}"), intern = TRUE)
+    showNotification("Служба перезапущена", type = "message")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
+  })
+  
+  # Запуск задачи
+  observeEvent(input$run_task, {
+    req(input$selected_task)
+    taskscheduler_runnow(taskname = input$selected_task)
+    showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
+  })
+  
+  # Поиск и чтение лога
+  observeEvent(input$view_task_logs, {
+    req(input$selected_task)
+    
+    # Находим выбранную задачу в таблице
+    selected_task_data <- all_tasks() %>% 
+      filter(TaskName == input$selected_task)
+    
+    if(nrow(selected_task_data) > 0) {
+      # Получаем нужные поля
+      task_to_run <- selected_task_data$`Task To Run`
+      start_in <- selected_task_data$`Start In`
+      
+      # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
+      if(!is.null(task_to_run) && !is.null(start_in)) {
+        log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+        
+        if(inherits(log_content, "try-error")) {
+          output$task_log_content <- renderText({ "Ошибка при чтении лога" })
+        } else {
+          output$task_log_content <- renderText({ log_content })
+        }
+        
+        # Показываем имя задачи
+        output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
+        
+        # Показываем блок с логами
+        shinyjs::show(id = "log_card")
+      } else {
+        showNotification("Не удалось найти данные для задачи", type = "error")
+      }
+    } else {
+      showNotification("Задача не найдена", type = "error")
+    }
+  })
+  
 }
 
 shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
