@@ -7,6 +7,8 @@ library(stringr)
 library(readr)
 library(glue)
 library(snakecase)
+library(RSQLite)
+library(ggplot2)
 
 # Функция поиска и чтения логов
 find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
