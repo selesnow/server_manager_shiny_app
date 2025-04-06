@@ -1,4 +1,5 @@
 library(shiny)
+library(shinyjs)  # Добавляем библиотеку shinyjs
 library(DT)
 library(dplyr)
 library(taskscheduleR)
@@ -6,6 +7,39 @@ library(stringr)
 library(readr)
 library(glue)
 library(snakecase)
+
+# Функция поиска и чтения логов
+find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
+  
+  file_ext <- tools::file_ext(unique(trimws(task_to_run)))
+  
+  if (tolower(file_ext) == 'r') {
+    
+    r_file    <- strsplit(unique(task_to_run), split = ' ')[[1]] %>% 
+      .[length(.)]
+    rout_path <- str_glue('{start_in}\\{r_file}out')
+    
+    rout_file  <- readLines(unique(rout_path)) %>% 
+      str_c(., collapse = '\n')
+    
+    return(rout_file)
+    
+  }
+  
+  if (tolower(file_ext) == 'bat') {
+    
+    bat_file  <- readLines(unique(task_to_run)) %>% 
+      str_c(., collapse = '\n')
+    
+    bat_file  <- str_glue(bat_file)
+    
+    return(bat_file)
+    
+  }
+  
+  return('Лог не найден!')
+  
+}
 
 # Получение задач (обычная функция)
 get_tasks <- function() {
@@ -23,7 +57,7 @@ get_tasks <- function() {
     filter(`Scheduled Task State` == "Enabled") %>% 
     rowwise() %>% 
     mutate(
-      client = str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
+      Client = str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
     ) %>% 
     ungroup()
   
@@ -65,6 +99,8 @@ get_services <- function() {
 }
 
 ui <- fluidPage(
+  useShinyjs(),  # Добавляем использование shinyjs
+  
   # Добавляем возможность переключения темной темы
   tags$head(
     tags$style(HTML("
@@ -146,6 +182,12 @@ ui <- fluidPage(
         color: #333 !important;
       }
       
+      /* Стиль для светлой темы логов */
+      .light-mode .light-mode-log {
+        background-color: #f0f0f0 !important;
+        color: #333 !important;
+      }
+      
       /* Стиль для header */
       .header-container {
         display: flex;
@@ -221,6 +263,24 @@ ui <- fluidPage(
     )
   ),
   
+  # Блок с выводом лога
+  fluidRow(
+    column(
+      width = 12,
+      div(class = "card", style = "display: none;", id = "log_card",
+          div(class = "card-header", "Логи задачи"),
+          div(class = "card-body",
+              h4(textOutput("log_task_name")),
+              tags$div(
+                style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                class = "light-mode-log",
+                verbatimTextOutput("task_log_content")
+              )
+          )
+      )
+    )
+  ),
+  
   # Второй вертикальный блок - таблица задач
   fluidRow(
     column(
@@ -277,6 +337,9 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   all_tasks <- reactiveVal(NULL)
   
+  # Добавляем реактивное значение для отслеживания обновлений
+  refresh_trigger <- reactiveVal(0)
+  
   observe({
     all_tasks(get_tasks())
   })
@@ -300,6 +363,42 @@ server <- function(input, output, session) {
   
   filtered_task_names <- reactive({
     task_data()$TaskName
+  })
+  
+  # Поиск и чтение лога
+  observeEvent(input$view_task_logs, {
+    req(input$selected_task)
+    
+    # Находим выбранную задачу в таблице
+    selected_task_data <- all_tasks() %>% 
+      filter(TaskName == input$selected_task)
+    
+    if(nrow(selected_task_data) > 0) {
+      # Получаем нужные поля
+      task_to_run <- selected_task_data$`Task To Run`
+      start_in <- selected_task_data$`Start In`
+      
+      # Если данные получены, вызываем функцию find_log
+      if(!is.null(task_to_run) && !is.null(start_in)) {
+        log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+        
+        if(inherits(log_content, "try-error")) {
+          output$task_log_content <- renderText({ "Ошибка при чтении лога" })
+        } else {
+          output$task_log_content <- renderText({ log_content })
+        }
+        
+        # Показываем имя задачи
+        output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
+        
+        # Показываем блок с логами
+        shinyjs::show(id = "log_card")
+      } else {
+        showNotification("Не удалось найти данные для задачи", type = "error")
+      }
+    } else {
+      showNotification("Задача не найдена", type = "error")
+    }
   })
   
   observe({
@@ -331,7 +430,10 @@ server <- function(input, output, session) {
     showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
   })
   
+  # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
   services_data <- reactive({
+    # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
+    refresh_trigger()
     get_services()
   })
   
@@ -360,28 +462,33 @@ server <- function(input, output, session) {
     req(input$selected_service)
     system(str_glue("nssm start {input$selected_service}"), intern = TRUE)
     showNotification("Служба запущена", type = "message")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
   })
   
   observeEvent(input$stop_service, {
     req(input$selected_service)
     system(str_glue("nssm stop {input$selected_service}"), intern = TRUE)
     showNotification("Служба остановлена", type = "warning")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
   })
   
   observeEvent(input$restart_service, {
     req(input$selected_service)
     system(str_glue("nssm restart {input$selected_service}"), intern = TRUE)
     showNotification("Служба перезапущена", type = "message")
+    # Обновляем триггер для обновления данных о службах
+    refresh_trigger(refresh_trigger() + 1)
   })
   
-  # Добавленный обработчик для кнопки обновления данных
+  # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
     # Обновляем данные о задачах
     all_tasks(get_tasks())
     
-    # Обновляем данные о службах путем инвалидации реактивных выражений
-    # Это вызовет повторное выполнение реактивного выражения services_data()
-    invalidateLater(0, session)
+    # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
+    refresh_trigger(refresh_trigger() + 1)
     
     # Показываем уведомление об успешном обновлении
     showNotification("Данные успешно обновлены", type = "message", duration = 3)
