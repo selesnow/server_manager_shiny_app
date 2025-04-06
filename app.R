@@ -5,6 +5,7 @@ library(taskscheduleR)
 library(stringr)
 library(readr)
 library(glue)
+library(snakecase)
 
 # Получение задач (обычная функция)
 get_tasks <- function() {
@@ -19,7 +20,13 @@ get_tasks <- function() {
       `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
-    filter(`Scheduled Task State` == "Enabled")
+    filter(`Scheduled Task State` == "Enabled") %>% 
+    rowwise() %>% 
+    mutate(
+      client = str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
+    ) %>% 
+    ungroup()
+  
 }
 
 # Получение служб с описанием
@@ -192,7 +199,7 @@ ui <- fluidPage(
                       h4("Управление задачами"),
                       selectInput("selected_task", "Выберите задачу:", choices = NULL),
                       div(class = "action-buttons",
-                          actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-primary"),
+                          actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
                           actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
                       )
                   ),
@@ -268,7 +275,6 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-  
   all_tasks <- reactiveVal(NULL)
   
   observe({
@@ -278,6 +284,7 @@ server <- function(input, output, session) {
   task_data <- reactive({
     req(all_tasks())
     task <- all_tasks()
+    
     if (!is.null(input$filter_author)) {
       task <- task %>% filter(Author %in% input$filter_author)
     }
@@ -287,6 +294,7 @@ server <- function(input, output, session) {
     if (!is.null(input$filter_last_result)) {
       task <- task %>% filter(`Last Result` %in% input$filter_last_result)
     }
+    
     task
   })
   
@@ -342,7 +350,10 @@ server <- function(input, output, session) {
   output$service_status <- renderText({
     req(input$selected_service)
     current <- service_info()
-    if (nrow(current) > 0) paste("Статус:", current$Status, "|", current$Description) else "Статус неизвестен"
+    if (nrow(current) > 0)
+      paste("Статус:", current$Status, "|", current$Description)
+    else
+      "Статус неизвестен"
   })
   
   observeEvent(input$start_service, {
@@ -361,6 +372,53 @@ server <- function(input, output, session) {
     req(input$selected_service)
     system(str_glue("nssm restart {input$selected_service}"), intern = TRUE)
     showNotification("Служба перезапущена", type = "message")
+  })
+  
+  # Добавленный обработчик для кнопки обновления данных
+  observeEvent(input$refresh_data, {
+    # Обновляем данные о задачах
+    all_tasks(get_tasks())
+    
+    # Обновляем данные о службах путем инвалидации реактивных выражений
+    # Это вызовет повторное выполнение реактивного выражения services_data()
+    invalidateLater(0, session)
+    
+    # Показываем уведомление об успешном обновлении
+    showNotification("Данные успешно обновлены", type = "message", duration = 3)
+  })
+  
+  # Добавим обработчик для поиска в таблице задач, если он нужен
+  filtered_task_data <- reactive({
+    data <- task_data()
+    
+    if (!is.null(input$task_search) && input$task_search != "") {
+      search_term <- tolower(input$task_search)
+      data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
+    }
+    
+    return(data)
+  })
+  
+  # Заменим обработчик таблицы задач, чтобы использовать фильтрацию
+  output$task_table <- renderDT({
+    datatable(filtered_task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
+  })
+  
+  # Добавим обработчик для поиска в таблице служб
+  filtered_service_data <- reactive({
+    data <- services_data()
+    
+    if (!is.null(input$service_search) && input$service_search != "") {
+      search_term <- tolower(input$service_search)
+      data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
+    }
+    
+    return(data)
+  })
+  
+  # Заменим обработчик таблицы служб, чтобы использовать фильтрацию
+  output$service_table <- renderDT({
+    datatable(filtered_service_data(), options = list(pageLength = 5))
   })
 }
 
