@@ -208,6 +208,10 @@ server <- function(input, output, session) {
     if (!logged_in()) {
       fluidPage(
         # Добавляем стили для центрирования, увеличения ширины полей и применения тёмной темы
+        tags$head(
+          # Добавляем иконку для вкладки браузера
+          tags$link(rel = "icon", type = "image/png", href = "favicon.png")
+        ),
         tags$style(HTML("
         .login-container {
           display: flex;
@@ -286,6 +290,10 @@ server <- function(input, output, session) {
         
         # Добавляем возможность переключения темной темы
         tags$head(
+          tags$head(
+            # Добавляем иконку для вкладки браузера
+            tags$link(rel = "icon", type = "image/png", href = "favicon.png")
+          ),
           tags$style(HTML("
             body {
               background-color: #333;
