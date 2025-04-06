@@ -9,6 +9,7 @@ library(glue)
 library(snakecase)
 
 # Функция поиска и чтения логов
+# Функция поиска и чтения логов
 find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
   
   file_ext <- tools::file_ext(unique(trimws(task_to_run)))
@@ -198,6 +199,31 @@ ui <- fluidPage(
         display: flex;
         align-items: center;
       }
+      
+      /* Стиль для вкладок */
+      .nav-tabs {
+        border-bottom: 1px solid #555;
+      }
+      .nav-tabs .nav-link {
+        color: #f5f5f5;
+        background-color: #444;
+        border-color: #555;
+      }
+      .nav-tabs .nav-link.active {
+        color: #f5f5f5;
+        background-color: #555;
+        border-color: #666;
+      }
+      .light-mode .nav-tabs .nav-link {
+        color: #333;
+        background-color: #f1f1f1;
+        border-color: #ddd;
+      }
+      .light-mode .nav-tabs .nav-link.active {
+        color: #333;
+        background-color: #ffffff;
+        border-color: #ddd;
+      }
     "))
   ),
   
@@ -216,38 +242,96 @@ ui <- fluidPage(
       )
   ),
   
-  # Первый вертикальный блок - фильтры и управление задачами
-  fluidRow(
-    column(
-      width = 12,
-      div(class = "card", 
-          div(class = "card-header", "Фильтры и управление"),
-          div(class = "card-body",
-              fluidRow(
-                # Блок с фильтрами
-                column(
-                  width = 6,
-                  div(class = "mb-3", 
-                      h4("Фильтры задач"),
-                      uiOutput("author_filter"),
-                      uiOutput("runas_filter"),
-                      uiOutput("last_result_filter")
-                  )
-                ),
-                # Блок с управлением задачами и службами
-                column(
-                  width = 6,
-                  div(class = "mb-3",
-                      h4("Управление задачами"),
-                      selectInput("selected_task", "Выберите задачу:", choices = NULL),
-                      div(class = "action-buttons",
-                          actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
-                          actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+  # Начало вкладок
+  tabsetPanel(
+    id = "main_tabs",
+    
+    # Вкладка "Задачи"
+    tabPanel(
+      title = "Задачи",
+      
+      # Первый вертикальный блок - фильтры и управление задачами
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card", 
+              div(class = "card-header", "Фильтры и управление задачами"),
+              div(class = "card-body",
+                  fluidRow(
+                    # Блок с фильтрами
+                    column(
+                      width = 6,
+                      div(class = "mb-3", 
+                          h4("Фильтры задач"),
+                          uiOutput("author_filter"),
+                          uiOutput("runas_filter"),
+                          uiOutput("last_result_filter"),
+                          uiOutput("client_filter") # Добавляем фильтр по клиенту
                       )
-                  ),
-                  tags$hr(),
+                    ),
+                    # Блок с управлением задачами
+                    column(
+                      width = 6,
+                      div(class = "mb-3",
+                          h4("Управление задачами"),
+                          selectInput("selected_task", "Выберите задачу:", choices = NULL),
+                          div(class = "action-buttons",
+                              actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
+                              actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+                          )
+                      )
+                    )
+                  )
+              )
+          )
+        )
+      ),
+      
+      # Блок с выводом лога
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card", style = "display: none;", id = "log_card",
+              div(class = "card-header", "Логи задачи"),
+              div(class = "card-body",
+                  h4(textOutput("log_task_name")),
+                  tags$div(
+                    style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                    class = "light-mode-log",
+                    verbatimTextOutput("task_log_content")
+                  )
+              )
+          )
+        )
+      ),
+      
+      # Таблица задач
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card",
+              div(class = "card-header", "Задачи"),
+              div(class = "card-body",
+                  DTOutput("task_table")
+              )
+          )
+        )
+      )
+    ),
+    
+    # Вкладка "Службы"
+    tabPanel(
+      title = "Службы",
+      
+      # Блок с управлением службами
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card", 
+              div(class = "card-header", "Управление службами"),
+              div(class = "card-body",
                   div(
-                    h4("Управление службами"),
+                    h4("Выбор и управление службами"),
                     selectInput("selected_service", "Выберите службу:", choices = NULL),
                     textOutput("service_status"),
                     div(class = "action-buttons",
@@ -256,53 +340,22 @@ ui <- fluidPage(
                         actionButton("restart_service", "Перезапустить", icon = icon("sync"), class = "btn-warning")
                     )
                   )
-                )
               )
           )
-      )
-    )
-  ),
-  
-  # Блок с выводом лога
-  fluidRow(
-    column(
-      width = 12,
-      div(class = "card", style = "display: none;", id = "log_card",
-          div(class = "card-header", "Логи задачи"),
-          div(class = "card-body",
-              h4(textOutput("log_task_name")),
-              tags$div(
-                style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                class = "light-mode-log",
-                verbatimTextOutput("task_log_content")
+        )
+      ),
+      
+      # Таблица служб
+      fluidRow(
+        column(
+          width = 12,
+          div(class = "card",
+              div(class = "card-header", "Службы"),
+              div(class = "card-body",
+                  DTOutput("service_table")
               )
           )
-      )
-    )
-  ),
-  
-  # Второй вертикальный блок - таблица задач
-  fluidRow(
-    column(
-      width = 12,
-      div(class = "card",
-          div(class = "card-header", "Задачи"),
-          div(class = "card-body",
-              DTOutput("task_table")
-          )
-      )
-    )
-  ),
-  
-  # Третий вертикальный блок - таблица служб
-  fluidRow(
-    column(
-      width = 12,
-      div(class = "card",
-          div(class = "card-header", "Службы"),
-          div(class = "card-body",
-              DTOutput("service_table")
-          )
+        )
       )
     )
   ),
@@ -357,6 +410,9 @@ server <- function(input, output, session) {
     if (!is.null(input$filter_last_result)) {
       task <- task %>% filter(`Last Result` %in% input$filter_last_result)
     }
+    if (!is.null(input$filter_client)) {
+      task <- task %>% filter(Client %in% input$filter_client)
+    }
     
     task
   })
@@ -378,7 +434,7 @@ server <- function(input, output, session) {
       task_to_run <- selected_task_data$`Task To Run`
       start_in <- selected_task_data$`Start In`
       
-      # Если данные получены, вызываем функцию find_log
+      # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
       if(!is.null(task_to_run) && !is.null(start_in)) {
         log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
         
@@ -418,6 +474,12 @@ server <- function(input, output, session) {
   output$last_result_filter <- renderUI({
     req(all_tasks())
     selectInput("filter_last_result", "Last Result:", choices = unique(all_tasks()$`Last Result`), multiple = TRUE)
+  })
+  
+  # Добавляем фильтр по клиенту
+  output$client_filter <- renderUI({
+    req(all_tasks())
+    selectInput("filter_client", "Client:", choices = unique(all_tasks()$Client), multiple = TRUE)
   })
   
   output$task_table <- renderDT({
