@@ -681,7 +681,7 @@ server <- function(input, output, session) {
               column(
                 width = 12,
                 div(class = "card", 
-                    div(class = "card-header", "Управление службами"),
+                    div(class = "card-header", "Интерфейс коммандной строки"),
                     div(class = "card-body",
                         div(
                           h4("Командная строка"),
