@@ -56,9 +56,14 @@ get_tasks <- function() {
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
     filter(`Scheduled Task State` == "Enabled") %>% 
+    mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
     rowwise() %>% 
     mutate(
-      Client = str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
+      Client = if_else(
+        `New Structure`,
+        str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case(),
+        'Unknown client'
+      )
     ) %>% 
     ungroup()
   
