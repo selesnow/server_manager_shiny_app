@@ -51,10 +51,7 @@ server <- function(input, output, session) {
   
   # Модуль авторизации
   mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
-  
-  # UI для авторизации
-  
-  
+
   # UI для основного контента
   output$app_ui <- renderUI({
     if (logged_in()) {
