@@ -208,7 +208,7 @@ get_services <- function() {
         }
       },
       Client = {
-      client_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
+        client_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
         if (length(client_info) > 0 && client_info != "") {
           str_trim(client_info)
           str_split(client_info, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
@@ -1207,7 +1207,7 @@ server <- function(input, output, session) {
     )
   })
   
-
+  
   # Поиск по файлам ---------------------------------------------------------
   # Заранее определённые директории
   search_dirs <- c(
@@ -1234,7 +1234,7 @@ server <- function(input, output, session) {
           output     = "tibble"
         ) %>% 
           as_tibble() %>% 
-          mutate(root = .x)
+          mutate(file = as.character(file.path(.x, file)))
         
         if (nrow(fif) == 0) {
           return(tibble())
