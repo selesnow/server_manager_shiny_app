@@ -1,5 +1,5 @@
 library(shiny)
-library(shinyjs)  # Добавляем библиотеку shinyjs
+library(shinyjs)
 library(shinychat)
 library(DT)
 library(dplyr)
@@ -13,236 +13,28 @@ library(ggplot2)
 library(findInFiles)
 library(purrr)
 
-# Функция поиска и чтения логов
-find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
-  
-  file_ext <- tools::file_ext(unique(trimws(task_to_run)))
-  
-  if (tolower(file_ext) == 'r') {
-    
-    r_file    <- strsplit(unique(task_to_run), split = ' ')[[1]] %>% 
-      .[length(.)]
-    rout_path <- str_glue('{start_in}\\{r_file}out')
-    
-    rout_file  <- readLines(unique(rout_path)) %>% 
-      str_c(., collapse = '\n')
-    
-    return(rout_file)
-    
-  }
-  
-  if (tolower(file_ext) == 'bat') {
-    
-    bat_file  <- readLines(unique(task_to_run)) %>% 
-      str_c(., collapse = '\n')
-    
-    bat_file  <- str_glue(bat_file)
-    
-    return(bat_file)
-    
-  }
-  
-  return('Лог не найден!')
-  
-}
+# Загрузка вспомогательных функций
+for(fun in dir(here::here("R"))) source(here::here("R", fun))
 
-# Функция чтения README
-find_readme <- function(start_in = ".") {  
-  # приоритет сначала README.Rmd, потом README.md
-  files <- c("README.Rmd", "README.md")
-  full_paths <- here::here(start_in, files)
-  existing_file <- full_paths[file.exists(full_paths)][1]  # первый найденный
-  
-  if (!length(existing_file) || is.na(existing_file)) {
-    return("<p>README не найден!</p>")
-  }
-  
-  # рендерим HTML (в ту же директорию)
-  rendered_html <- rmarkdown::render(
-    input = existing_file,
-    output_format = "html_document",
-    output_dir = start_in,
-    quiet = TRUE
-  )
-  
-  # читаем содержимое HTML-файла
-  html <- readLines(rendered_html, warn = FALSE, encoding = "UTF-8")
-  html_combined <- paste(html, collapse = "\n")
-  
-  return(html_combined)
-}
+# Загрузка модуля авторизации
+source("modules/mod_auth.R")
 
-# Получение задач (обычная функция)
-get_tasks <- function() {
-  analysts_team <- dept::dp_get_team()
-  analysts <- names(analysts_team)
-  analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
-  
-  taskscheduler_ls(fill = TRUE) %>%
-    mutate(
-      `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
-      Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
-      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
-    ) %>%
-    filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
-    filter(`Scheduled Task State` == "Enabled") %>% 
-    mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
-    rowwise() %>% 
-    mutate(
-      Client = if_else(
-        `New Structure`,
-        str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case(),
-        'Unknown client'
-      )
-    ) %>% 
-    ungroup()
-  
-}
 
-# Функция для получения общей статистики
-get_overall_stats <- function(tasks) {
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  total_crons <- length(unique(tasks$TaskName))
-  new_structure_crons <- length(unique(filter(tasks, `New Structure`)$TaskName))
-  crons_to_move <- total_crons - new_structure_crons
-  
-  new_structure_percent <- round(new_structure_crons / total_crons * 100, 0)
-  to_move_percent <- round(crons_to_move / total_crons * 100, 0)
-  
-  list(
-    total_crons = total_crons,
-    new_structure_crons = new_structure_crons,
-    new_structure_percent = new_structure_percent,
-    crons_to_move = crons_to_move,
-    to_move_percent = to_move_percent
-  )
-}
-
-# Функция для создания статистики по клиентам
-get_client_stats <- function(tasks) {
-  
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  tasks %>%
-    filter(`New Structure`) %>%
-    group_by(Client) %>%
-    summarise(crons = n()) %>%
-    ungroup() %>%
-    mutate(
-      rate = round(crons / length(unique(filter(tasks, `New Structure`)$TaskName)) * 100, 0)
-    ) %>%
-    arrange(desc(crons))
-}
-
-# Функция для создания статистики по авторам
-get_author_stats <- function(tasks) {
-  
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  tasks %>% 
-    mutate(new_crons = if_else(`New Structure`, 1, 0)) %>%
-    group_by(Author) %>%
-    summarise(
-      crons = n(),
-      'new crons' = sum(new_crons)
-    ) %>%
-    ungroup() %>%
-    mutate(
-      rate = round(crons / length(unique(tasks$TaskName)) * 100, 0),
-      'new cron rate' = round(`new crons` / crons * 100, 0)
-    ) %>%
-    arrange(desc(crons)) %>%
-    select(
-      Author,
-      crons,
-      rate,
-      'new crons',
-      'new cron rate'
-    )
-}
-
-# Получение служб с описанием
-get_services <- function() {
-  service_data <- system("sc query state= all", intern = TRUE)
-  service_lines <- grep("SERVICE_NAME: Analytics", service_data, value = TRUE)
-  service_names <- str_extract(service_lines, "Analytics[А-Яа-я\\w\\-_]+")
-  
-  tibble(Service = service_names) %>%
-    rowwise() %>%
-    mutate(
-      Status = {
-        status <- system(glue("sc query \"{Service}\""), intern = TRUE)
-        state_line <- grep("STATE", status, value = TRUE)
-        str_trim(str_replace(state_line, ".*STATE.*: ", ""))
-      },
-      DisplayName = {
-        info <- system(glue("sc qc \"{Service}\""), intern = TRUE)
-        display_line <- grep("DISPLAY_NAME", info, value = TRUE)
-        if (length(display_line) > 0) {
-          str_trim(str_remove(display_line, "DISPLAY_NAME *:"))
-        } else {
-          "Нет DisplayName"
-        }
-      },
-      Description = {
-        desc_info <- suppressWarnings(system(glue("nssm get \"{Service}\" Description"), intern = TRUE))
-        if (length(desc_info) > 0 && desc_info != "") {
-          str_trim(desc_info)
-        } else {
-          "Нет описания"
-        }
-      },
-      AppDirectory = {
-        dir_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
-        if (length(dir_info) > 0 && dir_info != "") {
-          str_trim(dir_info)
-        } else {
-          "Нет описания"
-        }
-      },
-      Client = {
-        client_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
-        if (length(client_info) > 0 && client_info != "") {
-          str_trim(client_info)
-          str_split(client_info, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
-        } else {
-          "Нет описания"
-        }
-      },
-      AppParameters = {
-        param_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppParameters"), intern = TRUE))
-        if (length(param_info) > 0 && param_info != "") {
-          str_trim(param_info)
-        } else {
-          "Нет описания"
-        }
-      }
-    ) %>%
-    ungroup()
-}
-
+# Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
-  
-  # Динамический вывод UI
-  uiOutput("login_ui"),  # Форма логина
-  
-  # Основной контент (доступен только после авторизации)
-  uiOutput("app_ui")
+  mod_auth_ui("auth"),     # Модуль авторизации
+  uiOutput("app_ui")       # Основной контент
 )
 
+
+# Серверная часть ---------------------------------------------------------
 server <- function(input, output, session) {
-  
+
+  # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
+  # Коннект к БД
   app_con <- dbConnect(RSQLite::SQLite(), "app.db")
   
-  # Функция для проверки логина и пароля
   check_user <- function(login, password) {
     query <- paste("SELECT * FROM users WHERE login = '", login, "' AND password = '", password, "'", sep = "")
     res <- dbGetQuery(app_con, query)
@@ -253,87 +45,13 @@ server <- function(input, output, session) {
     }
   }
   
-  # Состояние авторизации
+  # Reactives
   logged_in <- reactiveVal(FALSE)
   user_role <- reactiveVal(NULL)
   
-  # UI для авторизации
-  output$login_ui <- renderUI({
-    if (!logged_in()) {
-      fluidPage(
-        # Добавляем стили для центрирования, увеличения ширины полей и применения тёмной темы
-        tags$head(
-          # Добавляем иконку для вкладки браузера
-          tags$link(rel = "icon", type = "image/png", href = "favicon.png")
-        ),
-        tags$style(HTML("
-        .login-container {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          height: 100vh;
-          background-color: #333; /* Тёмный фон */
-        }
-        
-        .login-container .form-container {
-          width: 100%;
-          max-width: 400px;  /* Максимальная ширина формы */
-          padding: 20px;
-          border: 1px solid #555;
-          border-radius: 5px;
-          background-color: #444;  /* Тёмный фон формы */
-        }
-        
-        .login-container .form-container input, 
-        .login-container .form-container button {
-          width: 100%;  /* Делаем поля ввода и кнопки на всю ширину */
-          padding: 10px;
-          margin-bottom: 10px;
-          background-color: #555;  /* Тёмный фон для полей */
-          color: #f5f5f5;  /* Светлый текст */
-          border-color: #666;  /* Тёмная граница */
-        }
-        
-        .login-container .form-container button {
-          background-color: #007bff; /* Кнопка входа с синим фоном */
-        }
-        
-        #title-panel {
-          text-align: center;
-          color: #f5f5f5; /* Светлый текст заголовка */
-        }
-        
-        .login-container .form-container input:focus, 
-        .login-container .form-container button:focus {
-          outline: none;  /* Убираем обводку при фокусе */
-          border-color: #007bff; /* Синий цвет границы при фокусе */
-        }
-        
-        /* Заголовок 'Авторизация' в тёмной теме */
-        #title-panel {
-          font-size: 24px;
-          margin-bottom: 20px;
-        }
-      ")),
-        
-        # Контейнер с классом для выравнивания
-        div(class = "login-container",
-            fluidRow(
-              column(12, class = "form-container",
-                     # Заголовок "Авторизация" по центру
-                     tags$h2(id = "title-panel", "Авторизация"),
-                     textInput("login", "Логин"),
-                     passwordInput("password", "Пароль"),
-                     actionButton("login_btn", "Войти"),
-                     textOutput("login_message")
-              )
-            )
-        )
-      )
-    }
-  })
-  
-  
+  # Модуль авторизации
+  mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
+
   # UI для основного контента
   output$app_ui <- renderUI({
     if (logged_in()) {
@@ -566,7 +284,7 @@ server <- function(input, output, session) {
                         fluidRow(
                           # Блок с фильтрами
                           column(
-                            width = 6,
+                            width = 2,
                             div(class = "mb-3", 
                                 h4("Фильтры задач"),
                                 uiOutput("author_filter"),
@@ -577,14 +295,21 @@ server <- function(input, output, session) {
                           ),
                           # Блок с управлением задачами
                           column(
-                            width = 6,
+                            width = 5,
                             div(class = "mb-3",
                                 h4("Управление задачами"),
-                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '700px'),
+                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '750px'),
                                 div(class = "action-buttons",
                                     actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
                                     actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info"),
                                     actionButton("view_task_readme", "README", icon = icon("file-alt"), class = "btn-info")
+                                ),
+                                # Добавляем блок информации о задаче
+                                div(class = "card mt-3", id = "task_info_card",
+                                    div(class = "card-header", "Информация о задаче"),
+                                    div(class = "card-body",
+                                        uiOutput("selected_task_info")
+                                    )
                                 )
                             )
                           )
@@ -1165,9 +890,52 @@ server <- function(input, output, session) {
     }
   })
   
-  # командная строка
-  chat_history <- reactiveVal(list())
+
+  # Вывод дополнительный информации о выбранной задаче ----------------------
+  selected_task_details <- reactive({
+    req(input$selected_task)
+    all_tasks() %>% 
+      filter(TaskName == input$selected_task) %>%
+      select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`)
+  })
   
+  # Рендерим информацию о выбранной задаче
+  output$selected_task_info <- renderUI({
+    req(selected_task_details())
+    task_info <- selected_task_details()
+    
+    if(nrow(task_info) > 0) {
+      task <- task_info[1, ]
+      div(
+        div(class = "mb-2", strong("Автор: "), span(task$Author)),
+        div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
+        div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
+        div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
+        div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
+        div(class = "mb-2", strong("Результат прошлого запуска: "), 
+            span(case_when(
+                  task$`Last Result` == "0" ~ "Успешно", 
+                  task$`Last Result` == "267011" ~ "Задача ещё ни разу не запускалась",
+                  task$`Last Result` == "267009" ~ "Задача в данный момент выполняется",
+                  .default = str_glue('Ошибка ({task$`Last Result`})')
+                 ))
+            ),
+        div(class = "mb-2", strong("Клиент: "), span(task$Client)),
+        div(class = "mb-2", strong("Краткое описание: "), span(task$Comment))
+      )
+    } else {
+      div("Информация недоступна")
+    }
+  })
+  
+  # Показываем информацию при выборе задачи
+  observeEvent(input$selected_task, {
+    shinyjs::show(id = "task_info_card")
+  })
+  
+  # командная строка --------------------------------------------------------
+  chat_history <- reactiveVal(list())
+
   observeEvent(input$send_btn, {
     cmd <- input$user_input
     if (nzchar(cmd)) {
