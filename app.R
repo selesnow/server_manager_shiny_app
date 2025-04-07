@@ -13,39 +13,6 @@ library(ggplot2)
 library(findInFiles)
 library(purrr)
 
-# Функция поиска и чтения логов
-find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
-  
-  file_ext <- tools::file_ext(unique(trimws(task_to_run)))
-  
-  if (tolower(file_ext) == 'r') {
-    
-    r_file    <- strsplit(unique(task_to_run), split = ' ')[[1]] %>% 
-      .[length(.)]
-    rout_path <- str_glue('{start_in}\\{r_file}out')
-    
-    rout_file  <- readLines(unique(rout_path)) %>% 
-      str_c(., collapse = '\n')
-    
-    return(rout_file)
-    
-  }
-  
-  if (tolower(file_ext) == 'bat') {
-    
-    bat_file  <- readLines(unique(task_to_run)) %>% 
-      str_c(., collapse = '\n')
-    
-    bat_file  <- str_glue(bat_file)
-    
-    return(bat_file)
-    
-  }
-  
-  return('Лог не найден!')
-  
-}
-
 # Функция чтения README
 find_readme <- function(start_in = ".") {  
   # приоритет сначала README.Rmd, потом README.md
@@ -566,7 +533,7 @@ server <- function(input, output, session) {
                         fluidRow(
                           # Блок с фильтрами
                           column(
-                            width = 6,
+                            width = 2,
                             div(class = "mb-3", 
                                 h4("Фильтры задач"),
                                 uiOutput("author_filter"),
@@ -577,14 +544,21 @@ server <- function(input, output, session) {
                           ),
                           # Блок с управлением задачами
                           column(
-                            width = 6,
+                            width = 5,
                             div(class = "mb-3",
                                 h4("Управление задачами"),
-                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '700px'),
+                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '750px'),
                                 div(class = "action-buttons",
                                     actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
                                     actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info"),
                                     actionButton("view_task_readme", "README", icon = icon("file-alt"), class = "btn-info")
+                                ),
+                                # Добавляем блок информации о задаче
+                                div(class = "card mt-3", id = "task_info_card",
+                                    div(class = "card-header", "Информация о задаче"),
+                                    div(class = "card-body",
+                                        uiOutput("selected_task_info")
+                                    )
                                 )
                             )
                           )
@@ -1165,9 +1139,52 @@ server <- function(input, output, session) {
     }
   })
   
-  # командная строка
-  chat_history <- reactiveVal(list())
+
+  # Вывод дополнительный информации о выбранной задаче ----------------------
+  selected_task_details <- reactive({
+    req(input$selected_task)
+    all_tasks() %>% 
+      filter(TaskName == input$selected_task) %>%
+      select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`)
+  })
   
+  # Рендерим информацию о выбранной задаче
+  output$selected_task_info <- renderUI({
+    req(selected_task_details())
+    task_info <- selected_task_details()
+    
+    if(nrow(task_info) > 0) {
+      task <- task_info[1, ]
+      div(
+        div(class = "mb-2", strong("Автор: "), span(task$Author)),
+        div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
+        div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
+        div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
+        div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
+        div(class = "mb-2", strong("Результат прошлого запуска: "), 
+            span(case_when(
+                  task$`Last Result` == "0" ~ "Успешно", 
+                  task$`Last Result` == "267011" ~ "Задача ещё ни разу не запускалась",
+                  task$`Last Result` == "267009" ~ "Задача в данный момент выполняется",
+                  .default = str_glue('Ошибка ({task$`Last Result`})')
+                 ))
+            ),
+        div(class = "mb-2", strong("Клиент: "), span(task$Client)),
+        div(class = "mb-2", strong("Краткое описание: "), span(task$Comment))
+      )
+    } else {
+      div("Информация недоступна")
+    }
+  })
+  
+  # Показываем информацию при выборе задачи
+  observeEvent(input$selected_task, {
+    shinyjs::show(id = "task_info_card")
+  })
+  
+  # командная строка --------------------------------------------------------
+  chat_history <- reactiveVal(list())
+
   observeEvent(input$send_btn, {
     cmd <- input$user_input
     if (nzchar(cmd)) {
