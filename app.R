@@ -46,6 +46,32 @@ find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправле�
   
 }
 
+# Функция чтения README
+find_readme <- function(start_in = ".") {  
+  # приоритет сначала README.Rmd, потом README.md
+  files <- c("README.Rmd", "README.md")
+  full_paths <- here::here(start_in, files)
+  existing_file <- full_paths[file.exists(full_paths)][1]  # первый найденный
+  
+  if (!length(existing_file) || is.na(existing_file)) {
+    return("<p>README не найден!</p>")
+  }
+  
+  # рендерим HTML (в ту же директорию)
+  rendered_html <- rmarkdown::render(
+    input = existing_file,
+    output_format = "html_document",
+    output_dir = start_in,
+    quiet = TRUE
+  )
+  
+  # читаем содержимое HTML-файла
+  html <- readLines(rendered_html, warn = FALSE, encoding = "UTF-8")
+  html_combined <- paste(html, collapse = "\n")
+  
+  return(html_combined)
+}
+
 # Получение задач (обычная функция)
 get_tasks <- function() {
   analysts_team <- dept::dp_get_team()
@@ -521,7 +547,8 @@ server <- function(input, output, session) {
                                 selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '700px'),
                                 div(class = "action-buttons",
                                     actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
-                                    actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
+                                    actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info"),
+                                    actionButton("view_task_readme", "README", icon = icon("file-alt"), class = "btn-info")
                                 )
                             )
                           )
@@ -543,6 +570,24 @@ server <- function(input, output, session) {
                           style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
                           class = "light-mode-log",
                           verbatimTextOutput("task_log_content")
+                        )
+                    )
+                )
+              )
+            ),
+            
+            # Блок с выводом лога
+            fluidRow(
+              column(
+                width = 12,
+                div(class = "card", style = "display: none;", id = "readme_card",
+                    div(class = "card-header", "README"),
+                    div(class = "card-body",
+                        h4(textOutput("readme_task_name")),
+                        tags$div(
+                          style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                          class = "light-mode-log",
+                          uiOutput("task_readme_content")
                         )
                     )
                 )
@@ -1039,6 +1084,43 @@ server <- function(input, output, session) {
         
         # Показываем блок с логами
         shinyjs::show(id = "log_card")
+      } else {
+        showNotification("Не удалось найти данные для задачи", type = "error")
+      }
+    } else {
+      showNotification("Задача не найдена", type = "error")
+    }
+  })
+  
+  # Поиск и чтение README
+  observeEvent(input$view_task_readme, {
+    req(input$selected_task)
+    
+    # Находим выбранную задачу в таблице
+    selected_task_data <- all_tasks() %>% 
+      filter(TaskName == input$selected_task)
+    
+    if(nrow(selected_task_data) > 0) {
+      # Получаем нужные поля
+      task_to_run <- selected_task_data$`Task To Run`
+      start_in <- selected_task_data$`Start In`
+      
+      # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
+      if( !is.null(start_in)) {
+        readme_content <- try(find_readme(start_in = start_in), silent = TRUE)
+        
+        if(inherits(readme_content, "try-error")) {
+          output$task_readme_content <- renderUI({ HTML("<p>Ошибка при чтении README</p>") })
+        } else {
+          output$task_readme_content <- renderUI({ HTML(readme_content) })
+        }
+        
+        # Показываем имя задачи
+        output$readme_task_name <- renderText({ paste("README:", input$selected_task) })
+        
+        # Показываем блок с README
+        shinyjs::show(id = "readme_card")
+        
       } else {
         showNotification("Не удалось найти данные для задачи", type = "error")
       }
