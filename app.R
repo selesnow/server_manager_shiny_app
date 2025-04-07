@@ -1,5 +1,5 @@
 library(shiny)
-library(shinyjs)  # Добавляем библиотеку shinyjs
+library(shinyjs)
 library(shinychat)
 library(DT)
 library(dplyr)
@@ -13,188 +13,11 @@ library(ggplot2)
 library(findInFiles)
 library(purrr)
 
-# Функция чтения README
-find_readme <- function(start_in = ".") {  
-  # приоритет сначала README.Rmd, потом README.md
-  files <- c("README.Rmd", "README.md")
-  full_paths <- here::here(start_in, files)
-  existing_file <- full_paths[file.exists(full_paths)][1]  # первый найденный
-  
-  if (!length(existing_file) || is.na(existing_file)) {
-    return("<p>README не найден!</p>")
-  }
-  
-  # рендерим HTML (в ту же директорию)
-  rendered_html <- rmarkdown::render(
-    input = existing_file,
-    output_format = "html_document",
-    output_dir = start_in,
-    quiet = TRUE
-  )
-  
-  # читаем содержимое HTML-файла
-  html <- readLines(rendered_html, warn = FALSE, encoding = "UTF-8")
-  html_combined <- paste(html, collapse = "\n")
-  
-  return(html_combined)
-}
+# Загрузка вспомогательных функций
+for(fun in dir(here::here("R"))) source(here::here("R", fun))
 
-# Получение задач (обычная функция)
-get_tasks <- function() {
-  analysts_team <- dept::dp_get_team()
-  analysts <- names(analysts_team)
-  analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
-  
-  taskscheduler_ls(fill = TRUE) %>%
-    mutate(
-      `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
-      Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\"),
-      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
-    ) %>%
-    filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
-    filter(`Scheduled Task State` == "Enabled") %>% 
-    mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
-    rowwise() %>% 
-    mutate(
-      Client = if_else(
-        `New Structure`,
-        str_split(`Start In`, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case(),
-        'Unknown client'
-      )
-    ) %>% 
-    ungroup()
-  
-}
 
-# Функция для получения общей статистики
-get_overall_stats <- function(tasks) {
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  total_crons <- length(unique(tasks$TaskName))
-  new_structure_crons <- length(unique(filter(tasks, `New Structure`)$TaskName))
-  crons_to_move <- total_crons - new_structure_crons
-  
-  new_structure_percent <- round(new_structure_crons / total_crons * 100, 0)
-  to_move_percent <- round(crons_to_move / total_crons * 100, 0)
-  
-  list(
-    total_crons = total_crons,
-    new_structure_crons = new_structure_crons,
-    new_structure_percent = new_structure_percent,
-    crons_to_move = crons_to_move,
-    to_move_percent = to_move_percent
-  )
-}
-
-# Функция для создания статистики по клиентам
-get_client_stats <- function(tasks) {
-  
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  tasks %>%
-    filter(`New Structure`) %>%
-    group_by(Client) %>%
-    summarise(crons = n()) %>%
-    ungroup() %>%
-    mutate(
-      rate = round(crons / length(unique(filter(tasks, `New Structure`)$TaskName)) * 100, 0)
-    ) %>%
-    arrange(desc(crons))
-}
-
-# Функция для создания статистики по авторам
-get_author_stats <- function(tasks) {
-  
-  tasks <- tasks %>%
-    select(TaskName, Client, Author, `New Structure`) %>% 
-    unique()
-  
-  tasks %>% 
-    mutate(new_crons = if_else(`New Structure`, 1, 0)) %>%
-    group_by(Author) %>%
-    summarise(
-      crons = n(),
-      'new crons' = sum(new_crons)
-    ) %>%
-    ungroup() %>%
-    mutate(
-      rate = round(crons / length(unique(tasks$TaskName)) * 100, 0),
-      'new cron rate' = round(`new crons` / crons * 100, 0)
-    ) %>%
-    arrange(desc(crons)) %>%
-    select(
-      Author,
-      crons,
-      rate,
-      'new crons',
-      'new cron rate'
-    )
-}
-
-# Получение служб с описанием
-get_services <- function() {
-  service_data <- system("sc query state= all", intern = TRUE)
-  service_lines <- grep("SERVICE_NAME: Analytics", service_data, value = TRUE)
-  service_names <- str_extract(service_lines, "Analytics[А-Яа-я\\w\\-_]+")
-  
-  tibble(Service = service_names) %>%
-    rowwise() %>%
-    mutate(
-      Status = {
-        status <- system(glue("sc query \"{Service}\""), intern = TRUE)
-        state_line <- grep("STATE", status, value = TRUE)
-        str_trim(str_replace(state_line, ".*STATE.*: ", ""))
-      },
-      DisplayName = {
-        info <- system(glue("sc qc \"{Service}\""), intern = TRUE)
-        display_line <- grep("DISPLAY_NAME", info, value = TRUE)
-        if (length(display_line) > 0) {
-          str_trim(str_remove(display_line, "DISPLAY_NAME *:"))
-        } else {
-          "Нет DisplayName"
-        }
-      },
-      Description = {
-        desc_info <- suppressWarnings(system(glue("nssm get \"{Service}\" Description"), intern = TRUE))
-        if (length(desc_info) > 0 && desc_info != "") {
-          str_trim(desc_info)
-        } else {
-          "Нет описания"
-        }
-      },
-      AppDirectory = {
-        dir_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
-        if (length(dir_info) > 0 && dir_info != "") {
-          str_trim(dir_info)
-        } else {
-          "Нет описания"
-        }
-      },
-      Client = {
-        client_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppDirectory"), intern = TRUE))
-        if (length(client_info) > 0 && client_info != "") {
-          str_trim(client_info)
-          str_split(client_info, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case()
-        } else {
-          "Нет описания"
-        }
-      },
-      AppParameters = {
-        param_info <- suppressWarnings(system(glue("nssm get \"{Service}\" AppParameters"), intern = TRUE))
-        if (length(param_info) > 0 && param_info != "") {
-          str_trim(param_info)
-        } else {
-          "Нет описания"
-        }
-      }
-    ) %>%
-    ungroup()
-}
-
+# Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
   
   # Динамический вывод UI
@@ -204,8 +27,12 @@ ui <- fluidPage(
   uiOutput("app_ui")
 )
 
+
+# Серверная часть ---------------------------------------------------------
 server <- function(input, output, session) {
   
+
+  # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
   app_con <- dbConnect(RSQLite::SQLite(), "app.db")
   
