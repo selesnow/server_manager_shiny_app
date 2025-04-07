@@ -346,7 +346,42 @@ server <- function(input, output, session) {
         tags$head(
           tags$head(
             # Добавляем иконку для вкладки браузера
-            tags$link(rel = "icon", type = "image/png", href = "favicon.png")
+            tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
+            tags$style(HTML("
+              .header-container {
+                  display: flex;
+                  justify-content: flex-start;  /* Расположить элементы слева */
+                  align-items: center;          /* Выравнивание по вертикали */
+                  padding: 10px 20px;           /* Отступы вокруг */
+                  background-color: #333;       /* Темно-серый фон */
+                  color: #fff;                  /* Белый цвет текста */
+                  border-radius: 5px;           /* Скругление углов */
+                  margin-bottom: 10px;          /* Отступ снизу */
+                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* Тень */
+              }
+              
+              .controls-wrapper {
+                  display: flex;
+                  justify-content: flex-start;  /* Выравнивание контейнера слева */
+                  align-items: center;
+              }
+              
+              .controls-container {
+                  display: flex;
+                  gap: 10px;  /* Расстояние между элементами */
+                  align-items: center;  /* Выравнивание по вертикали */
+              }
+              
+              .controls-container .btn-sm {
+                  padding: 5px 10px;  /* Немного уменьшаем размер кнопки */
+              }
+              
+              /* Стили для светлой темы, если нужно */
+              .light-mode .header-container {
+                  background-color: #f7f7f7; /* Светлый фон, если активирована светлая тема */
+                  color: #333;  /* Тёмный текст */
+              }
+          "))
           ),
           tags$style(HTML("
             body {
@@ -504,11 +539,12 @@ server <- function(input, output, session) {
         ),
         
         # Добавляем элементы управления отдельно, после заголовка
-        div(class = "header-container",
-            div(), # Пустой элемент для правильного выравнивания
-            div(class = "controls-container",
-                checkboxInput("dark_mode", "Светлая тема", FALSE),
-                actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2")
+        div(class = "header-container", 
+            div(class = "controls-wrapper", 
+                div(class = "controls-container", 
+                    actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2"),
+                    checkboxInput("dark_mode", "Светлая тема", FALSE)
+                )
             )
         ),
         
