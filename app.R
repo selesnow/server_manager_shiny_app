@@ -518,7 +518,7 @@ server <- function(input, output, session) {
                             width = 6,
                             div(class = "mb-3",
                                 h4("Управление задачами"),
-                                selectInput("selected_task", "Выберите задачу:", choices = NULL),
+                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '700px'),
                                 div(class = "action-buttons",
                                     actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
                                     actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info")
