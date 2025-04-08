@@ -912,39 +912,7 @@ server <- function(input, output, session) {
         div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
         div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
         div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
-        div(
-          class = "mb-2", 
-          strong("Результат прошлого запуска: "), 
-          span(
-            case_when(
-              task$`Last Result` == "0"       ~ "Успешно",
-              task$`Last Result` == "267008"  ~ "Запущена",
-              task$`Last Result` == "267009"  ~ "Задача выполняется",
-              task$`Last Result` == "267010"  ~ "Готова к запуску (ожидает триггер)",
-              task$`Last Result` == "267011"  ~ "Ещё не запускалась",
-              task$`Last Result` == "267012"  ~ "Приостановлена",
-              task$`Last Result` == "267013"  ~ "Завершена",
-              task$`Last Result` == "267014"  ~ "Завершена с ошибкой",
-              task$`Last Result` == "267015"  ~ "Не завершилась в отведённое время",
-              task$`Last Result` == "1"       ~ "Ошибка: скрипт завершился аварийно (неудачное выполнение)",
-              task$`Last Result` == "2"       ~ "Ошибка: файл не найден",
-              task$`Last Result` == "3"       ~ "Ошибка: путь не найден",
-              task$`Last Result` == "5"       ~ "Ошибка: отказано в доступе",
-              task$`Last Result` == "8"       ~ "Ошибка: недостаточно памяти",
-              task$`Last Result` == "10"      ~ "Окружающая среда отсутствует",
-              task$`Last Result` == "32"      ~ "Ошибка: ресурс используется другим процессом",
-              task$`Last Result` == "87"      ~ "Ошибка: неверный параметр",
-              task$`Last Result` == "258"     ~ "Ошибка: время ожидания операции истекло",
-              task$`Last Result` == "1603"    ~ "Ошибка: установка завершилась с ошибкой",
-              task$`Last Result` == "1639"    ~ "Ошибка: недействительный командный аргумент",
-              task$`Last Result` == "2147942401" ~ "Ошибка: задача уже запущена",
-              task$`Last Result` == "2147942402" ~ "Ошибка: задача уже завершена",
-              task$`Last Result` == "2147942667" ~ "Ошибка: не найден путь к исполняемому файлу",
-              task$`Last Result` == "103" ~ "Ошибка: слишком много семафоров (проблема с ресурсами синхронизации)",
-              .default = str_glue("Ошибка (код {task$`Last Result`})")
-            )
-          )
-        ),
+        div(class = "mb-2", strong("Результат прошлого запуска: "), span(task$`Last Result`)),
         div(class = "mb-2", strong("Клиент: "), span(task$Client)),
         div(class = "mb-2", strong("Краткое описание: "), span(task$Comment))
       )
