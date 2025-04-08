@@ -2,17 +2,32 @@
 
 mod_tab_cmd_ui <- function(id) {
   ns <- NS(id)
-  tabPanel("CMD",
-           fluidRow(
-             column(12,
-                    h3("Командная строка"),
-                    uiOutput(ns("chat_ui")),
-                    textInput(ns("user_input"), "Введите команду"),
-                    actionButton(ns("send_btn"), "Отправить")
-             )
-           )
+  tabPanel(
+    title = "CMD",
+    
+    fluidRow(
+      column(
+        width = 12,
+        div(class = "card", 
+            div(class = "card-header", "Интерфейс коммандной строки"),
+            div(class = "card-body",
+                div(
+                  h4("Командная строка"),
+                  uiOutput(ns("chat_ui")),  # <-- добавлен ns
+                  fluidRow(
+                    column(10,
+                           textInput(ns("user_input"), NULL, placeholder = "Введите команду...")),  # <-- добавлен ns
+                    column(2,
+                           actionButton(ns("send_btn"), "Выполнить", class = "btn-primary"))  # <-- добавлен ns
+                  )
+                )
+            )
+        )
+      )
+    )
   )
 }
+
 
 mod_tab_cmd_server <- function(id) {
   moduleServer(id, function(input, output, session) {
