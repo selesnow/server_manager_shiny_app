@@ -18,7 +18,8 @@ for(fun in dir(here::here("R"))) source(here::here("R", fun))
 
 # Загрузка модуля авторизации
 source("modules/mod_auth.R")
-
+# Загрузка модуля интерфейса управления пользователями
+source("modules/mod_access.R")
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
@@ -34,6 +35,13 @@ server <- function(input, output, session) {
   # Подключение к базе данных SQLite
   # Коннект к БД
   app_con <- dbConnect(RSQLite::SQLite(), "app.db")
+  
+  observe({
+    if (logged_in() && user_role() == "admin") {
+      mod_access_server("access", conn = app_con)
+    }
+  })
+  
   
   check_user <- function(login, password) {
     query <- paste("SELECT * FROM users WHERE login = '", login, "' AND password = '", password, "'", sep = "")
@@ -531,7 +539,10 @@ server <- function(input, output, session) {
                 )
               )
             )
-          )
+          ),
+          if (user_role() == "admin") {
+            tabPanel("Доступ", mod_access_ui("access"))
+          }
         ),
         
         # Добавляем CSS для кнопок действий
