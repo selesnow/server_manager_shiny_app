@@ -20,6 +20,8 @@ for(fun in dir(here::here("R"))) source(here::here("R", fun))
 source("modules/mod_auth.R")
 # Загрузка модуля интерфейса управления пользователями
 source("modules/mod_access.R")
+# Загрузка модуля CMD
+source("modules/mod_tab_cmd.R")
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
@@ -489,31 +491,9 @@ server <- function(input, output, session) {
           ),
           
           # Вкладка "CMD"
-          tabPanel(
-            title = "CMD",
-            
-            # Блок с управлением службами
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", 
-                    div(class = "card-header", "Интерфейс коммандной строки"),
-                    div(class = "card-body",
-                        div(
-                          h4("Командная строка"),
-                          uiOutput("chat_ui"),
-                          fluidRow(
-                            column(10,
-                                   textInput("user_input", NULL, placeholder = "Введите команду...")),
-                            column(2,
-                                   actionButton("send_btn", "Выполнить", class = "btn-primary"))
-                          )
-                        )
-                    )
-                )
-              )
-            )
-          ),
+          mod_tab_cmd_ui("cmd"),
+          
+          # Поиск по файлам
           tabPanel(
             title = "Поиск по файлам",
             fluidRow(
@@ -938,47 +918,7 @@ server <- function(input, output, session) {
   })
   
   # Командная строка --------------------------------------------------------
-  chat_history <- reactiveVal(list())
-
-  observeEvent(input$send_btn, {
-    cmd <- input$user_input
-    if (nzchar(cmd)) {
-      # Добавим команду пользователя в чат
-      new_entry <- list(sender = "Вы", text = cmd)
-      history <- append(chat_history(), list(new_entry))
-      
-      # Выполним команду
-      result <- tryCatch({
-        system(cmd, intern = TRUE)
-      }, error = function(e) {
-        paste("Ошибка:", e$message)
-      })
-      
-      # Добавим ответ сервера
-      response_entry <- list(sender = "Сервер", text = paste(result, collapse = "\n"))
-      history <- append(history, list(response_entry))
-      chat_history(history)
-      
-      # Очистим поле ввода
-      updateTextInput(session, "user_input", value = "")
-    }
-  }
-  )
-  
-  output$chat_ui <- renderUI({
-    history <- chat_history()
-    tagList(
-      lapply(history, function(msg) {
-        div(
-          style = paste0("margin-bottom: 10px; padding: 10px; border-radius: 10px; background-color:",
-                         if (msg$sender == "Вы") "#D6EAF8" else "#D5F5E3"),
-          strong(msg$sender), ": ", br(),
-          tags$pre(style = "white-space: pre-wrap;", msg$text)
-        )
-      })
-    )
-  })
-  
+  mod_tab_cmd_server("cmd")
   
   # Поиск по файлам ---------------------------------------------------------
   # Заранее определённые директории
