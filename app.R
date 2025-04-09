@@ -110,6 +110,9 @@ server <- function(input, output, session) {
           # Вкладка "CMD"
           mod_tab_cmd_ui("cmd"),
           
+          # Вкладка процессы
+          mod_tab_processes_ui("processes_tab"),
+          
           # Поиск по файлам
           mod_tab_find_in_files_ui("file_search"),
   
@@ -205,6 +208,14 @@ server <- function(input, output, session) {
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
       
+      # Модуль процессов
+      process_data <- reactive({
+        get_processes()
+      })
+      
+      #mod_tab_processes_server("processes_tab", process_data)
+      mod_tab_processes_server("processes_tab", refresh_trigger = refresh_trigger)
+      
       # Модуль поощь и новости
       mod_help_server("help")
       mod_news_server("news")
@@ -234,8 +245,7 @@ server <- function(input, output, session) {
   
   # Поиск по файлам ---------------------------------------------------------
   mod_tab_find_in_files_server("file_search")
-  
-  
+
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
     

@@ -1,4 +1,4 @@
-get_proccesess <- function() {
+get_processes <- function() {
   
   analysts_team <- dept::dp_get_team()
   analysts <- names(analysts_team)
