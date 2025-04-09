@@ -19,7 +19,7 @@ for(fun in dir(here::here("R"))) source(here::here("R", fun))
 # Загрузка модуля авторизации
 source("modules/mod_auth.R")
 # Загрузка модуля интерфейса управления пользователями
-source("modules/mod_access.R")
+source("modules/mod_tab_access.R")
 # Загрузка модуля CMD
 source("modules/mod_tab_cmd.R")
 # Загрузка модуля Служб
