@@ -12,7 +12,6 @@ get_client_stats <- function(tasks) {
     unique()
   
   tasks %>%
-    filter(`New Structure`) %>%
     group_by(Client) %>%
     summarise(crons = n()) %>%
     ungroup() %>%
