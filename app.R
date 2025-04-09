@@ -22,6 +22,8 @@ source("modules/mod_auth.R")
 source("modules/mod_access.R")
 # Загрузка модуля CMD
 source("modules/mod_tab_cmd.R")
+# Загрузка модуля Служб
+source("modules/mod_tab_services.R")
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
@@ -380,44 +382,7 @@ server <- function(input, output, session) {
           ),
           
           # Вкладка "Службы"
-          tabPanel(
-            title = "Службы",
-            
-            # Блок с управлением службами
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", 
-                    div(class = "card-header", "Управление службами"),
-                    div(class = "card-body",
-                        div(
-                          h4("Выбор и управление службами"),
-                          selectInput("selected_service", "Выберите службу:", choices = NULL),
-                          textOutput("service_status"),
-                          div(class = "action-buttons",
-                              actionButton("start_service", "Запустить", icon = icon("play"), class = "btn-success"),
-                              actionButton("stop_service", "Остановить", icon = icon("stop"), class = "btn-danger"),
-                              actionButton("restart_service", "Перезапустить", icon = icon("sync"), class = "btn-warning")
-                          )
-                        )
-                    )
-                )
-              )
-            ),
-            
-            # Таблица служб
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Службы"),
-                    div(class = "card-body",
-                        DTOutput("service_table")
-                    )
-                )
-              )
-            )
-          ),
+          mod_tab_services_ui("services_tab"),
           
           # Улучшенная вкладка "Статистика"
           tabPanel(
@@ -579,6 +544,13 @@ server <- function(input, output, session) {
   # Добавляем реактивное значение для отслеживания обновлений
   refresh_trigger <- reactiveVal(0)
   
+  # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
+  services_data <- reactive({
+    # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
+    refresh_trigger()
+    get_services()
+  })
+  
   # Основная логика приложения, запускается после логина
   observeEvent(logged_in(), {
     if (logged_in()) {
@@ -606,6 +578,9 @@ server <- function(input, output, session) {
         
         task
       })
+      
+      # модуль служб ------------------------------------------------------------
+      mod_tab_services_server("services_tab", services_data)
       
       # Реактивные значения для статистики
       overall_stats <- reactive({
@@ -677,34 +652,6 @@ server <- function(input, output, session) {
         datatable(task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
       })
       
-      # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
-      services_data <- reactive({
-        # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
-        refresh_trigger()
-        get_services()
-      })
-      
-      service_info <- reactive({
-        services_data() %>% filter(Service == input$selected_service)
-      })
-      
-      output$service_table <- renderDT({
-        datatable(services_data(), options = list(pageLength = 5))
-      })
-      
-      observe({
-        updateSelectInput(session, "selected_service", choices = services_data()$Service)
-      })
-      
-      output$service_status <- renderText({
-        req(input$selected_service)
-        current <- service_info()
-        if (nrow(current) > 0)
-          paste("Статус:", current$Status, "|", current$Description)
-        else
-          "Статус неизвестен"
-      })
-      
       # Добавим обработчик для поиска в таблице задач, если он нужен
       filtered_task_data <- reactive({
         data <- task_data()
@@ -769,36 +716,14 @@ server <- function(input, output, session) {
   observeEvent(input$refresh_data, {
     # Обновляем данные о задачах
     all_tasks(get_tasks())
+    # Обновление данных о службах
+    services_data(get_services())
     
     # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
     refresh_trigger(refresh_trigger() + 1)
     
     # Показываем уведомление об успешном обновлении
     showNotification("Данные успешно обновлены", type = "message", duration = 3)
-  })
-  
-  observeEvent(input$start_service, {
-    req(input$selected_service)
-    system(str_glue("nssm start {input$selected_service}"), intern = TRUE)
-    showNotification("Служба запущена", type = "message")
-    # Обновляем триггер для обновления данных о службах
-    refresh_trigger(refresh_trigger() + 1)
-  })
-  
-  observeEvent(input$stop_service, {
-    req(input$selected_service)
-    system(str_glue("nssm stop {input$selected_service}"), intern = TRUE)
-    showNotification("Служба остановлена", type = "warning")
-    # Обновляем триггер для обновления данных о службах
-    refresh_trigger(refresh_trigger() + 1)
-  })
-  
-  observeEvent(input$restart_service, {
-    req(input$selected_service)
-    system(str_glue("nssm restart {input$selected_service}"), intern = TRUE)
-    showNotification("Служба перезапущена", type = "message")
-    # Обновляем триггер для обновления данных о службах
-    refresh_trigger(refresh_trigger() + 1)
   })
   
   # Запуск задачи
