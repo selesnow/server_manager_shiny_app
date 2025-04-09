@@ -272,8 +272,9 @@ server <- function(input, output, session) {
         div(class = "header-container", 
             div(class = "controls-wrapper", 
                 div(class = "controls-container", 
-                    actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-sm ml-2"),
-                    checkboxInput("dark_mode", "Светлая тема", FALSE)
+                    actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-warning"),
+                    actionButton("logout_btn", "Выйти",  icon = icon("power-off"), class = "btn-danger btn-sm ml-2"),
+                    actionButton("toggle_theme", label = "Светлая тема", icon = icon("moon"), class = "btn-secondary btn-sm")
                 )
             )
         ),
@@ -501,17 +502,20 @@ server <- function(input, output, session) {
             }
           "))
         ),
-        actionButton("logout_btn", "Выйти"),
         
         # JavaScript для переключения темной/светлой темы
         tags$script(HTML("
           $(document).ready(function() {
             // Темная тема по умолчанию
-            $('#dark_mode').on('change', function() {
-              if($(this).is(':checked')) {
-                $('body').addClass('light-mode');
-              } else {
+            $('#toggle_theme').on('click', function() {
+              if ($('body').hasClass('light-mode')) {
                 $('body').removeClass('light-mode');
+                $('#toggle_theme').html('<i class=\"fa fa-sun\"></i> Светлая тема');  // Текст на кнопке
+                $('#toggle_theme').removeClass('btn-light').addClass('btn-dark');  // Класс кнопки
+              } else {
+                $('body').addClass('light-mode');
+                $('#toggle_theme').html('<i class=\"fa fa-moon\"></i> Тёмная тема');  // Текст на кнопке
+                $('#toggle_theme').removeClass('btn-dark').addClass('btn-light');  // Класс кнопки
               }
             });
           });
