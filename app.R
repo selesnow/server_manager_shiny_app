@@ -493,26 +493,6 @@ server <- function(input, output, session) {
         datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
       })
       
-      # filtered_task_names <- reactive({
-      #   task_data()$TaskName
-      # })
-      
-      # observe({
-      #   updateSelectInput(session, "selected_task", choices = filtered_task_names())
-      # })
-      
-      # Добавим обработчик для поиска в таблице задач, если он нужен
-      # filtered_task_data <- reactive({
-      #   data <- task_data()
-      #   
-      #   if (!is.null(input$task_search) && input$task_search != "") {
-      #     search_term <- tolower(input$task_search)
-      #     data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
-      #   }
-      #   
-      #   return(data)
-      # })
-      
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
         data <- services_data()
