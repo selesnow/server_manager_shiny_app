@@ -248,8 +248,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive) {
           readme_content <- try(find_readme(start_in = start_in), silent = TRUE)
           
           output$task_readme_content <- renderUI({
-            md_path   <- file.path(start_in, "README.md")
-            html_path <- file.path(start_in, "README.html")
+            md_path   <- file.path(unique(start_in), "README.md")
+            html_path <- file.path(unique(start_in), "README.html")
             
             if (file.exists(md_path)) {
               includeMarkdown(md_path)
