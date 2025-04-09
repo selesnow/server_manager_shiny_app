@@ -16,20 +16,8 @@ library(purrr)
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) source(here::here("R", fun))
 
-# Загрузка модуля авторизации
-source("modules/mod_auth.R")
-# Загрузка модуля интерфейса управления пользователями
-source("modules/mod_tab_access.R")
-# Загрузка модуля CMD
-source("modules/mod_tab_cmd.R")
-# Загрузка модуля Служб
-source("modules/mod_tab_services.R")
-# Загрузка модуля поиска по файлам
-source("modules/mod_tab_find_in_files.R")
-# Загрузка модуля поиска по файлам
-source("modules/mod_tab_tasks.R")
-# Загрузка модуля статистики
-source("modules/mod_tab_statistic.R")
+# Загрузка модулей
+for(mod in dir(here::here("modules"))) source(here::here("modules", mod))
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
@@ -207,7 +195,6 @@ server <- function(input, output, session) {
       # модуль служб ------------------------------------------------------------
       mod_tab_services_server("services_tab", services_data)
       
-      
       # Модуль вкладки задач ----------------------------------------------------
       mod_tab_tasks_server("tasks_tab", all_tasks)
       
@@ -234,6 +221,12 @@ server <- function(input, output, session) {
   }
   )
   
+  # Командная строка --------------------------------------------------------
+  mod_tab_cmd_server("cmd")
+  
+  # Поиск по файлам ---------------------------------------------------------
+  mod_tab_find_in_files_server("file_search")
+  
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
@@ -248,13 +241,6 @@ server <- function(input, output, session) {
     showNotification("Данные успешно обновлены", type = "message", duration = 3)
     
   })
-  
-  
-  # Командная строка --------------------------------------------------------
-  mod_tab_cmd_server("cmd")
-  
-  # Поиск по файлам ---------------------------------------------------------
-  mod_tab_find_in_files_server("file_search")
   
 }
 
