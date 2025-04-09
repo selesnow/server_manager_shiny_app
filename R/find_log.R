@@ -35,10 +35,12 @@ find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправле�
     
     rout_path <- str_glue('{r_file}out')
     
-    rout_file  <- readLines(unique(rout_path)) %>% 
-      str_c(., collapse = '\n')
-    
-    return(rout_file)
+    if (file.exists(rout_path)) {
+      rout_file  <- readLines(unique(rout_path)) %>% 
+        str_c(., collapse = '\n')
+      
+      return(rout_file)
+    }
     
   }
   
