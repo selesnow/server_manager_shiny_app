@@ -1,0 +1,32 @@
+.header-container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.controls-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.controls-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.controls-container .btn-sm {
+    padding: 5px 10px;
+}
+
+.light-mode .header-container {
+    background-color: #f7f7f7;
+    color: #333;
+}

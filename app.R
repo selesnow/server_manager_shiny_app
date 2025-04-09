@@ -38,7 +38,7 @@ ui <- fluidPage(
 
 # Серверная часть ---------------------------------------------------------
 server <- function(input, output, session) {
-
+  
   # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
   # Коннект к БД
@@ -67,7 +67,7 @@ server <- function(input, output, session) {
   
   # Модуль авторизации
   mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
-
+  
   # UI для основного контента
   output$app_ui <- renderUI({
     if (logged_in()) {
@@ -81,189 +81,10 @@ server <- function(input, output, session) {
           tags$head(
             # Добавляем иконку для вкладки браузера
             tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
-            tags$style(HTML("
-              .header-container {
-                  display: flex;
-                  justify-content: flex-start;  /* Расположить элементы слева */
-                  align-items: center;          /* Выравнивание по вертикали */
-                  padding: 10px 20px;           /* Отступы вокруг */
-                  background-color: #333;       /* Темно-серый фон */
-                  color: #fff;                  /* Белый цвет текста */
-                  border-radius: 5px;           /* Скругление углов */
-                  margin-bottom: 10px;          /* Отступ снизу */
-                  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);  /* Тень */
-              }
-              
-              .controls-wrapper {
-                  display: flex;
-                  justify-content: flex-start;  /* Выравнивание контейнера слева */
-                  align-items: center;
-              }
-              
-              .controls-container {
-                  display: flex;
-                  gap: 10px;  /* Расстояние между элементами */
-                  align-items: center;  /* Выравнивание по вертикали */
-              }
-              
-              .controls-container .btn-sm {
-                  padding: 5px 10px;  /* Немного уменьшаем размер кнопки */
-              }
-              
-              /* Стили для светлой темы, если нужно */
-              .light-mode .header-container {
-                  background-color: #f7f7f7; /* Светлый фон, если активирована светлая тема */
-                  color: #333;  /* Тёмный текст */
-              }
-          "))
-          ),
-          tags$style(HTML("
-            body {
-              background-color: #333;
-              color: #f5f5f5;
-            }
-            .card {
-              background-color: #444;
-              border-color: #555;
-              margin-bottom: 20px;
-            }
-            .card-header {
-              background-color: #555;
-              border-color: #666;
-            }
-            .btn-primary {
-              background-color: #007bff;
-            }
-            .btn-success {
-              background-color: #28a745;
-            }
-            .btn-danger {
-              background-color: #dc3545;
-            }
-            .btn-warning {
-              background-color: #ffc107;
-              color: #333;
-            }
-            .btn-info {
-              background-color: #17a2b8;
-            }
-            select, input {
-              background-color: #555;
-              color: #f5f5f5;
-              border-color: #666;
-            }
-            table {
-              color: #f5f5f5;
-            }
-            .dataTables_wrapper {
-              color: #f5f5f5;
-            }
-            .dataTables_info, 
-            .dataTables_paginate,
-            .dataTables_filter,
-            .dataTables_length {
-              color: #f5f5f5 !important;
-            }
-            
-            /* Стили для светлой темы */
-            .light-mode {
-              background-color: #ffffff;
-              color: #333;
-            }
-            .light-mode .card {
-              background-color: #f9f9f9;
-              border-color: #ddd;
-            }
-            .light-mode .card-header {
-              background-color: #f1f1f1;
-              border-color: #ddd;
-            }
-            .light-mode select, .light-mode input {
-              background-color: #ffffff;
-              color: #333;
-              border-color: #ccc;
-            }
-            .light-mode table {
-              color: #333;
-            }
-            .light-mode .dataTables_wrapper {
-              color: #333;
-            }
-            .light-mode .dataTables_info, 
-            .light-mode .dataTables_paginate,
-            .light-mode .dataTables_filter,
-            .light-mode .dataTables_length {
-              color: #333 !important;
-            }
-            
-            /* Стиль для светлой темы логов */
-            .light-mode .light-mode-log {
-              background-color: #f0f0f0 !important;
-              color: #333 !important;
-            }
-            
-            /* Стиль для header */
-            .header-container {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
-            .controls-container {
-              display: flex;
-              align-items: center;
-            }
-            
-            /* Стиль для вкладок */
-            .nav-tabs {
-              border-bottom: 1px solid #555;
-            }
-            .nav-tabs .nav-link {
-              color: #f5f5f5;
-              background-color: #444;
-              border-color: #555;
-            }
-            .nav-tabs .nav-link.active {
-              color: #f5f5f5;
-              background-color: #555;
-              border-color: #666;
-            }
-            .light-mode .nav-tabs .nav-link {
-              color: #333;
-              background-color: #f1f1f1;
-              border-color: #ddd;
-            }
-            .light-mode .nav-tabs .nav-link.active {
-              color: #333;
-              background-color: #ffffff;
-              border-color: #ddd;
-            }
-            
-            /* Стили для статистики */
-            .stats-summary {
-              margin-bottom: 20px;
-              padding: 15px;
-              border-radius: 5px;
-              background-color: #555;
-            }
-            .light-mode .stats-summary {
-              background-color: #f1f1f1;
-            }
-            .stats-item {
-              margin-bottom: 8px;
-            }
-            .stats-description {
-              margin-top: 15px;
-              padding: 15px;
-              border-radius: 5px;
-              background-color: #555;
-            }
-            .light-mode .stats-description {
-              background-color: #f1f1f1;
-            }
-            .stats-description h4 {
-              margin-bottom: 10px;
-            }
-          "))
+            # Подключаем внешние CSS файлы
+            tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css"),
+            tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css")
+          )
         ),
         
         # Используем правильную структуру заголовка без встроенных стилей
@@ -452,7 +273,7 @@ server <- function(input, output, session) {
       # модуль служб ------------------------------------------------------------
       mod_tab_services_server("services_tab", services_data)
       
-
+      
       # Модуль вкладки задач ----------------------------------------------------
       mod_tab_tasks_server("tasks_tab", all_tasks)
       
@@ -492,26 +313,6 @@ server <- function(input, output, session) {
       output$author_stats_table <- renderDT({
         datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
       })
-      
-      # filtered_task_names <- reactive({
-      #   task_data()$TaskName
-      # })
-      
-      # observe({
-      #   updateSelectInput(session, "selected_task", choices = filtered_task_names())
-      # })
-      
-      # Добавим обработчик для поиска в таблице задач, если он нужен
-      # filtered_task_data <- reactive({
-      #   data <- task_data()
-      #   
-      #   if (!is.null(input$task_search) && input$task_search != "") {
-      #     search_term <- tolower(input$task_search)
-      #     data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
-      #   }
-      #   
-      #   return(data)
-      # })
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
