@@ -255,11 +255,5 @@ server <- function(input, output, session) {
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
   shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
 } else {
-  # Запуск приложения с путем "/myapp"
-  startServer(
-    host = "0.0.0.0",
-    port = 8080,
-    appDir = ".",
-    path = "/myapp"
-  )
+  shinyApp(ui, server, options = list(port = 8080))
 }
