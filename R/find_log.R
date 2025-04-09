@@ -30,7 +30,15 @@ find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправле�
     
     bat_file  <- str_glue(bat_file)
     
-    return(bat_file)
+    r_file    <- strsplit(unique(bat_file), split = ' ')[[1]] %>% 
+      .[length(.)]
+    
+    rout_path <- str_glue('{r_file}out')
+    
+    rout_file  <- readLines(unique(rout_path)) %>% 
+      str_c(., collapse = '\n')
+    
+    return(rout_file)
     
   }
   
