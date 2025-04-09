@@ -17,8 +17,9 @@ mod_help_ui <- function(id) {
                       h4("О приложении:"),
                       HTML(str_glue("
                       <ul>
-                        <li><b>Версия:</b>{yaml::read_yaml(here::here('app_info.yml'))$version}</li>
-                        <li><b>Краткое описание:</b>{yaml::read_yaml(here::here('app_info.yml'))$description}</li>
+                        <li><b>Название:</b> {yaml::read_yaml(here::here('app_info.yml'))$name}</li>
+                        <li><b>Версия:</b> {yaml::read_yaml(here::here('app_info.yml'))$version}</li>
+                        <li><b>Краткое описание: </b>{yaml::read_yaml(here::here('app_info.yml'))$description}</li>
                       </ul>
                     ")
                    )
