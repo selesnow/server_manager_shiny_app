@@ -247,11 +247,18 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive) {
         if(!is.null(start_in)) {
           readme_content <- try(find_readme(start_in = start_in), silent = TRUE)
           
-          if(inherits(readme_content, "try-error")) {
-            output$task_readme_content <- renderUI({ HTML("<p>Ошибка при чтении README</p>") })
-          } else {
-            output$task_readme_content <- renderUI({ HTML(readme_content) })
-          }
+          output$task_readme_content <- renderUI({
+            md_path   <- file.path(start_in, "README.md")
+            html_path <- file.path(start_in, "README.html")
+            
+            if (file.exists(md_path)) {
+              includeMarkdown(md_path)
+            } else if (file.exists(html_path)) {
+              includeHTML(html_path)
+            } else {
+              HTML("<p>README не найден!</p>")
+            }
+          })
           
           # Показываем имя задачи
           output$readme_task_name <- renderText({ paste("README:", input$selected_task) })
