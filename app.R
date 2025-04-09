@@ -26,6 +26,8 @@ source("modules/mod_tab_cmd.R")
 source("modules/mod_tab_services.R")
 # Загрузка модуля поиска по файлам
 source("modules/mod_tab_find_in_files.R")
+# Загрузка модуля поиска по файлам
+source("modules/mod_tab_tasks.R")
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
@@ -286,103 +288,7 @@ server <- function(input, output, session) {
           id = "main_tabs",
           
           # Вкладка "Задачи"
-          tabPanel(
-            title = "Задачи",
-            
-            # Первый вертикальный блок - фильтры и управление задачами
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", 
-                    div(class = "card-header", "Фильтры и управление задачами"),
-                    div(class = "card-body",
-                        fluidRow(
-                          # Блок с фильтрами
-                          column(
-                            width = 2,
-                            div(class = "mb-3", 
-                                h4("Фильтры задач"),
-                                uiOutput("author_filter"),
-                                uiOutput("runas_filter"),
-                                uiOutput("last_result_filter"),
-                                uiOutput("client_filter") # Добавляем фильтр по клиенту
-                            )
-                          ),
-                          # Блок с управлением задачами
-                          column(
-                            width = 5,
-                            div(class = "mb-3",
-                                h4("Управление задачами"),
-                                selectInput("selected_task", "Выберите задачу:", choices = NULL, width = '750px'),
-                                div(class = "action-buttons",
-                                    actionButton("run_task", "Запустить", icon = icon("play"), class = "btn-success"),
-                                    actionButton("view_task_logs", "Логи", icon = icon("file-alt"), class = "btn-info"),
-                                    actionButton("view_task_readme", "README", icon = icon("file-alt"), class = "btn-info")
-                                ),
-                                # Добавляем блок информации о задаче
-                                div(class = "card mt-3", id = "task_info_card",
-                                    div(class = "card-header", "Информация о задаче"),
-                                    div(class = "card-body",
-                                        uiOutput("selected_task_info")
-                                    )
-                                )
-                            )
-                          )
-                        )
-                    )
-                )
-              )
-            ),
-            
-            # Блок с выводом лога
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", style = "display: none;", id = "log_card",
-                    div(class = "card-header", "Логи задачи"),
-                    div(class = "card-body",
-                        h4(textOutput("log_task_name")),
-                        tags$div(
-                          style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                          class = "light-mode-log",
-                          verbatimTextOutput("task_log_content")
-                        )
-                    )
-                )
-              )
-            ),
-            
-            # Блок с выводом лога
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card", style = "display: none;", id = "readme_card",
-                    div(class = "card-header", "README"),
-                    div(class = "card-body",
-                        h4(textOutput("readme_task_name")),
-                        tags$div(
-                          style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                          class = "light-mode-log",
-                          uiOutput("task_readme_content")
-                        )
-                    )
-                )
-              )
-            ),
-            
-            # Таблица задач
-            fluidRow(
-              column(
-                width = 12,
-                div(class = "card",
-                    div(class = "card-header", "Задачи"),
-                    div(class = "card-body",
-                        DTOutput("task_table")
-                    )
-                )
-              )
-            )
-          ),
+          mod_tab_tasks_ui("tasks_tab"),
           
           # Вкладка "Службы"
           mod_tab_services_ui("services_tab"),
@@ -543,28 +449,12 @@ server <- function(input, output, session) {
         all_tasks(get_tasks())
       })
       
-      task_data <- reactive({
-        req(all_tasks())
-        task <- all_tasks()
-        
-        if (!is.null(input$filter_author)) {
-          task <- task %>% filter(Author %in% input$filter_author)
-        }
-        if (!is.null(input$filter_runas)) {
-          task <- task %>% filter(`Run As User` %in% input$filter_runas)
-        }
-        if (!is.null(input$filter_last_result)) {
-          task <- task %>% filter(`Last Result` %in% input$filter_last_result)
-        }
-        if (!is.null(input$filter_client)) {
-          task <- task %>% filter(Client %in% input$filter_client)
-        }
-        
-        task
-      })
-      
       # модуль служб ------------------------------------------------------------
       mod_tab_services_server("services_tab", services_data)
+      
+
+      # Модуль вкладки задач ----------------------------------------------------
+      mod_tab_tasks_server("tasks_tab", all_tasks)
       
       # Реактивные значения для статистики
       overall_stats <- reactive({
@@ -603,55 +493,25 @@ server <- function(input, output, session) {
         datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
       })
       
-      filtered_task_names <- reactive({
-        task_data()$TaskName
-      })
+      # filtered_task_names <- reactive({
+      #   task_data()$TaskName
+      # })
       
-      observe({
-        updateSelectInput(session, "selected_task", choices = filtered_task_names())
-      })
-      
-      output$author_filter <- renderUI({
-        req(all_tasks())
-        selectInput("filter_author", "Author:", choices = unique(all_tasks()$Author), multiple = TRUE)
-      })
-      
-      output$runas_filter <- renderUI({
-        req(all_tasks())
-        selectInput("filter_runas", "Run As User:", choices = unique(all_tasks()$`Run As User`), multiple = TRUE)
-      })
-      
-      output$last_result_filter <- renderUI({
-        req(all_tasks())
-        selectInput("filter_last_result", "Last Result:", choices = unique(all_tasks()$`Last Result`), multiple = TRUE)
-      })
-      
-      # Добавляем фильтр по клиенту
-      output$client_filter <- renderUI({
-        req(all_tasks())
-        selectInput("filter_client", "Client:", choices = unique(all_tasks()$Client), multiple = TRUE)
-      })
-      
-      output$task_table <- renderDT({
-        datatable(task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
-      })
+      # observe({
+      #   updateSelectInput(session, "selected_task", choices = filtered_task_names())
+      # })
       
       # Добавим обработчик для поиска в таблице задач, если он нужен
-      filtered_task_data <- reactive({
-        data <- task_data()
-        
-        if (!is.null(input$task_search) && input$task_search != "") {
-          search_term <- tolower(input$task_search)
-          data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
-        }
-        
-        return(data)
-      })
-      
-      # Заменим обработчик таблицы задач, чтобы использовать фильтрацию
-      output$task_table <- renderDT({
-        datatable(filtered_task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
-      })
+      # filtered_task_data <- reactive({
+      #   data <- task_data()
+      #   
+      #   if (!is.null(input$task_search) && input$task_search != "") {
+      #     search_term <- tolower(input$task_search)
+      #     data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
+      #   }
+      #   
+      #   return(data)
+      # })
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
@@ -698,6 +558,7 @@ server <- function(input, output, session) {
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
+    
     # Обновляем данные о задачах
     all_tasks(get_tasks())
     # Обновление данных о службах
@@ -708,117 +569,15 @@ server <- function(input, output, session) {
     
     # Показываем уведомление об успешном обновлении
     showNotification("Данные успешно обновлены", type = "message", duration = 3)
+    
   })
   
-  # Запуск задачи
-  observeEvent(input$run_task, {
-    req(input$selected_task)
-    taskscheduler_runnow(taskname = input$selected_task)
-    showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
-  })
-  
-  # Поиск и чтение лога
-  observeEvent(input$view_task_logs, {
-    req(input$selected_task)
-    
-    # Находим выбранную задачу в таблице
-    selected_task_data <- all_tasks() %>% 
-      filter(TaskName == input$selected_task)
-    
-    if(nrow(selected_task_data) > 0) {
-      # Получаем нужные поля
-      task_to_run <- selected_task_data$`Task To Run`
-      start_in <- selected_task_data$`Start In`
-      
-      # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
-      if(!is.null(task_to_run) && !is.null(start_in)) {
-        log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
-        
-        if(inherits(log_content, "try-error")) {
-          output$task_log_content <- renderText({ "Ошибка при чтении лога" })
-        } else {
-          output$task_log_content <- renderText({ log_content })
-        }
-        
-        # Показываем имя задачи
-        output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
-        
-        # Показываем блок с логами
-        shinyjs::show(id = "log_card")
-      } else {
-        showNotification("Не удалось найти данные для задачи", type = "error")
-      }
-    } else {
-      showNotification("Задача не найдена", type = "error")
-    }
-  })
-  
-  # Поиск и чтение README
-  observeEvent(input$view_task_readme, {
-    req(input$selected_task)
-    
-    # Находим выбранную задачу в таблице
-    selected_task_data <- all_tasks() %>% 
-      filter(TaskName == input$selected_task)
-    
-    if(nrow(selected_task_data) > 0) {
-      # Получаем нужные поля
-      task_to_run <- selected_task_data$`Task To Run`
-      start_in <- selected_task_data$`Start In`
-      
-      # Если данные получены, вызываем функцию find_log (с чтением последних 25 строк)
-      if( !is.null(start_in)) {
-        readme_content <- try(find_readme(start_in = start_in), silent = TRUE)
-        
-        if(inherits(readme_content, "try-error")) {
-          output$task_readme_content <- renderUI({ HTML("<p>Ошибка при чтении README</p>") })
-        } else {
-          output$task_readme_content <- renderUI({ HTML(readme_content) })
-        }
-        
-        # Показываем имя задачи
-        output$readme_task_name <- renderText({ paste("README:", input$selected_task) })
-        
-        # Показываем блок с README
-        shinyjs::show(id = "readme_card")
-        
-      } else {
-        showNotification("Не удалось найти данные для задачи", type = "error")
-      }
-    } else {
-      showNotification("Задача не найдена", type = "error")
-    }
-  })
-  
-
   # Вывод дополнительный информации о выбранной задаче ----------------------
   selected_task_details <- reactive({
     req(input$selected_task)
     all_tasks() %>% 
       filter(TaskName == input$selected_task) %>%
       select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`)
-  })
-  
-  # Рендерим информацию о выбранной задаче
-  output$selected_task_info <- renderUI({
-    req(selected_task_details())
-    task_info <- selected_task_details()
-    
-    if(nrow(task_info) > 0) {
-      task <- task_info[1, ]
-      div(
-        div(class = "mb-2", strong("Автор: "), span(task$Author)),
-        div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
-        div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
-        div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
-        div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
-        div(class = "mb-2", strong("Результат прошлого запуска: "), span(task$`Last Result`)),
-        div(class = "mb-2", strong("Клиент: "), span(task$Client)),
-        div(class = "mb-2", strong("Краткое описание: "), span(task$Comment))
-      )
-    } else {
-      div("Информация недоступна")
-    }
   })
   
   # Показываем информацию при выборе задачи
