@@ -79,7 +79,7 @@ server <- function(input, output, session) {
         
         # Используем правильную структуру заголовка без встроенных стилей
         titlePanel(
-          title = "Server Task & Service Manager",
+          title = str_glue("Server Task & Service Manager v {yaml::read_yaml(here::here('app_info.yml'))$version}"),
           windowTitle = "Server Task & Service Manager"
         ),
         
@@ -112,11 +112,15 @@ server <- function(input, output, session) {
           
           # Поиск по файлам
           mod_tab_find_in_files_ui("file_search"),
-          
+  
           # Доступы
           if (user_role() == "admin") {
             tabPanel("Доступ", mod_access_ui("access"))
-          }
+          },
+          
+          # Помощь и обновления
+          mod_help_ui('help'),
+          mod_news_ui('news')
           
         ),
         
@@ -200,6 +204,10 @@ server <- function(input, output, session) {
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
+      
+      # Модуль поощь и новости
+      mod_help_server("help")
+      mod_news_server("news")
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
