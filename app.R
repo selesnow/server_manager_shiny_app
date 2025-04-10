@@ -207,7 +207,7 @@ server <- function(input, output, session) {
     # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
     refresh_trigger()
     services <- get_services()
-    waiter_hide()
+    #waiter_hide()
     return(services)
     
   })
@@ -235,7 +235,7 @@ server <- function(input, output, session) {
           color = "#333"
         )
         all_tasks(get_tasks())
-        waiter_hide()
+        #waiter_hide()
       })
       
       # модуль служб ------------------------------------------------------------
@@ -301,7 +301,7 @@ server <- function(input, output, session) {
     # Обновляем данные о задачах
     all_tasks(get_tasks())
     
-    waiter_hide()
+    #waiter_hide()
     
     # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
     refresh_trigger(refresh_trigger() + 1)
