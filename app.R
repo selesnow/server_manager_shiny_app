@@ -200,8 +200,10 @@ server <- function(input, output, session) {
     )
     # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
     refresh_trigger()
-    get_services()
+    services <- get_services()
     waiter_hide()
+    return(services)
+    
   })
   
   # Основная логика приложения, запускается после логина
