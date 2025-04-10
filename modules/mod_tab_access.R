@@ -12,7 +12,7 @@ mod_access_ui <- function(id) {
              textInput(ns("new_login"), "Логин"),
              passwordInput(ns("new_password"), "Пароль"),
              passwordInput(ns("confirm_password"), "Подтвердите"),
-             selectInput(ns("new_role"), "Роль", choices = c("admin", "user")),
+             selectInput(ns("new_role"), "Роль", choices = c("admin", "user", 'viewer')),
              actionButton(ns("add_user"), "Добавить", class = "btn btn-success")
       ),
       column(3,
@@ -23,7 +23,7 @@ mod_access_ui <- function(id) {
       column(3,
              h5("🛠 Изменить роль"),
              uiOutput(ns("user_selector_role")),
-             selectInput(ns("updated_role"), "Новая роль", choices = c("admin", "user")),
+             selectInput(ns("updated_role"), "Новая роль", choices = c("admin", "user", 'viewer')),
              actionButton(ns("change_role"), "Изменить", class = "btn btn-warning")
       ),
       column(3,

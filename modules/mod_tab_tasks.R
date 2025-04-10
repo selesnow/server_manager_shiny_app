@@ -33,7 +33,8 @@ mod_tab_tasks_ui <- function(id) {
                         h4("Управление задачами"),
                         selectInput(ns("selected_task"), "Выберите задачу:", choices = NULL, width = '750px'),
                         div(class = "action-buttons",
-                            actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success"),
+                            uiOutput(ns("run_button")),
+                            #actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success"),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                             actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
                         ),
@@ -80,7 +81,7 @@ mod_tab_tasks_ui <- function(id) {
 }
 
 # Серверная часть модуля
-mod_tab_tasks_server <- function(id, all_tasks_reactive) {
+mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -155,6 +156,13 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive) {
       req(input$selected_task)
       taskscheduler_runnow(taskname = input$selected_task)
       showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
+    })
+    
+    output$run_button <- renderUI({
+      role <- user_role()
+      if (role %in% c("admin", "user")) {
+        actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success")
+      }
     })
     
     # Рендерим карточку с логами
