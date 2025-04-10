@@ -53,12 +53,6 @@ mod_tab_statistic_ui <- function(id) {
     fluidRow(
       column(6, plotOutput(ns("task_log_plot"))),
       column(6, plotOutput(ns("task_info_plot")))
-    ),
-    hr(),
-    fluidRow(
-      column(12,
-             DTOutput(ns("statistics_table"))
-      )
     )
   )
 }
@@ -127,10 +121,6 @@ mod_tab_statistic_server <- function(id, all_tasks) {
         geom_line() + geom_point() + 
         labs(title = 'Динамика количества настроенных заданий в планировщике', x = '', y = '')
     })
-    
-    # Таблица статистики (если она у вас используется, иначе можно убрать)
-    output$statistics_table <- renderDT({
-      datatable(all_tasks(), options = list(pageLength = 10, scrollX = TRUE))
-    })
+
   })
 }
