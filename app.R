@@ -12,6 +12,8 @@ library(RSQLite)
 library(ggplot2)
 library(findInFiles)
 library(purrr)
+library(ps)
+library(tidyr)
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) source(here::here("R", fun))
