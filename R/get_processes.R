@@ -22,16 +22,16 @@ get_processes <- function() {
     unnest_longer(files) %>% 
     unnest_longer(pid) %>% 
     unique() %>% 
+    rowwise() %>% 
     mutate(`New Structure` = str_detect(dir, '^C:(\\\\|/)scripts.*')) %>% 
-    ungroup() %>% 
-    filter(str_detect(tolower(username), analyst_filter)) %>%
     mutate(
-      client = if_else(
+      client = ifelse(
         `New Structure`,
-        str_split(dir, pattern = '\\\\|/') %>% unlist() %>% .[4] %>% to_title_case(),
+        str_split(dir, pattern = '\\\\|/') %>% pluck(1, 4) %>% to_title_case(),
         'Unknown client'
       )
-    )
+    ) %>% 
+    ungroup() %>% 
+    filter(str_detect(tolower(username), analyst_filter)) 
   
 }
-

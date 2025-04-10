@@ -12,11 +12,11 @@ mod_tab_processes_ui <- function(id) {
             div(class = "card-body",
                 fluidRow(
                   column(
-                    width = 8,
+                    width = 4,
                     selectInput(ns("filter_username"), "Пользователь", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_name"), "Имя процесса", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_client"), "Клиент", choices = NULL, multiple = TRUE),
-                    selectInput(ns("filter_dir"), "Рабочая директория", choices = NULL, multiple = TRUE, width = "100%")
+                    selectInput(ns("filter_dir"), "Рабочая директория", choices = NULL, multiple = TRUE, width = "90%")
                   ),
                   column(
                     width = 4,
@@ -109,7 +109,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     })
     
     output$process_table <- renderDT({
-      datatable(filtered_processes(), options = list(pageLength = 10, scrollX = TRUE))
+      datatable(filtered_processes(), filter = "top", options = list(pageLength = 25, scrollX = TRUE))
     })
     
     observeEvent(input$kill_process, {
