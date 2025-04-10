@@ -43,10 +43,10 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    processes <- reactiveVal(get_proccesess())
+    processes <- reactiveVal(get_processes())
     
     observeEvent(refresh_trigger(), {
-      processes(get_proccesess())
+      processes(get_processes())
     })
     
     observe({
@@ -104,7 +104,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
       
       showNotification("Процессы остановлены", type = "message")
       
-      processes(get_proccesess())  # Обновим после остановки
+      processes(get_processes())  # Обновим после остановки
     })
   })
 }
