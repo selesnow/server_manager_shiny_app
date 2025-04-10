@@ -32,5 +32,6 @@ get_processes <- function() {
         'Unknown client'
       )
     )
+  
 }
 

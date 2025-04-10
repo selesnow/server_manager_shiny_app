@@ -14,6 +14,7 @@ library(findInFiles)
 library(purrr)
 library(ps)
 library(tidyr)
+library(waiter)
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) source(here::here("R", fun))
@@ -23,6 +24,7 @@ for(mod in dir(here::here("modules"))) source(here::here("modules", mod))
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
+  useWaiter(),             # Помощник в загрузке приложения
   mod_auth_ui("auth"),     # Модуль авторизации
   uiOutput("app_ui")       # Основной контент
 )
@@ -188,17 +190,44 @@ server <- function(input, output, session) {
   
   # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
   services_data <- reactive({
+    waiter_show(
+      html = HTML(paste(
+        spin_fading_circles(),
+        br(),
+        h4("Загрузка служб...")
+      )),
+      color = "#333"
+    )
     # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
     refresh_trigger()
     get_services()
+    waiter_hide()
   })
   
   # Основная логика приложения, запускается после логина
   observeEvent(logged_in(), {
     if (logged_in()) {
       
+      waiter_show(
+        html = HTML(paste(
+          spin_fading_circles(),
+          br(),
+          h4("Загрузка интерфейса...")
+        )),
+        color = "#333"
+      )
+      
       observe({
+        waiter_show(
+          html = HTML(paste(
+            spin_fading_circles(),
+            br(),
+            h4("Загрузка данных планировщика заданий...")
+          )),
+          color = "#333"
+        )
         all_tasks(get_tasks())
+        waiter_hide()
       })
       
       # модуль служб ------------------------------------------------------------
@@ -238,6 +267,7 @@ server <- function(input, output, session) {
       output$service_table <- renderDT({
         datatable(filtered_service_data(), options = list(pageLength = 5))
       })
+      waiter_hide()
     }
   }
   )
@@ -251,8 +281,19 @@ server <- function(input, output, session) {
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
     
+    
+    waiter_show(
+        html = HTML(paste(
+          spin_fading_circles(),
+          br(),
+          h4("Загрузка данных планировщика заданий...")
+        )),
+        color = "#333"
+    )
     # Обновляем данные о задачах
     all_tasks(get_tasks())
+    
+    waiter_hide()
     
     # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
     refresh_trigger(refresh_trigger() + 1)

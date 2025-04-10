@@ -46,7 +46,16 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     processes <- reactiveVal(get_processes())
     
     observeEvent(refresh_trigger(), {
+      waiter_show(
+        html = HTML(paste(
+          spin_fading_circles(),
+          br(),
+          h4("Загрузка процессов...")
+        )),
+        color = "#333"
+      )
       processes(get_processes())
+      waiter_hide()
     })
     
     observe({
@@ -107,4 +116,5 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
       processes(get_processes())  # Обновим после остановки
     })
   })
+  
 }

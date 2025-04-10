@@ -4,6 +4,7 @@
 #' @export
 #'
 get_tasks <- function() {
+  
   analysts_team <- dept::dp_get_team()
   analysts <- names(analysts_team)
   analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()

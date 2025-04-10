@@ -5,6 +5,7 @@
 #'
 #' @examples
 get_services <- function() {
+  
   service_data <- system("sc query state= all", intern = TRUE)
   service_lines <- grep("SERVICE_NAME: Analytics", service_data, value = TRUE)
   service_names <- str_extract(service_lines, "Analytics[А-Яа-я\\w\\-_]+")
@@ -61,4 +62,5 @@ get_services <- function() {
       }
     ) %>%
     ungroup()
+  
 }
