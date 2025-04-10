@@ -6,44 +6,132 @@
 #' @returns текст Rout лога
 #' @export
 #'
-find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
+find_log_2 <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
   
   file_ext <- tools::file_ext(unique(trimws(task_to_run)))
   
+  # Обработка R файла
   if (tolower(file_ext) == 'r') {
     
     r_file    <- strsplit(unique(task_to_run), split = ' ')[[1]] %>% 
       .[length(.)]
-    rout_path <- str_glue('{start_in}\\{r_file}out')
+    
+    # Если start_in не указан, то не добавляем его в путь
+    rout_path <- ifelse(is.null(start_in) || start_in == "", 
+                        str_glue("{r_file}out"), 
+                        str_glue("{start_in}\\{r_file}out"))
     
     rout_file  <- readLines(unique(rout_path)) %>% 
       str_c(., collapse = '\n')
     
     return(rout_file)
-    
   }
   
+  # Обработка .bat файла
   if (tolower(file_ext) == 'bat') {
     
     bat_file  <- readLines(unique(task_to_run)) %>% 
       str_c(., collapse = '\n')
     
-    bat_file  <- str_glue(bat_file)
+    # Регулярное выражение для поиска всех .R файлов в .bat файле
+    r_files <- str_extract_all(bat_file, "C:\\\\[^\\s]+\\.R")[[1]] %>% unique()
     
-    r_file    <- strsplit(unique(bat_file), split = ' ')[[1]] %>% 
-      .[length(.)]
+    rout_file <- ""
     
-    rout_path <- str_glue('{r_file}out')
-    
-    if (file.exists(rout_path)) {
-      rout_file  <- readLines(unique(rout_path)) %>% 
-        str_c(., collapse = '\n')
+    for (r_file in r_files) {
+      rout_path <- ifelse(is.na(start_in) || start_in == "N/A", 
+                          str_glue("{r_file}out"), 
+                          str_glue("{start_in}\\{r_file}out"))
       
-      return(rout_file)
+      if (file.exists(rout_path)) {
+        rout_file <- str_c(rout_file, 
+                           "------------------------------------", r_file, "out-------->\n", 
+                           readLines(rout_path) %>% str_c(collapse = '\n'), 
+                           "\n<---------------------------------------------------------\n")
+      }
+    }
+    return(rout_file)
+  }
+  
+  # Обработка .ps1 файла
+  if (tolower(file_ext) == 'ps1') {
+    
+    ps1_file  <- readLines(unique(task_to_run)) %>% 
+      str_c(., collapse = '\n')
+    
+    # Регулярное выражение для поиска всех .R файлов в .ps1 файле
+    r_files <- str_extract_all(ps1_file, "C:\\\\[^\\s]+\\.R")[[1]] %>% unique()
+    
+    rout_file <- ""
+    
+    for (r_file in r_files) {
+      rout_path <- ifelse(is.na(start_in) || start_in == "N/A", 
+                          str_glue("{r_file}out"), 
+                          str_glue("{start_in}\\{r_file}out"))
+      
+      if (file.exists(rout_path)) {
+        rout_file <- str_c(rout_file, 
+                           "------------------------------------", r_file, "out-------->\n", 
+                           readLines(rout_path) %>% str_c(collapse = '\n'), 
+                           "\n<---------------------------------------------------------\n")
+      }
     }
     
+    return(rout_file)
   }
   
   return('Лог не найден!')
-  
 }
+
+
+# старый вариант поиска лога
+#' 
+#' #' Функция поиска и чтения логов
+#' #'
+#' #' @param task_to_run Какой файл запускается задачей
+#' #' @param start_in В какой директории стартует скрипт
+#' #'
+#' #' @returns текст Rout лога
+#' #' @export
+#' #'
+#' find_log <- function(task_to_run = NULL, start_in = NULL) {  # Исправление: null -> NULL
+#'   
+#'   file_ext <- tools::file_ext(unique(trimws(task_to_run)))
+#'   
+#'   if (tolower(file_ext) == 'r') {
+#'     
+#'     r_file    <- strsplit(unique(task_to_run), split = ' ')[[1]] %>% 
+#'       .[length(.)]
+#'     rout_path <- str_glue('{start_in}\\{r_file}out')
+#'     
+#'     rout_file  <- readLines(unique(rout_path)) %>% 
+#'       str_c(., collapse = '\n')
+#'     
+#'     return(rout_file)
+#'     
+#'   }
+#'   
+#'   if (tolower(file_ext) == 'bat') {
+#'     
+#'     bat_file  <- readLines(unique(task_to_run)) %>% 
+#'       str_c(., collapse = '\n')
+#'     
+#'     bat_file  <- str_glue(bat_file)
+#'     
+#'     r_file    <- strsplit(unique(bat_file), split = ' ')[[1]] %>% 
+#'       .[length(.)]
+#'     
+#'     rout_path <- str_glue('{r_file}out')
+#'     
+#'     if (file.exists(rout_path)) {
+#'       rout_file  <- readLines(unique(rout_path)) %>% 
+#'         str_c(., collapse = '\n')
+#'       
+#'       return(rout_file)
+#'     }
+#'     
+#'   }
+#'   
+#'   return('Лог не найден!')
+#'   
+#' }
