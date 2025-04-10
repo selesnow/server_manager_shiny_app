@@ -99,6 +99,7 @@ server <- function(input, output, session) {
         ),
         
         # Начало вкладок
+        # Начало вкладок
         tabsetPanel(
           id = "main_tabs",
           
@@ -111,16 +112,22 @@ server <- function(input, output, session) {
           # Улучшенная вкладка "Статистика"
           mod_tab_statistic_ui("stats_tab"),
           
-          # Вкладка "CMD"
-          mod_tab_cmd_ui("cmd"),
+          # CMD только для admin и user
+          if (user_role() %in% c("admin", "user")) {
+            mod_tab_cmd_ui("cmd")
+          },
           
-          # Вкладка процессы
-          mod_tab_processes_ui("processes_tab"),
+          # Процессы — только для admin и user
+          if (user_role() %in% c("admin", "user")) {
+            mod_tab_processes_ui("processes_tab")
+          },
           
-          # Поиск по файлам
-          mod_tab_find_in_files_ui("file_search"),
-  
-          # Доступы
+          # Поиск по файлам — только для admin и user
+          if (user_role() %in% c("admin", "user")) {
+            mod_tab_find_in_files_ui("file_search")
+          },
+          
+          # Доступы — только для admin
           if (user_role() == "admin") {
             tabPanel("Доступ", mod_access_ui("access"))
           },
@@ -128,7 +135,6 @@ server <- function(input, output, session) {
           # Помощь и обновления
           mod_help_ui('help'),
           mod_news_ui('news')
-          
         ),
         
         # Добавляем CSS для кнопок действий
@@ -233,10 +239,10 @@ server <- function(input, output, session) {
       })
       
       # модуль служб ------------------------------------------------------------
-      mod_tab_services_server("services_tab", services_data)
+      mod_tab_services_server("services_tab", services_data, user_role)
       
       # Модуль вкладки задач ----------------------------------------------------
-      mod_tab_tasks_server("tasks_tab", all_tasks)
+      mod_tab_tasks_server("tasks_tab", all_tasks, user_role)
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)

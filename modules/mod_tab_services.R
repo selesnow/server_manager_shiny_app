@@ -16,9 +16,7 @@ mod_tab_services_ui <- function(id) {
                   selectInput(ns("selected_service"), "Выберите службу:", choices = NULL),
                   textOutput(ns("service_status")),
                   div(class = "action-buttons",
-                      actionButton(ns("start_service"), "Запустить", icon = icon("play"), class = "btn-success"),
-                      actionButton(ns("stop_service"), "Остановить", icon = icon("stop"), class = "btn-danger"),
-                      actionButton(ns("restart_service"), "Перезапустить", icon = icon("sync"), class = "btn-warning")
+                      uiOutput(ns("service_buttons"))
                   )
                 )
             )
@@ -41,7 +39,7 @@ mod_tab_services_ui <- function(id) {
   )
 }
 
-mod_tab_services_server <- function(id, services_data) {
+mod_tab_services_server <- function(id, services_data, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -62,6 +60,18 @@ mod_tab_services_server <- function(id, services_data) {
     output$service_status <- renderText({
       current <- service_info()
       if (nrow(current) > 0) paste("Статус:", current$Status, "|", current$Description) else "Статус неизвестен"
+    })
+    
+    output$service_buttons <- renderUI({
+      role <- user_role()
+      
+      if (role %in% c("admin", "user")) {
+        tagList(
+          actionButton(ns("start_service"), "Запустить", icon = icon("play"), class = "btn-success"),
+          actionButton(ns("stop_service"), "Остановить", icon = icon("stop"), class = "btn-danger"),
+          actionButton(ns("restart_service"), "Перезапустить", icon = icon("sync"), class = "btn-warning")
+        )
+      }
     })
     
     observeEvent(input$start_service, {
