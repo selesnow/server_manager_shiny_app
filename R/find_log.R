@@ -76,7 +76,7 @@ find_log <- function(task_to_run = '', start_in = NULL) {
   if (tolower(file_ext) == 'ps1') {
     
     ps1_file  <- task_to_run %>%
-      str_remove_all('powershell ') %>% 
+      str_remove_all('powershell |\\.\\\\') %>% 
       str_trim() %>%
       unique() %>% 
       if_else(is.na(start_in) || start_in == "N/A", ., str_glue("{start_in}\\{.}")) %>% 
