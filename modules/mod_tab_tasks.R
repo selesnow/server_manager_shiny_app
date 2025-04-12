@@ -76,8 +76,11 @@ mod_tab_tasks_ui <- function(id) {
             div(class = "card-header", "Задачи"),
             div(class = "card-body",
                 DTOutput(ns("task_table")),
-                div(class = "mt-3",
-                    actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets", class = "btn btn-success")
+                tagList(
+                  div(class = "mt-3",
+                      actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets", class = "btn btn-success"),
+                      uiOutput(ns("open_gs_btn"))  # вот сюда отрендерится кнопка
+                  )
                 )
             )
         )
@@ -90,6 +93,8 @@ mod_tab_tasks_ui <- function(id) {
 mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    
+    sheet_url <- reactiveVal(NULL)
     
     # Реактивные значения
     task_data <- reactive({
@@ -339,8 +344,23 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       # Перемещение в папку на Google Drive
       drive_mv(ss, path = "task_scheduller/")
       
+      sheet_url(gs4_get(ss)$spreadsheet_url)
+      
       # Можно тут ещё всплывающее уведомление или alert добавить
       showNotification("Файл успешно выгружен в Google Sheets!", type = "message")
     })
+    
+    # Кнопка открыть докс
+    output$open_gs_btn <- renderUI({
+      req(sheet_url())
+      
+      tags$a(
+        href = sheet_url(),
+        target = "_blank",
+        class = "btn btn-primary",
+        "Открыть Google Sheets"
+      )
+    })
+    
   })
 }

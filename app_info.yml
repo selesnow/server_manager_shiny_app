@@ -1,4 +1,4 @@
 name: Server Task & Service Manager
-version: '1.10.4'
+version: '1.11S.0'
 description: Shiny приложение для управление планировщиком заданий, и службами на
   сервере
