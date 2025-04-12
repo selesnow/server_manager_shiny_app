@@ -1,4 +1,7 @@
 # Модуль вкладки "Задачи"
+library(googlesheets4)
+library(googledrive)
+library(glue)
 
 # UI часть модуля
 mod_tab_tasks_ui <- function(id) {
@@ -72,7 +75,10 @@ mod_tab_tasks_ui <- function(id) {
         div(class = "card",
             div(class = "card-header", "Задачи"),
             div(class = "card-body",
-                DTOutput(ns("task_table"))
+                DTOutput(ns("task_table")),
+                div(class = "mt-3",
+                    actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets", class = "btn btn-success")
+                )
             )
         )
       )
@@ -148,7 +154,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     })
     
     output$task_table <- renderDT({
-      datatable(filtered_task_data(), filter = "top", options = list(pageLength = 10, scrollX = TRUE))
+      datatable(filtered_task_data(), filter = "top", options = list(pageLength = 25, scrollX = TRUE))
     })
     
     # Запуск задачи
@@ -314,6 +320,27 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     # Показываем информацию при выборе задачи
     observeEvent(input$selected_task, {
       shinyjs::show(id = ns("task_info_card"))
+    })
+    
+    # Кнопка выгрузки в докс
+    observeEvent(input$upload_to_gs, {
+      req(filtered_task_data())
+      
+      # Авторизация
+      gs4_auth(path = serviceaccounts::get_sa_from_internal_file())
+      drive_auth(path = serviceaccounts::get_sa_from_internal_file())
+      
+      # Создание таблицы
+      ss <- gs4_create(
+        glue('Task scheduller list ({Sys.time()})'),
+        sheets = list(tasks = filtered_task_data())
+      )
+      
+      # Перемещение в папку на Google Drive
+      drive_mv(ss, path = "task_scheduller/")
+      
+      # Можно тут ещё всплывающее уведомление или alert добавить
+      showNotification("Файл успешно выгружен в Google Sheets!", type = "message")
     })
   })
 }
