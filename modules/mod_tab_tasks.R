@@ -37,7 +37,6 @@ mod_tab_tasks_ui <- function(id) {
                         selectInput(ns("selected_task"), "Выберите задачу:", choices = NULL, width = '750px'),
                         div(class = "action-buttons",
                             uiOutput(ns("run_button")),
-                            #actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success"),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                             actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
                         ),
@@ -79,7 +78,7 @@ mod_tab_tasks_ui <- function(id) {
                 tagList(
                   div(class = "mt-3",
                       actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets", class = "btn btn-success"),
-                      uiOutput(ns("open_gs_btn"))  # вот сюда отрендерится кнопка
+                      uiOutput(ns("open_gs_btn")) 
                   )
                 )
             )
