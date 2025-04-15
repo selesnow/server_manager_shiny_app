@@ -84,7 +84,7 @@ server <- function(input, output, session) {
         # Используем правильную структуру заголовка без встроенных стилей
         titlePanel(
           title = str_glue("{yaml::read_yaml(here::here('app_info.yml'))$name} v{yaml::read_yaml(here::here('app_info.yml'))$version}"),
-          windowTitle = "Server Task & Service Manager"
+          windowTitle = "Server Manager"
         ),
         
         # Добавляем элементы управления отдельно, после заголовка
