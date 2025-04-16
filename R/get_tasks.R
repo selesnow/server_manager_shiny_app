@@ -27,6 +27,7 @@ get_tasks <- function() {
       )
     ) %>% 
     ungroup() %>% 
+    filter(Author != "Microsoft Visual Studio") %>% 
     # расшифровка статуса
     mutate(
       `Last Result` =  case_when(
