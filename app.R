@@ -15,6 +15,7 @@ library(purrr)
 library(ps)
 library(tidyr)
 library(waiter)
+library(ellmer)
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) source(here::here("R", fun))

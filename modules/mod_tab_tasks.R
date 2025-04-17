@@ -38,6 +38,7 @@ mod_tab_tasks_ui <- function(id) {
                         div(class = "action-buttons",
                             uiOutput(ns("run_button")),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
+                            actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info"),
                             actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
                         ),
                         # Добавляем блок информации о задаче
@@ -93,7 +94,13 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    output$task_log_markdown <- renderUI({
+      # По умолчанию пустой блок
+      HTML("")
+    })
+    
     sheet_url <- reactiveVal(NULL)
+    log_content_type <- reactiveVal("text") 
     
     # Реактивные значения
     task_data <- reactive({
@@ -179,13 +186,28 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     output$log_card <- renderUI({
       if (show_log_card()) {
         div(class = "card",
-            #div(class = "card-header", "Логи задачи"),
             div(class = "card-body",
                 h4(textOutput(ns("log_task_name"))),
-                tags$div(
-                  style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                  class = "light-mode-log",
-                  verbatimTextOutput(ns("task_log_content"))
+                tabsetPanel(
+                  id = ns("log_tabs"),
+                  tabPanel(
+                    title = "Логи",
+                    value = "logs",
+                    tags$div(
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      verbatimTextOutput(ns("task_log_content"))
+                    )
+                  ),
+                  tabPanel(
+                    title = "Анализ Rout",
+                    value = "analysis",
+                    tags$div(
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      uiOutput(ns("task_log_markdown"))
+                    )
+                  )
                 )
             )
         )
@@ -239,8 +261,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           # Показываем имя задачи
           output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
           
-          # Активируем отображение карточки
+          # Активируем отображение карточки и переключаемся на вкладку логов
           show_log_card(TRUE)
+          updateTabsetPanel(session, "log_tabs", selected = "logs")
         } else {
           showNotification("Не удалось найти данные для задачи", type = "error")
         }
@@ -359,6 +382,51 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         class = "btn btn-primary",
         "Открыть Google Sheets"
       )
+    })
+    
+    # Анализ Rout
+    observeEvent(input$analyze_log, {
+      req(input$selected_task)
+      
+      selected_task_data <- all_tasks_reactive() %>% 
+        filter(TaskName == input$selected_task)
+      
+      if (nrow(selected_task_data) > 0) {
+        task_to_run <- selected_task_data$`Task To Run`
+        start_in    <- selected_task_data$`Start In`
+        
+        if (!is.null(task_to_run) && !is.null(start_in)) {
+          log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+          
+          if (inherits(log_content, "try-error") || is.null(log_content)) {
+            # Для ошибок тоже используем markdown
+            output$task_log_markdown <- renderUI({ 
+              HTML("<p>Ошибка при чтении лога</p>") 
+            })
+          } else {
+            Sys.setenv(GOOGLE_API_KEY = 'AIzaSyDvfNK77j38BwtTVGckmKq-sGAPBFw95yw')
+            
+            chat <- ellmer::chat_gemini(system_prompt = 'Ты специалист по анализу данных, и разработчик на языке R. Твоя задача анализировать выполнение R скриптов через просмотр Rout файлов и помогать исправлять ошибки если работа скрипта была прервана.')
+            
+            out <- chat$chat(
+              glue::glue('Ниже я тебе отправлю вывод из .Rout файла моего скрипта, тебе надо его проанализировать, и если выполнение закончилось ошибкой, то дать описание чем эта ошибка вызвана и пошаговый план по её исправлению, если выполнение скрипта выполнено успешно то напиши что скрипт был выполнен успешно и скажи сколько минут длилось его выполнение.\n\n{log_content}')
+            )
+            
+            # Выводим результат как HTML с поддержкой markdown
+            output$task_log_markdown <- renderUI({ 
+              HTML(markdown::markdownToHTML(text = out, fragment.only = TRUE)) 
+            })
+            output$log_task_name <- renderText({ paste("Задача:", input$selected_task) })
+            
+            show_log_card(TRUE)
+            updateTabsetPanel(session, "log_tabs", selected = "analysis")
+          }
+        } else {
+          showNotification("Не удалось найти данные для задачи", type = "error")
+        }
+      } else {
+        showNotification("Задача не найдена", type = "error")
+      }
     })
     
   })
