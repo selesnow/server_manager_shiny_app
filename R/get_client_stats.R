@@ -16,7 +16,7 @@ get_client_stats <- function(tasks) {
     summarise(crons = n()) %>%
     ungroup() %>%
     mutate(
-      rate = round(crons / length(unique(filter(tasks, `New Structure`)$TaskName)) * 100, 0)
+      rate = round(crons / length(unique(tasks$TaskName)) * 100, 0)
     ) %>%
     arrange(desc(crons))
 }
