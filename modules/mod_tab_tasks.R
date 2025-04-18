@@ -9,7 +9,7 @@ chat <- ellmer::chat_gemini(
     'Ты специалист по анализу данных, и разработчик на языке R. ',
     'Твоя задача анализировать выполнение R скриптов через просмотр Rout файлов ',
     'и помогать исправлять ошибки если работа скрипта была прервана.'
-    )
+  )
 )
 
 # UI часть модуля
@@ -414,6 +414,11 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
             })
           } else {
             
+            # ⚙️ Обрезаем до 30000 последних символов
+            log_cut <- substr(log_content, 
+                              max(1, nchar(log_content) - 29999), 
+                              nchar(log_content))
+                              
             # Сообщение в чат Gemini
             out <- chat$chat(
               glue::glue(
@@ -424,7 +429,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                 'дать рекомендации по оптимизации скрипта.\n\n',
                 '## Текст Rout файла\n\n',
                 '{log_content}'
-                )
+              ), echo = F
             )
             
             # Выводим результат как HTML с поддержкой markdown
@@ -442,7 +447,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       } else {
         showNotification("Задача не найдена", type = "error")
       }
-    })
+    }) 
     
   })
 }
