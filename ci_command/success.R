@@ -72,15 +72,15 @@ escape_markdown <- function(text) {
 
 # Создание сообщения
 message <- paste0(
-  "🚀 *Обновление Server Task & Service Manager Shiny App!*\n\n",
+  "🚀 *Обновление Server Manager Shiny App!*\n\n",
   "● *Версия:* ", yaml::read_yaml(here::here('app_info.yml'))$version, "\n\n",
   "_Что было доработано:_\n\n",
   escape_markdown(commit_raw), "\n\n",
-  "🔗 Открыть [Server Task & Service Manager Shiny App](http://94.130.22.47:3838/)", "\n\n",
+  "🔗 Открыть [Server Manager](http://94.130.22.47:3838/)", "\n\n",
   "● Автор: ", author, "\n",
   "● Ветка: ", branch, "\n",
   "● *Pipeline:* [#", pipeline_id, "](", pipeline_url, ")\n\n",
-  "#shiny\\_task\\_service\\_manager\n"
+  "#shiny\\_server\\_manager\n"
 )
 
 # Отправка сообщения в Telegram
