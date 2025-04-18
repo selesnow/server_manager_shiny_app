@@ -3,6 +3,15 @@ library(googlesheets4)
 library(googledrive)
 library(glue)
 
+# Создаём чат для анализа Rout
+chat <- ellmer::chat_gemini(
+  system_prompt = str_glue(
+    'Ты специалист по анализу данных, и разработчик на языке R. ',
+    'Твоя задача анализировать выполнение R скриптов через просмотр Rout файлов ',
+    'и помогать исправлять ошибки если работа скрипта была прервана.'
+    )
+)
+
 # UI часть модуля
 mod_tab_tasks_ui <- function(id) {
   ns <- NS(id)
@@ -191,7 +200,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                 tabsetPanel(
                   id = ns("log_tabs"),
                   tabPanel(
-                    title = "Логи",
+                    title = tagList(icon("file-code"), "Логи"),
                     value = "logs",
                     tags$div(
                       style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
@@ -200,7 +209,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                     )
                   ),
                   tabPanel(
-                    title = "Анализ Rout",
+                    title = tagList(icon("chart-line"), "Анализ Rout"),
                     value = "analysis",
                     tags$div(
                       style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
@@ -404,12 +413,18 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
               HTML("<p>Ошибка при чтении лога</p>") 
             })
           } else {
-            Sys.setenv(GOOGLE_API_KEY = 'AIzaSyDvfNK77j38BwtTVGckmKq-sGAPBFw95yw')
             
-            chat <- ellmer::chat_gemini(system_prompt = 'Ты специалист по анализу данных, и разработчик на языке R. Твоя задача анализировать выполнение R скриптов через просмотр Rout файлов и помогать исправлять ошибки если работа скрипта была прервана.')
-            
+            # Сообщение в чат Gemini
             out <- chat$chat(
-              glue::glue('Ниже я тебе отправлю вывод из .Rout файла моего скрипта, тебе надо его проанализировать, и если выполнение закончилось ошибкой, то дать описание чем эта ошибка вызвана и пошаговый план по её исправлению, если выполнение скрипта выполнено успешно то напиши что скрипт был выполнен успешно и скажи сколько минут длилось его выполнение.\n\n{log_content}')
+              glue::glue(
+                'Ниже я тебе отправлю вывод из .Rout файла моего скрипта, тебе надо его проанализировать, ',
+                'и если выполнение закончилось ошибкой, то дать описание чем эта ошибка вызвана и пошаговый ',
+                'план по её исправлению, если выполнение скрипта выполнено успешно то напиши что скрипт был ',
+                'выполнен успешно и скажи сколько минут длилось его выполнение, при успешном выполнении можешь ',
+                'дать рекомендации по оптимизации скрипта.\n\n',
+                '## Текст Rout файла\n\n',
+                '{log_content}'
+                )
             )
             
             # Выводим результат как HTML с поддержкой markdown
