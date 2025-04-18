@@ -59,8 +59,26 @@ get_services <- function() {
         } else {
           "Нет описания"
         }
+      },
+      PID = {
+        status_ex <- system(glue("sc queryex \"{Service}\""), intern = TRUE)
+        pid_line <- grep("PID", status_ex, value = TRUE)
+        pid_val <- as.integer(str_extract(pid_line, "\\d+"))
+        if (!is.na(pid_val) && pid_val > 0) pid_val else NA
+      },
+      StartTime = {
+        if (!is.na(PID)) {
+          start_info <- system(glue("wmic process where ProcessId={PID} get CreationDate"), intern = TRUE)
+          creation_line <- start_info[2]
+          if (!is.na(creation_line) && nchar(creation_line) >= 14) {
+            as.character(as.POSIXct(strptime(substr(creation_line, 1, 14), format = "%Y%m%d%H%M%S")))
+          } else {
+            NA
+          }
+        } else {
+          NA
+        }
       }
     ) %>%
     ungroup()
-  
 }
