@@ -1,0 +1,451 @@
+
+# rpup - R пакет для работы с базой данных ПУПа
+rpup это пакеет который предназначен для работы с базой данных внутренней самописной ERP/CRM системы ПУП, по сути все функции пакета это обёртки над SQL запросами в которые просто прокидываются параметры.
+
+## Начало работы с пакетом
+
+При старте каждой новой сессии подключите пакет:
+
+    library(rpup)
+
+После подключения пакета вы увидите приветственное сообщение:
+
+    Привет Alsey!
+    Пакет rpup версии 0.9.0 подключен.
+    Для начала работы с базой ПУПа установите следующие необходимые опции 
+
+    # pup options
+    options(pup.user     = 'имя пользователя базы данных',
+            pup.password = 'пароль для подключения к базе данных')
+
+При первом запуске рекомендую создать конфиг командой
+`pup_create_config()`. После запуска функции в консоли запустится мастер
+создания конфига, отвечайте по очереди на его вопросы.
+
+    # сначала устанавливаем необходимые опции, если дефолтные не подходят
+    options(
+      pup.hostname='95.216.4.19',
+      pup.dbname   = "pup"
+    )
+
+    # запускаем мастер создания конфига
+    pup_create_config()
+
+    Ваш логин в ПУПе: Alsey
+    Ваш пароль в ПУПе: *********
+    Имя пользователя в базе Пупа MySQL: alsey
+    Пароль в базе Пупа MySQL: *********
+    Конфиг успешно создан.
+
+В дальнейшем при запуске пакета необходимые учётные данные будут
+считываться с конфига.
+
+Для подключения к базе данных ПУПа используйте команду
+`pup_connection()`:
+
+    pup_connection(
+      username = 'username', 
+      password = '*******', 
+      hostname = '1.1.1.1', 
+      port     = 3310,
+      dbname   = 
+    )
+
+После подключения к базе данных ПУПа можно переходить непосредственно к
+работе с пакетом.
+
+## Функции пакета rpup
+
+В этом блоке я опишу доступные в rpup функции для запроса данных и
+приведу примеры кода.
+
+*Таблица функций:*
+<table class="gmisc_table" style="border-collapse: collapse; margin-top: 1em; margin-bottom: 1em;">
+<thead>
+<tr>
+<th style="border-bottom: 1px solid grey; border-top: 2px solid grey;">
+</th>
+<th style="font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;">
+Функция
+</th>
+<th style="font-weight: 900; border-bottom: 1px solid grey; border-top: 2px solid grey; text-align: center;">
+Описание
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">
+1
+</td>
+<td style="text-align: center;">
+<code>pup_get_query()</code>
+</td>
+<td style="text-align: center;">
+Чтение SQL запроса, функция принимает запрос строкой, либо в виде пути к
+SQL файлу
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+2
+</td>
+<td style="text-align: center;">
+<code>pup_get_table()</code>
+</td>
+<td style="text-align: center;">
+Чтение определённой таблицы из БД ПУПа
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+3
+</td>
+<td style="text-align: center;">
+<code>pup_search_table()</code>
+</td>
+<td style="text-align: center;">
+Поиск таблиц по названию
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+4
+</td>
+<td style="text-align: center;">
+<code>pup_get_bonuses()</code>
+</td>
+<td style="text-align: center;">
+Получить данные о бонусах
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+5
+</td>
+<td style="text-align: center;">
+<code>pup_get_clients()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу клиентов (контрагентов)
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+6
+</td>
+<td style="text-align: center;">
+<code>pup_get_currency_rates()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу курсов валют
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+7
+</td>
+<td style="text-align: center;">
+<code>pup_get_expenses()</code>
+</td>
+<td style="text-align: center;">
+Получить траты сотрудников
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+8
+</td>
+<td style="text-align: center;">
+<code>pup_get_orders()</code>
+</td>
+<td style="text-align: center;">
+Получить данные по заявкам на услуги
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+9
+</td>
+<td style="text-align: center;">
+<code>pup_get_pf_task()</code>
+</td>
+<td style="text-align: center;">
+Получить данные по задачам в Планфикс
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+10
+</td>
+<td style="text-align: center;">
+<code>pup_get_projects()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу проект - услуг
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+11
+</td>
+<td style="text-align: center;">
+<code>pup_get_query_money()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу запросов денег
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+12
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_cert()</code>
+</td>
+<td style="text-align: center;">
+Получить сертификаты сотрудников из ПУПа
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+13
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_info()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу сотрудников
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+14
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_social_links()</code>
+</td>
+<td style="text-align: center;">
+Получить ссылки на социальные сети из профиля сотрудника
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+15
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_official_info()</code>
+</td>
+<td style="text-align: center;">
+Получить официальные данные по трудоустройству сотрудников
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+16
+</td>
+<td style="text-align: center;">
+<code>pup_get_project_archive()</code>
+</td>
+<td style="text-align: center;">
+Получить данные по архивации проектов
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+17
+</td>
+<td style="text-align: center;">
+<code>pup_get_project_expenses()</code>
+</td>
+<td style="text-align: center;">
+Получить список трат по проектам
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+18
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_leaders()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу руководителей по заданным сотрудникам
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+19
+</td>
+<td style="text-align: center;">
+<code>pup_get_user_team()</code>
+</td>
+<td style="text-align: center;">
+Получить список подчинённых по указанным сотрудникам
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+20
+</td>
+<td style="text-align: center;">
+<code>pup_get_usertask()</code>
+</td>
+<td style="text-align: center;">
+Получить список задач по указанному сотруднику
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+21
+</td>
+<td style="text-align: center;">
+<code>pup_get_client_contacts()</code>
+</td>
+<td style="text-align: center;">
+Получить список контактов клиентов
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+22
+</td>
+<td style="text-align: center;">
+<code>pup_get_client_balance()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу остатков по балансу контрагентов
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+23
+</td>
+<td style="text-align: center;">
+<code>pup_get_vacs()</code>
+</td>
+<td style="text-align: center;">
+Получить заявки на вакансии
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+24
+</td>
+<td style="text-align: center;">
+<code>pup_get_salary_reduce_2022()</code>
+</td>
+<td style="text-align: center;">
+Данные по урезаниям ЗП в связи с войной в Украине 2022
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+25
+</td>
+<td style="text-align: center;">
+<code>pup_get_salary_compensation_2022()</code>
+</td>
+<td style="text-align: center;">
+Данные по выплаченным компенсациям в связи урезаниям ЗП в связи с войной
+в Украине 2022
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+26
+</td>
+<td style="text-align: center;">
+<code>pup_get_additional_income()</code>
+</td>
+<td style="text-align: center;">
+Данные по дополнительным (не клиентским) доходам.
+</td>
+</tr>
+<tr>
+<td style="text-align: left;">
+27
+</td>
+<td style="text-align: center;">
+<code>pup_get_client_payments()</code>
+</td>
+<td style="text-align: center;">
+Получить таблицу пополнений счетов (оплат) контрагентов
+</td>
+</tr>
+<tr>
+<td style="border-bottom: 2px solid grey; text-align: left;">
+28
+</td>
+<td style="border-bottom: 2px solid grey; text-align: center;">
+<code>pup_get_attendance_journal()</code>
+</td>
+<td style="border-bottom: 2px solid grey; text-align: center;">
+Запросить журнал посещаемости сотрудников
+</td>
+</tr>
+</tbody>
+</table>
+
+Примеры кода для работы с пакетом `rpup`:
+
+``` r
+library(rpup)
+
+# подключение к базе ПУПа
+pup_connection(hostname = '95.216.4.19')
+
+# ищем таблицы в названии которых встречается слово payment
+pup_search_table('payment')
+
+# получить полный список всех таблиц можно так
+pup_search_table('.*')
+
+# Читам таблицу payment_report - списаний
+pr <- pup_get_table(
+  table   = 'payment_report', 
+  fields  = c('pay_proj_id', 'Date', 'IM', 'FSR'), 
+  filters = 'Date BETWEEN "2021-06-01" AND "2021-06-30"'
+)
+
+# Читаем sql запрос
+## текст SQL запроса
+sql <- '
+    SELECT username, iduser, date_company
+    FROM contacts
+    WHERE date_company_out = "0000-00-00"
+'
+## чтение запроса
+contacts <- pup_get_query(sql)
+
+# Получить список сотрудников
+employee <- pup_get_user_info(with_fired_users = FALSE)
+
+# Получить список подчинённых по указанным сотрудникам
+als_pix_teams <- pup_get_user_team(pup_user_ids = c(301, 483))
+
+# Получить список руководителей по указанным сотрудникам
+als_ash_dh <- pup_get_user_leaders(pup_user_ids = c(301, 460))
+```
+
+## Обновление данных в аналитической копии базы ПУПа
+
+Пакет rpup позволяет внепланово обновить данные в таблицах аналитической
+копии базы данных. Но, для обновления данных вам необходима привилегия в
+ПУПе на использование entity. Открыть данную привелегию можно через Rock
+или Dante.
+
+Так же для обновления данных на Windows необходимо установить Git.
+
+Обновление данных осуществляется функцией `pup_db_update()`.
+
+Пример обновления таблиц contacts и agencies:
+
+``` r
+pup_db_update(tables = c('contacts', 'agencies'))
+```
+
+## Поддержка пакета
+
+По всем вопросам работы с пакетом, и расширения его функционала
+обращаться к [Alsey](https://t.me/AlexeySeleznev).
