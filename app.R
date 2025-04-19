@@ -16,6 +16,7 @@ library(ps)
 library(tidyr)
 library(waiter)
 library(ellmer)
+library(bslib)
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) source(here::here("R", fun))
@@ -100,7 +101,6 @@ server <- function(input, output, session) {
         ),
         
         # Начало вкладок
-        # Начало вкладок
         tabsetPanel(
           id = "main_tabs",
           
@@ -114,7 +114,12 @@ server <- function(input, output, session) {
           mod_tab_statistic_ui("stats_tab"),
           
           # Модуль AI разработки
-          mod_tab_ai_dev_ui("ai_dev"),
+          tabPanel(
+            "AI разработка",
+            bslib::page_fluid(
+              chat_ui("simple_chat")
+            )
+          ),
           
           # CMD только для admin и user
           if (user_role() %in% c("admin", "user")) {
@@ -250,9 +255,19 @@ server <- function(input, output, session) {
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
-
-      # Модуль разработки -------------------------------------------------------
-      mod_tab_ai_dev_server("ai_dev")
+      
+      # Модуль AI чата - добавлен напрямую в код (вне модулей)
+      # Создаем чат с системным промптом
+      dev_chat <- ellmer::chat_gemini(
+        system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"), 
+        echo = 'none'
+      )
+      
+      observeEvent(input$simple_chat_user_input, {
+        message("Получен ввод:", input$simple_chat_user_input)
+        stream <- dev_chat$stream_async(input$simple_chat_user_input)
+        chat_append("simple_chat", stream)
+      })
       
       # Модуль процессов
       process_data <- reactive({
@@ -292,18 +307,18 @@ server <- function(input, output, session) {
   
   # Поиск по файлам ---------------------------------------------------------
   mod_tab_find_in_files_server("file_search")
-
+  
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
     
     
     waiter_show(
-        html = HTML(paste(
-          spin_fading_circles(),
-          br(),
-          h4("Загрузка данных планировщика заданий...")
-        )),
-        color = "#333"
+      html = HTML(paste(
+        spin_fading_circles(),
+        br(),
+        h4("Загрузка данных планировщика заданий...")
+      )),
+      color = "#333"
     )
     # Обновляем данные о задачах
     all_tasks(get_tasks())
