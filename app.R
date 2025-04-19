@@ -259,8 +259,9 @@ server <- function(input, output, session) {
       # Модуль AI чата - добавлен напрямую в код (вне модулей)
       # Создаем чат с системным промптом
       dev_chat <- ellmer::chat_gemini(
-        system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"), 
-        echo = 'none'
+        system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"),
+        model = 'gemini-2.0-flash',  
+        echo  = 'none'
       )
       
       observeEvent(input$simple_chat_user_input, {

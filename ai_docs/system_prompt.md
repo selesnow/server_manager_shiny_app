@@ -57,6 +57,14 @@ pup_set_config_name('conf_name.cfg')
 pup_connection()
 ```
 
+Есть несколько рабочих баз данных в которых хранится информация из ПУПа
+
+1. 116.203.250.66:3320 - реплика основной базы пупа
+2. 162.55.132.205 - тут лежит урезанная база пупа, с некоторыми дополнительными таблицами, которые считаются нашими скриптами отдельно
+3. 116.203.250.66:3310 - реплика ПУП компании InWeb
+
+
+
 После подключения к базе данных ПУПа можно переходить непосредственно к
 работе с пакетом.
 
@@ -266,6 +274,680 @@ pup_connection()
     * data - data.frame, который необходимо записать в БД
     * table_name - название таблице в базе
     * write_disposition - что делать если таблица существует, варианты "append", "overwrite"
+    
+### К каким таблицам обращаются функции и какие поля возвращают
+
+В большинстве функций пакета rpup есть аргумент fields. который принимает вектор из названий полей, которые надо получить пользователю.
+
+Ниже приведён список того, к каким таблицам обращаются основные функции пакета, и какие поля возвращают:
+
+* pup_get_bonuses
+  * поля
+    * bonus_id - Идентификатор бонуса
+    * create_time - Время создания бонуса
+    * salary_date - Дата выдачи зарплаты, к которой привязан бонус
+    * bonus_type_name - Тип бонуса (Плюс, Плюс-процент, Передача коллеге, Платное напоминание, Компенсация)
+    * comment - комментарий к бонусу
+    * username - Кому выписан бонус
+    * user_id - Идентификатор пользователя. которому выписан бонус
+    * author_username - Кем выписан бонус
+    * autor_id - Идентификатор пользователя, который выписал бонус
+    * domain - Домен ПУ по которой был выписан плюс-процент
+    * projects_wt_shortname - Услуга по ПУ по которой выписан плюс-процент
+    * proj_id - Идентификатор проект-услуги по которой выписан плюс-процент
+    * plus_percent_history_link - Ссылка на плюс-процент в ПУПе
+    * size_usd - Размер бонуса в USD
+    * size_currency - Размер бонуса в валюте
+    * currency_code - В какой именно валюте указан размер бонуса в валюте
+    * salary_id - Идентификатор зарплаты к которой привязан бонус (только по выполненным бонусам)
+    * payment_id - Идентификатор списания, по которому был начислен плюс-процент
+    * plus_percent_type - тип плюс процента, за ведение или за результат
+    * plus_percent_condition - условия начисления плюс процента
+    * plus_percent_source_method - ?
+    * plus_percent_source_percent - от какой величины считать размер плюс процента, от СР или ФСР
+    * plus_percent_percent_value - какой процент берём от указанной в plus_percent_source_percent величины
+    * plus_percent_separation - распределение плюс процента
+    * projects_role - роль в проекте, по которой выписан плюс процент
+    * role - полное название роли в проекте, как в интерфейсе пупа
+    * article_id - Идентификатор статьи в СФУ 
+    * podrazdel - Подраздел к которой относится статья в СФУ
+    * razdel - Раздел к которому относится статья в СФУ
+    * category - Категоряи в СФУ к которой относится статья
+  * таблицы
+    * bonus
+    * bonus_type
+    * contacts
+    * projects
+    * fin_sections
+    * salary
+    * services_documents
+    * currency
+    * proj_payment_bonus
+    * roles
+* pup_get_client_payments
+  * поля
+    * id - Идентификатор оплаты
+    * client_id - Идентификатор контрагента, справочник контрагентов можно получить с помощью функции `pup_get_clients()`
+    * client_name - Имя контрагента
+    * client_surname - Фамилия контрагента
+    * client_enterprise_name - Предприятие контрагента
+    * client_segment - Сегментр контрагента
+    * payment_date - Дата оплаты
+    * fact_payment_date - Фактическая дата оплаты
+    * bayt - Получено USD
+    * bit - Получено UAH
+    * zapad - Получено EUR
+    * vostok - Получено RUB
+    * yugo_vostok - Получено KZT 
+    * grinvich_B - Получено GBP
+    * tiger - Получено BGN
+    * usdt - Получено USDT
+    * bit_B - Получено UAH в пересчёте на USD
+    * zapad_B - Получено EUR в пересчёте на USD
+    * vostok_B - Получено RUB в пересчёте на USD
+    * yugo_vostok_B - Получено KZT в пересчёте на USD
+    * grinvich_B - Получено GBP в пересчёте на USD
+    * tiger_B - Получено BGN в пересчёте на USD
+    * usdt_B - Получено USDT в пересчёте на USD
+    * bayt_bit - Получено USD в пересчёте на UAH
+    * zapad_bit - Получено EUR в пересчёте на UAH
+    * vostok_bit - Получено RUB в пересчёте на UAH
+    * yugo_vostok_bit - Получено KZT в пересчёте на UAH
+    * grinvich_bit - Получено GBP в пересчёте на UAH
+    * tiger_bit - Получено BGN в пересчёте на UAH
+    * usdt_bit - Получено USDT в пересчёте на UAH
+    * all_sum - Сумма пополнения в USD
+    * payment_date_sum - Сумма пополнения в USD на дату пополнения счета
+    * bayt_target_currency - В какую валюту конвертировались USD
+    * bit_target_currency - В какую валюту конвертировались UAH
+    * zapad_target_currency - В какую валюту конвертировались EUR
+    * vostok_target_currency - В какую валюту конвертировались RUB
+    * yugo_vostok_target_currency - В какую валюту конвертировались KZT
+    * grinvich_target_currency - В какую валюту конвертировались GBP
+    * tiger_target_currency - В какую валюту конвертировались BGN
+    * usdt_target_currency - В какую валюту конвертировались USDT
+    * user_id - Идентификатор сотрудника, который внёс оплату, справочник сотрудников можно получить с помощью функции `pup_get_user_info()`
+    * author - Ник сотрудника, который внёс оплату
+    * date_course - Дата курсов, по которым расчитывались переводы валют
+    * payment_source - Источник пополнения. simple - обычное
+    * client_account_type - Тип счёта контрагента для зачисления
+    * proj_payment_id - id списания (только для партнерского пополнения и возврата скидки)
+    * course_type - Тип источника курса - межбанк или центробанк ('interbank','nb_cb','nbu')
+    * payment_type - Способ оплаты
+    * nds - НДС
+    * tax_percent - Процент налога
+    * comission_size - Комиссия, которую оплатил клиент в USD
+    * comission_size_currency - Комиссия, которую оплатил клиент (в валюте оплаты)
+    * comission_currency - Валюта комиссии
+    * agency - Представительство
+    * closed_by_acts - Оплата закрыта актами
+    * closed_by_tax_invoice - Оплата закрыта счет-фактурой или НН
+    * purpose - Цель пополнения. 
+    * risky - Флаг рискованное пополнение
+    * payment_doc_number - Номер документа по которому было пополнение
+    * payment_doc_type - Тип документа по которому была оплата
+    * doc_name - Название документа, которое состоит из типа и номера документа
+    * doc_path - Ссылка на документ в ПУПе
+    * doc_pf_task_id - Идентификатор задачи в ПФ на выставление счёта
+    * doc_pf_task_link - Ссылка на задачи в ПФ на выставление счёта
+    * doc_sum - Сумма документа
+    * doc_work_sum - Сумма из документа на работы
+    * doc_exp_sum - Сумма из документы на рекламные траты
+    * invoice_divide_type - Флаг типа разделения счетов
+    * doc_comment - Комментарий к документу
+    * client_doc_proj_id - Привязка документа к ПУ, получить справочник проектов можно с помощью функции `pup_get_projects()`
+    * doc_proj_domain - Домен ПУ привязанной к документу
+    * doc_proj_service - Услуга ПУ привязанной к документу
+    * doc_proj_service_sphere - Сфера ПУ привязанной к документу
+    * doc_period_from - Период документа: дата "с"
+    * doc_period_to - Период документа: дата "по"
+    * doc_date - Дата документа
+  * таблицы
+    * client_payment
+    * contacts
+    * client
+    * currency
+    * client_payment_purpose
+    * client_payment_commission
+    * client_account_types
+    * payment_t_hie
+    * payment_t
+    * agencies
+    * regions
+    * region_translation
+    * client_payment_document
+    * client_documents_types
+    * client_documents
+    * projects
+    * services_documents
+    * works_type_group
+* pup_get_clients
+  * поля
+    * client_id - ID контрагента
+    * client_identifier_id - Идентификатор клиента
+    * client_name - Имя клиента
+    * client_surname - Фамилия клиента
+    * client_link - Ссылка на профиль клиента в ПУПе
+    * client_mail - email клиента
+    * client_phone - Номер телефона клиента
+    * client_segment - Сегмент клиента (small-medium, enterprise, large)
+    * domain_name - Домен клиента
+    * company - Название предприятия (Компания в ПланФиксе - поле company в таблице client)
+    * enterprise_name - Название предприятия (Название контрагента в Пупе, поле company в таблице client)
+    * enterprise_type - Тип организации ("ТОВ", "ФО", "Физ. Лицо", "ООО", "СПД", "Юр. Лицо", "ПП", "ЗАО", "ИП", "ПрАТ")
+    * payment_type - Тип оплаты контрагента
+    * city - Город контрагента
+    * client_country_eng - Страна контрагента
+    * country_registration - Страна регистрации юрлица клиента (именно это поле выводится в графе страна в пупе)
+    * agency - Представительство к которому относится контрагент
+    * partner - Является ли контрагент партнёром
+    * partner_is_vatpayer - Является ли партнёр плательщиком НДС.
+    * has_no_partner_services - Флаг не оказывает партнёские услуги
+    * postpaid - Флаг, может ли клиент работать по постоплате.
+    * archive - Дата архивации контрагента, Контрагент отмечается архивным либо в ручную PM, либо автоматом, если удовлетворяет следующим условиям: Если по контрагенту в течение 90 дней все проект-услуги в архиве или если по партнёру в течение 90 дней все проект-услуги его и его наследников в архиве.
+    * pf_company_id - Привязка к компании в ПФ
+    * pf_task_id - Идентификатор задачи - заявки по которой мы завели клиента, информацию по заявкам можно получить с помощью функции `pup_get_orders()`.
+    * comment - Комментарий к контрагенту
+    * total_client_projects - Общее количество ПУ контрагента
+    * active_client_proj - КОличество активных ПУ контрагента
+    * client_card_num - Номер карты клиента
+    * brought_by_partner - Привел партнер?
+    * counterparty_pm - PM по контрагенту
+    * counterparty_type - Тип контрагента
+    * currency - Валюта контрагента
+    * passive_income_is_possible - Возможен пассивный доход
+    * birthday - День рождения клиента
+    * language_of_customer_account - Язык ЛК клиента
+    * skype - Скайп клиента
+    * telegram - Telegram клиента
+    * stat_phone - Номер телефона клиента
+    * client_partner_rework - Партнёр внедряет доработки?
+    * partner_services - Партнёрские услуги
+    * partner_regions - Регионы работы партнёра
+    * country_of_inplacement - Страна (местонахождение клиента, контакта или большей части команды)
+    * opf - Краткое название ОПФ (Организационно правовая форма) из таблицы form_incorp
+    * fullname_opf - Полное название ОПФ (Организационно правовая форма) из таблицы form_incorp
+    * inn - Юридическая информация / ИНН (только при `with_legal_info = TRUE`)
+    * edrpou - Юридическая информация / ЄДРПОУ (только при `with_legal_info = TRUE`)
+    * bin - Юридическая информация / БИН (только при `with_legal_info = TRUE`)
+    * okpo - Юридическая информация / ОКПО (только при `with_legal_info = TRUE`)
+    * rnn - Юридическая информация / РНН (только при `with_legal_info = TRUE`)
+    * legal_address - Юридическая информация / Legal address (только при `with_legal_info = TRUE`)
+    * OFP - Юридическая информация / Наименование предприятия (только при `with_legal_info = TRUE`)
+    * short_enterprise_name - Юридическая информация / Сокращенное наименование предприятия (только при `with_legal_info = TRUE`)
+    * communication_language - язык коммуникации (только при `with_legal_info = TRUE`)
+    * project_language - язык ведения проекта (только при `with_legal_info = TRUE`)
+    * multicurrencies - Разрешено ли использование доп. валют (только при `with_legal_info = TRUE`)
+    * accountant_email- Електронна адреса бухгалтера (только при `with_legal_info = TRUE`)
+    * vchasno_email - Електронна адреса для відправки документів в сервісі Вчасно (только при `with_legal_info = TRUE`)
+    * vat - НДС (только при `with_legal_info = TRUE`)
+    * client_legal_name - Имя клиента из таблицы legal_inform_value (только при `with_legal_info = TRUE`)
+    * client_legal_surname - Фамилия клиента из таблицы legal_inform_value (только при `with_legal_info = TRUE`)
+    * client_legal_patronicname - Отчество клиента из таблицы legal_inform_value (только при `with_legal_info = TRUE`)
+    * bussines_name - наименование предприятия из юридической информации контрагента (только при `with_legal_info = TRUE`)
+  * таблицы
+    * client
+    * client_type
+    * client_wallet
+    * currency
+    * agencies
+    * regions
+    * region_translation
+    * projects
+    * form_incorp
+    * payment_t_hie
+    * payment_t
+    * legal_inform_value (только при `with_legal_info=TRUE`)
+    * legal_inform_field (только при `with_legal_info=TRUE`)
+    * legal_inform_qq (только при `with_legal_info=TRUE`)
+    * users
+    * partner_service
+    * partner_region_of_work
+* pup_get_expenses
+  * поля
+    * expenses_id - Идентификатор траты
+    * expenses_link - Ссылка на отчёт по тратам
+    * user_id - Идентификатор сотрудника, который внёс трату
+    * username - Ник сотрудника, который внёс тарту
+    * date - Дата к которой относится трата
+    * time_add - Время внесения траты
+    * fact_date_add - Время когда трата была добавлена в ПУП
+    * pf_task_id - Идентификатор задачи с которой связана трата
+    * title - Название задачи с которой связана трата
+    * proj_id - Id ПУ в ПУПе, по которой внесена трата
+    * domain - Домен ПУ из Пупа, к которому относится задача
+    * projects_wt_shortname - Услуга пу по которой внесена трата
+    * expenses_type - Тип траты
+    * description - Комментарий к трате
+    * size - Размер траты в USD
+    * size_currency - Размер траты в валюте
+    * currency - Валюта
+    * hours - Размер траты в часах
+  * таблицы
+    * expenses
+    * contacts
+    * expenses_type
+    * projects
+    * services_documents
+    * planfix_tasks
+* pup_get_orders
+  * поля 
+    * pf_task_id - Planfix ID задачи на заявку, используется в ссылках типа https://t.netpeak.group/?action=planfix&task=pf_task_id
+    * planfix_task_general_id - General ID задачи на заявку, используется в ссылках типа https://t.netpeak.group/task/general/
+    * task_title - Название задачи на заявку
+    * task_status - Статус задачи на заявку
+    * pf_task_done_date - Дата, когда задача на заявку была переведена в статус "Выполнена"
+    * pf_task_complete_date - Дата, когда задача на заявку была переведена в статус "Завершена"
+    * appl_servs_ticket_num - ID заявки
+    * appl_servs_datetime_added - Дата и время получения заявки
+    * appl_servs_ga_client_id - Идентификатор посетилеля сайта сгенериолванный в Google Analytics
+    * appl_servs_ga_user_id - Присвоенный идентификатор посетителя сайта
+    * appl_servs_email - Email указанный в заявке
+    * appl_servs_phone - Номер телефона указанный в заявке
+    * name_from_order - Имя указанное в ззаявке
+    * domains_from_order - Домен указанный а заявке
+    * appl_servs_region_id - Идентификатор региона определённого по IP посетителя
+    * appl_servs_country_alpha2 - Код страны посетителя, определённый по IP
+    * appl_servs_city_ru - Город посетителя определённый по IP
+    * appl_servs_traffic_type - Тип трафика
+    * appl_servs_services - заказанная услуга
+    * appl_servs_order_page - С какой страницы была отправлена заявка
+    * appl_servs_referrer - Реферрал
+    * appl_servs_custom_region_key - регион заявки установленный руками менеджером, берётся из аналитики заявки
+    * appl_servs_works_type_id - ID услуги
+    * appl_servs_works_type_group_id - ID Сферы
+    * sdr_pup_user_id - User ID SDR взявшего заявку в работу
+    * sdr_username_appl_servs - Ник SDR взявшего в работу заявку
+    * lead_channel - Канал получения заявки
+    * lead_channels_id - ID канала получения лида
+    * group_key - Группа канала получения лида
+    * subchannel_id - Идентификатор подканала получения лида
+    * subchannel_name - Подканал получения лида
+    * appl_servs_sale_work_type - Услуга которой интересуется клиент
+    * appl_servs_ticket_hash - Хеш заявки
+    * appl_servs_seo_budget - Диапазон SEO бюджета
+    * appl_servs_ppc_budget - Диапазон PPC бюджета
+    * company_id - ID Компании исполнителя по задаче на заявку
+    * company_name - Компания исполнителя по задаче на заявку
+    * pf_user_role - роль текущего исполнителя задачи по заявке
+    * task_workers - Список исполнителей задачи
+    * first_pay_date_payment_analytics - Дата первой оплаты из аналитики оплат
+    * first_fsr_payment_analytics - ФСР первой оплаты из аналитики оплат
+    * region_payment_analytics - Регион из аналитики оплат
+    * service_type_payment_analytics - Услуга из аналитики оплат
+    * sphere_payment_analytics - Сфера из аналитики оплат
+  * таблицы
+    * appl_servs
+    * lead_channels
+    * lead_source_group
+    * lead_source
+    * client
+    * contacts
+    * planfix_tasks
+    * planfix_usertasks
+    * companies
+    * planfix_status_lists
+    * appl_servs_sdr
+    * appl_servs_status_date
+    * appl_servs_analytics
+* pup_get_pf_task
+  * поля
+    * pf_task_id - pf_task_id задачи
+    * pf_parent_id - ID надзадачи
+    * pf_project_id - ID проекта в Планфикс
+    * status - ID статуса задачи
+    * statusSet - ID набора статусов
+    * owner_user_id - ПФ ID постановщика задачи
+    * pf_owner_name - Имя постановщика задачи в Планфикс
+    * title - Название задачи
+    * is_overdued - ???
+    * start_date - Дата создания задачи
+    * general - General ID задачи, который используется в основной ссылке на задачу
+    * end_date - Дата завершения
+    * done_date - Дата, когда задача была переведена в статус выполненная
+    * complete_date - Дата, когда задача была была переведена в статус завершена
+    * updated - Дата и время, когда данные по задаче были обновлены
+    * system_edited - Был ли последний статус установлен системой
+    * auto_changes_date_end - Кол-во автоматических переносов даты завершения задачи (дедлайнов)
+    * num_minus_of_the_deadline - Кол-во попыток выписать платное напоминание за отсутствие в задаче дедлайна
+    * num_minus_of_the_workers - Кол-во попыток выписать платное напоминание за отсутствие в задаче исполнителей
+    * num_minus_status_draft - Кол-во предупреждений о том, что задача находится в статусе "Черновик"
+    * num_minus_status_declined - Кол-во предупреждений о том, что задача находится в статусе "Отклоненная"
+    * brief - Идентификатор действия добавления брифа в задачу ПФ
+    * planfix_tasks_status_check - Общее количество проверок статуса посетителем
+    * scrum_analitic  - Очки сложности по скраму
+    * planfix_tasks_template_id - ID шаблона по которому была поставлена задача
+    * planfix_tasks_delete - Была ли задача удалена
+    * id - id записи в таблице planfix_status_lists
+    * id_list - id списка статусов в таблице planfix_status_lists
+    * id_status - id статуса в таблице planfix_status_lists
+    * status_name - Статус задачи
+    * is_active - Является ли текущий статус задачи активным
+    * has_deadline - Отслеживаются (1) или не отслеживаются (0) сроки задач в этом статусе
+    * color - Цвет статуса
+    * sort - Сортировка статусов в наборе
+    * project_title - Название проекта в Планфикс
+  * таблицы
+    * planfix_tasks
+    * planfix_status_lists
+* pup_get_project_archive
+  * поля 
+    * project_archive_id - Id архивации
+    * proj_id - Id проекта, подробную информацию по проектам можно получить с помощью функции `pup_get_projects()`
+    * domain - Домен проекта
+    * service - Услуга проекта
+    * archive_date - Дата отправки в архив
+    * return_date - Дата возврата из архива
+    * archive_count - Общее количество архиваций проект услуги
+    * reanimation_pf_task_id - Id задачи в планфикс на реанимацию проект услуги, получить подробную информацию по задачам можно с помощью функции `pup_get_pf_task()`,
+    * archive_reason - Причина отправки в архив
+    * project_archive_initiate - инициатор отправки в архив
+  * таблицы
+    * project_archive
+    * archive_questionnaire
+    * archiving_reason
+    * projects
+    * services_documents
+* pup_get_project_expenses
+  * поля
+    * date - Дата за которую приведены расходы
+    * project_id - ID проекта 
+    * expenses_type - Тип трат, т.е. из какой таблицы они в базе пупа получены
+    * expense - Сумма трат в $
+  * таблицы
+    * context_expense
+    * context_profiles
+    * context_accounts
+    * context_oauth
+    * services_autoimport
+    * context_profile_history
+    * expenses
+    * expenses_type
+    * links
+    * projects_credit_partners_percent
+* pup_get_projects
+  * поля
+    * proj_id - ID проект услуги
+    * proj_pf_id - ID проекта в Планфикс
+    * project_pup_link - Ссылка на проект услугу в ПУПе
+    * Domain - Домен проекта
+    * subjects - Тематика (ниша) проекта
+    * payment_type - Тип оплаты по контрагенту данной проект услуги
+    * site_type - Тип сайта: Интернет-магазин, Портал, Сервис
+    * agency - Представительство
+    * service - Название услуги
+    * service_sphere - Название сферы
+    * client_id - Идентификатор контрагента, является ключём к данными полученным функцией `pup_get_clients()`
+    * project_date - Дата последнего старта работ, т.е. если была архивация, то будет дата последнего возвращения из архива, если архивации не было, то будет дата начала работ.
+    * start_date - Дата первого старта работа.
+    * archive_date- Дата архивации
+    * date_add - Дата создания ПУ
+    * archive_reason - Причина архивации
+    * project_status - Текущий статус проекта, активный или архивный
+    * project_class - Класс проекта, клиентский или внутренний
+    * IM - Ответвественный специалист
+    * IMTL - Team lead специалиста проекта
+    * junior_im - Junior IM из команды проекта
+    * PM - Ответвенный менеджер проекта
+    * PMTL - Team Lead менеджера
+    * junior_pm - Junior PM из команды проекта
+    * SM - Менеджер по продам, продавший данную услугу, по новому NB
+    * project_founder - Создатель ПУ
+    * pf_general_id - Номер заявки по которой зашла проект усуга, может быть ключём по полю `planfix_task_general_id`, к таблице полученной функцией `pup_get_orders()`.
+    * pf_task_link - Ссылка на задачу-заявку в Планфикс, по которой зашел проект
+    * order_date - Дата получения заявки, по которой зашел проект
+    * month_payment - Являеться ли услуга постоянной, т.е. с ежемесячной оплатой, или разовой
+    * plan_nr - Плановая стоимость работ
+    * plan_budget - Плановый бюджет на траты
+    * currency_code - Валюта бюджетов
+    * partner_budget - Плановый партнёрский бюджет
+    * total_budget - Общий бюджет проекта
+    * auto_calc_real_budget - Параметр "Как автоматически начислять планируемый валовый доход?": off – Автоматическое начисление планируемого валового дохода - выключено, plane_sr – Автоматическое начисление планируемого валового дохода, control_min_sr_commission – Автоматическое начисление планируемого валового дохода - по минимальной комиссии
+    * legal_work_scheme - Схема работы. agreement (по договору), offer (по офферте), without (не установлено)
+    * document_status - Статус документа (договора или офферты)
+    * offer_url - Ссылка на текст договора оферты, поле возвращается только если указан аргумент `with_offer_url = TRUE`
+    * offer_alias - Алиас офферты из таблицы offert, поле возвращается только если указан аргумент `with_offer_url = TRUE`
+    * offer_accepted - Принята ли оферта (оплачена), поле возвращается только если указан аргумент `with_offer_url = TRUE`
+    * offer_accepted_at - Дата принятия офферты, поле возвращается только если указан аргумент `with_offer_url = TRUE`
+    * ringostat_service_enable - Предоставляются ли услуги Рингостата
+    * ringostat_service_budget - Стоимость услуг Рингостата
+    * archive_debt_status - Статус долга архивного проекта (client - будет погашен клиентом, am - будет погашен менеджером, company - будет погашен компанией, closed - долг закрыт)
+    * result_payment - Оплата по результату? Из таблицы services_documents, что бы получить это поле используйте аргумент `we_worked_fields = TRUE` и в списке полей обязательно должно быть поле `proj_id`
+    * we_worked_sum - Сумма долга клиента в поле мы отработали (http://img.netpeak.ua/alsey/1597PV1.png), что бы получить это поле используйте аргумент `we_worked_fields = TRUE`  и в списке полей обязательно должно быть поле `proj_id`
+    * we_worked_days - К-во дней по которым сформирован долг в поле мы отработали (http://img.netpeak.ua/alsey/1597TQT.png), что бы получить это поле используйте аргумент `we_worked_fields = TRUE`  и в списке полей обязательно должно быть поле `proj_id`
+  * таблицы
+    * projects
+    * projects_second
+    * client
+    * agencies
+    * regions
+    * appl_servs
+    * services_documents
+    * works_type_group
+    * contacts
+    * client_domains_class
+    * proj_pf
+    * projects_team
+    * client_domains
+    * site_types
+    * project_archive
+    * archiving_reason
+    * payment_t_hie
+    * domain_subjects
+    * subjects
+    * client_offer_agreement
+    * proj_payment
+    * context_expense
+    * context_profiles
+    * context_accounts
+    * context_oauth
+    * services_autoimport
+    * context_profile_history
+    * expenses
+    * expenses_type
+    * links
+    * projects_credit
+* pup_get_services
+  * поля 
+    * service_id - Идентификатор услуги
+    * shortname - Краткое название услуги
+    * responsible - Ответственный по услуге
+    * archive_projects - К-во архивных проект-услуг
+    * active_projects - Количество активных проект услуг
+    * total_projects - Общее количество услуг
+    * service_sphere - К какой сфере относится услуга
+    * is_monthly - Ежемесячная оплата по услуге или разовая
+    * archive_date - Дата отправки услуги в архив
+  * таблицы
+    * services_documents
+    * contacts
+    * projects
+    * works_type_group
+* pup_get_user_info
+  * поля 
+    * username - Ник сотрудника
+    * contacts_name - Имя сотрудника
+    * contacts_surname - Фамилия сотрудника
+    * contacts_patronymic - Отчество сотрудника
+    * name_eng - Имя (англ)
+    * surname_eng - Фамилия (англ)
+    * fio - Устаревшее поле с инициалами сотрудника
+    * gender - Пол сотруника
+    * mob_phone - Номер телефона сотрудника
+    * mob_phone2 - Дополнительный номер телефона сотрудника
+    * address - Фактический адрес проживания сотрудника
+    * pup_link - Ссылка на профиль сотрудника в ПУПе
+    * staff_status - Текущий статус сотрудника
+    * dismissal_type - Тип и причина увольнения
+    * user_id - Идентификатор сотрудника в ПУПе, может использоваться ключём к другим таблицам
+    * planfix_id - Идентификатор сотрудника в Планфикс
+    * company - Компания в которой работает сотрудник
+    * department - Отдел в котором работает сотрудник
+    * role - Главная роль сотрудника в ПУПе
+    * command - Команда сотрудника
+    * position - Должность сотрудника (звено в иерархии)
+    * office - Офис к которому привязан сотрудник
+    * date_of_birth - День рождения сотрудника
+    * date_company - Дата появления в компании
+    * employment_date - Дата зачисления в штат (когда сотрудник прошел испытательный срок)
+    * date_company_out - Дата увольнения
+    * company_mail - Рабочая почта
+    * gmail_mail - Рабочая Gmail gmail
+    * home_mail - Домашняя почта
+    * contacts_telegram - Рабочий Telegram сотрудника
+    * find_user_source - Каким способом был найден сотрудник
+    * responsible_hr - Ответвенный HR
+    * vacs_link - Ссылка на задачу - вакансию
+    * day_work_hours - Количество рабочих часов в день
+    * has_rates_correction - Предусмотрена ли компенсация зарплаты по курсу валют
+    * has_payed_overtimes - Разрешена ли положительная коррекция при выписке зарплаты
+    * motivation_system_link - Ссылка на описание системы стимулирования
+    * min_guaranteed_payments - Сумма Минимально Гарантиванной Выплаты (МГВ)
+    * min_guaranteed_payments_currency - Валюта МГВ
+    * rates - Ставка
+    * currency_code - Валюта ставки
+    * salary_allocate_type - Метод распределения ЗП: Автоматический, Ручной
+    * salary_payment_type - Тип оплаты для выплат ЗП
+    * rate_actual_from - Дата с которой актуальна установленная ставка
+    * check_motivation_date - Дата, когда надо пересмотреть систему стимулирования или ставку
+    * can_salary_request - Может ли сотрудник запрашивать себе зарплату
+    * mgv_probation_size - МГВ на период испытательного срока
+    * mgv_probation_currency - Валюта МГВ на период испытательного срока
+    * min_guaranteed_payments_is_diff - Отличается ли МГВ. 0 - МГВ = ставке сотрудника (не отличается). 1 - МГВ != ставке сотрудника (отличается)
+    * mgv_expiration_date - Дата окончания действия минимальной гарантированной выплаты
+    * contacts_official_placement- Оформлен ли официально сотрудник
+    * contacts_timezone - Часовой пояс сотрудника, по умолчанию часовой пояс берётся из настроек офиса, но так же может быть определён в индивидуальном порядке на уровне сотрудника.
+    * military_status - Статус военнообязанного
+    * connected_to_military_office - Привяза ли до ТЦК
+    * military_office - ТЦК по месту оегистарции согласно Обегит Резерв+ 
+    * military_speciality - ВОС
+    * rank - Военное звание
+    * last_military_medical_check_date - Дата последней ВЛК согласно ВОД
+    * has_reason_for_deferment - Есть ли причины для отсрочки (не бронь)
+    * deferment_reason - Какая причина для отсрочки
+    * has_deferment_date_been_set - Установлена дата отсрочки у ВОД?
+    * deferment_date_end - Дата окончания отсрочки
+    * was_military_data_updated_on_time - Были ли уточнены данные до 16.07.2024 (своевременно)
+    * military_data_update_date - Дата уточнения данных
+    * military_excerpt_link - Ссылка на (PDF) выписку данных из Резерв+ или ЦНАП
+    * security_service_check_link - Ссылка на проверку ВСБ
+    * man_category - Категория мужчины
+    * criticality_from_ceo - Критичность сотрудника по оценке CEO
+    * officially_employed_by - Устроен ли официально сотрудник на ТОВ
+    * reservation_from_netpeak - Есть ли брон по ТОВ Нетпик
+    * reservation_from_netpeak_date_end - Окончание срока бронирования по ТОВ НЕтпик
+    * reservation_from_iss - Есть ли бронь по ТОВ АСС
+    * reservation_from_iss_date_end - Окончание срока бронирования по ТОВ АСС
+    * reservation_from_pdg - Есть ли бронь по ТОВ ПДГ
+    * reservation_from_pdg_date_end - Окончание срока бронирования по ТОВ ПДГ
+    * reservation_from_taf - Есть ли бронь по ТОВ ТАФ
+    * reservation_from_taf_date_end - Окончание срока бронирования по ТОВ ТАФ
+    * reservation_from_core - Есть ли бронирование по ТОВ Кор
+    * reservation_from_core_date_end - КОкончание срока бронирования по ТОВ Кор
+    * wanted - розыск
+    * commentary - Комментарий ответвенного за военный учёт
+  * таблицы
+    * contacts
+    * department
+    * roles
+    * hierarchy
+    * companies
+    * currency
+    * employee_minimal_guaranteed_payment
+    * profile_sets
+    * offices
+    * planfix_tasks
+    * payment_t_hie
+    * payment_t
+    * employee_military_accounts
+    * military_deferment_reasons
+* pup_get_user_leaders
+  * поля
+    * user_id - Идентификатор сотрудника, по которому запрашиваетс иерархия
+    * username - Ник сотрудника, по которому запрашивется иерархия
+    * position - должность сотрудника, по которому запрашивется иерархия
+    * submission - идентификатор должности руководителя в таблице hierarchy
+    * level - уровень сотрудника, по которому запрашивется иерархия
+    * functional_duties - ссылка на функциональные обязаности
+    * leader - Ник руководителя
+    * leader_user_id - идентификатор руководителя в таблице contacts
+    * leader_planfix_id - planfix_id руководителя
+    * hierarchy_level - уровень руководителя (используется для сортировки иерархии)
+  * таблицы
+    * contacts
+    * hierarchy
+* pup_get_user_official_info
+  * поля
+    * user_id - Идентификатор сотрудника
+    * username - Ник сотрудника
+    * surname - Фамилия сотрудника
+    * name Имя - сотрудника
+    * patronymic - Отчество сотрудника
+    * official_position - Название официальной должности
+    * is_official - Устроен ли сотрудник официально
+    * official_company - На какое предприятие сотрудник официально устроен
+    * official_date - Дата официального трудоустройства
+    * staff_status - Статус сотрудника
+    * date_of_birth - День рождения сотрудника
+    * gmail - Gmail почта сотрудника
+    * work_addres - Адрес офиса к которому привязан сотрудник
+    * city - Город офиса к которому привязан сотрудник
+    * inn - ИНН / Табельный номер
+    * official_salary - Официальная ставка сотрудника
+    * rate_of_full_salary - Доля от полной ставки
+  * таблицы 
+    * contacts
+    * official_information
+    * offices
+    * payment_t
+* pup_get_user_team
+  * поля
+    * pup_user_id - идентификатор сотрудника
+    * planfix_id - planfix_id сотрудника
+    * username - ник сотрудника
+    * contacts_name - Имя сотрудника
+    * contacts_surname - Фамилия сотрудника
+    * company_mail - Почта сотрудника
+    * hierarchy_id - Идентификатор позиции сотрудника в таблице иерархии
+    * submission - Используется для построения иерархии сотрудников
+    * functional_duties - функциональные обязанности
+    * level - уровень сотрудника в таблице иерархии
+    * tl_iduser - идентификатор руковдителя в пупе
+    * team_lead - ник руководителя
+    * tl_mail - почта руководителя
+    * tl_pf_userid - planfix_id руководиеля
+  * таблицы
+    * contacts
+    * hierarchy
+    * roles
+* pup_get_usertask
+  * поля
+    * username - Ник сотрудника
+    * user_id - Id сотрудника
+    * pf_task_id - планфикс ID задачи
+    * general_id - General ID задачи
+    * task_link - Ссылка на задачу
+    * title - Заголовок задачи
+    * task_status - Статус задачи
+    * pf_project_id - Id проекта в Планфикс
+    * project_title - Название проекта в Планфикс
+    * owner_user_id - Id постановщика задачи
+    * pf_owner_name - Ник постановщика задачи
+    * is_overdued - ???
+    * start_date - Дата начала
+    * end_date - Плановая дата завершения
+    * done_date - Дата перевода в статус "Выполненая"
+    * complete_date - Дата перевода задачи в статус "завершенная"
+    * planfix_tasks_template_id - Id шаблона по которому была поставлена задача
+    * template_title - название шаблона по которому была поставлена задача
+    * planfix_tasks_delete - Флаг удаления задачи
+  * таблицы
+    * planfix_usertasks
+    * contacts
+    * planfix_tasks
+    * planfix_projects
+    * planfix_status_lists
+    * planfix_template
 
 ### Примеры кода для работы с пакетом `rpup`:
 
@@ -273,7 +955,7 @@ pup_connection()
 library(rpup)
 
 # подключение к базе ПУПа
-pup_connection(hostname = '95.216.4.19')
+pup_connection(hostname = '162.55.132.205')
 
 # ищем таблицы в названии которых встречается слово payment
 pup_search_table('payment')
@@ -307,6 +989,29 @@ als_pix_teams <- pup_get_user_team(pup_user_ids = c(301, 483))
 # Получить список руководителей по указанным сотрудникам
 als_ash_dh <- pup_get_user_leaders(pup_user_ids = c(301, 460))
 ```
+
+Некоторые данные системы ПУП нельзя получить напрямую через пакет rpup, например данные о зарплате можно получить только через python модуль PyPup и пакет reticulate.
+Ниже пример того как получить данные по зарплатам:
+
+```
+library(reticulate)
+
+# подключаем модуль PyPup
+py_run_string(code = 'from alspy import PyPup')
+
+# необходимо указать ключ шифрования
+py$fin_decrypter$Encryption(py$os$getenv('КЛЮЧ ШИФРОВАНИЯ'))$set_key()
+
+# запрос данных о зарплате
+with(py$PyPup$Pup('alsey', '116.203.250.66:3320', 'projects_ndb') %as% pup, {
+      salary      <- pup$get_salary(salary_period = c(salary_date, salary_date + 60)) 
+})
+```
+
+Мы в основном работаем с клиентами по предоплате, данные об оплатах лежат в таблице client_payment, но пользователи обычно просят не оплаты а списания.
+Схема работы такая, клиент делает оплату, мы выполняем работу, после чего делаем списание средств с его счёта, это последняя операция называется снисание, и пользователи чаще хотят запросить данные именно по списаниям.
+Рассчитанные данные по списаниям лежат в урезанной базе пупа (162.55.132.205) в таблицe payment_report, сырые данные о списаниях можно найти в любой базе в таблице proj_payment.
+
 ## работа с пакетом pfworker
 
 Внутренний R пакет предназначенный для работы с ПФWorker, т.е. позволяет запрашиваьт данные из Планфикса, а также создавать в Планфикс задачи по API.
@@ -691,3 +1396,33 @@ n1_disconnect()
     * `n1_get_vacations_requests()` - Получить запросы отпускных / больничных / отгулов
 * Обновление пакета:
     * `n1::n1_update()` - Обновить пакет из корпоративного GitLab
+    
+## Поля которые возвращают  некоторые функции пакета n1
+
+* n1_get_employees
+   * nickname - Ник сотрудника
+   * first_name_en - Имя на английском
+   * last_name_en - Фамилия на английском
+   * email - Электронная почта
+   * other_name_en - Отчество на английском
+   * first_name - Имя на украинском
+   * last_name - Фамилия на украинском
+   * other_name - Отчество на украинском
+   * date_of_birth - Дата рождения
+   * country - Страна
+   * city - Город
+   * gender_pronounce - Тип обращения She / Her, He / Him
+   * telegram - Telegram сотрудника
+   * phones - Номер телефона
+   * company - Компания в которой работает сотрудник
+   * team - Команда в которой работает сотрудник
+   * job_title - Должность сотрудника
+   * employee_level - Уровень сотрудника
+   * hire_date - Дата выхода на работу
+   * employment_date - Дата прохождения испытательного срока
+   * employee_status - Статус сотрудника
+   * direct_manager - Прямой руководитель сотрудника
+   * sex - Пол сотрудник
+   * appearance_date - Дата первого рабочего дня (дата создания пользователя)
+   * work_location - Часовой пояс в котором работает сотрудник
+   * work_schedule - К-во рабочих часов

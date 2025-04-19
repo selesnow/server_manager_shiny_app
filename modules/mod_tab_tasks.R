@@ -6,6 +6,7 @@ library(glue)
 # Создаём чат для анализа Rout
 chat <- ellmer::chat_gemini(
   system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"), 
+  model = 'gemini-2.0-flash',  
   echo = 'none'
 )
 
