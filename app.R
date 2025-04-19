@@ -113,6 +113,9 @@ server <- function(input, output, session) {
           # Улучшенная вкладка "Статистика"
           mod_tab_statistic_ui("stats_tab"),
           
+          # Модуль AI разработки
+          mod_tab_ai_dev_ui("ai_dev"),
+          
           # CMD только для admin и user
           if (user_role() %in% c("admin", "user")) {
             mod_tab_cmd_ui("cmd")
@@ -247,6 +250,9 @@ server <- function(input, output, session) {
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
+
+      # Модуль разработки -------------------------------------------------------
+      mod_tab_ai_dev_server("ai_dev")
       
       # Модуль процессов
       process_data <- reactive({
