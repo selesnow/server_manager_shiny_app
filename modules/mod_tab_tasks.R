@@ -5,11 +5,7 @@ library(glue)
 
 # Создаём чат для анализа Rout
 chat <- ellmer::chat_gemini(
-  system_prompt = readLines(
-    here::here('ai_docs', 'system_prompt.md'), 
-    warn = FALSE, 
-    encoding = "UTF-8"
-    ), , 
+  system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"), 
   echo = 'none'
 )
 
