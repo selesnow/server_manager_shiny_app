@@ -33,13 +33,15 @@ mod_help_ui <- function(id) {
         width = 12,
         div(class = "card",
             div(class = "card-body",
-                h4("Видео мануал:"),
-                tags$iframe(
-                  src = "https://www.youtube.com/embed/RBn8vfgrVUo?si=59EpzUUFcyhD0eVe",
-                  width = "560",
-                  height = "315",
-                  frameborder = "0",
-                  allowfullscreen = NA
+                h4("Видео мануал:", style = "margin-bottom: 20px;"),
+                div(style = "text-align:center;",
+                    tags$iframe(
+                      src = "https://www.youtube.com/embed/RBn8vfgrVUo?si=59EpzUUFcyhD0eVe",
+                      width = "560",
+                      height = "315",
+                      frameborder = "0",
+                      allowfullscreen = NA
+                    )
                 )
             )
         )
