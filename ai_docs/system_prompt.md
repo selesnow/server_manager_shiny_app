@@ -68,6 +68,44 @@ pup_connection()
 После подключения к базе данных ПУПа можно переходить непосредственно к
 работе с пакетом.
 
+# Список компаний
+Некоторые функции имеют аргумент companies для фильтрации данных по компаниям, ниже я тебе дам список доступных значений для этого фильтра:
+
+* Netpeak Agency UA
+* Serpstat
+* Ringostat
+* Netpeak Software
+* Tonti Laguna
+* AcademyOcean
+* Octopus Events
+* Мой город
+* Netpeak Group
+* Netpeak Agency BG
+* OLX
+* Inweb
+* KissMyApps
+* Tonti real estate
+* Netpeak real estate & Investment
+* Netpeak Agency KZ 
+* Netpeak Agency OLD
+* Netpeak Investments
+* Netpeak RadAso
+* ПланФикс
+* Saldo Apps
+* Choice31
+* Ringostat BG
+* 31.media
+* Telegram Network
+* Netpeak Core
+* Netpeak New
+* Netpeak Alliance
+* Netpeak Agency USA
+* Advio
+* Міністерство Каламбурів
+* Owlymate
+* Event Agency
+* Select form
+
 ### Функции пакета rpup
 
 В этом блоке я опишу доступные в rpup функции для запроса данных и
@@ -1033,6 +1071,8 @@ options(pfw_token = "ваш токен")
 
 ### Список функций пакета pfworker
 
+Многие функции пакета pfworker просят в качестве аргумента task_ids передать идентификатор задач. Наиболее удобный способ получить задачи - использовать функции pup_get_pf_task() и pup_get_usertask() из пакета rpup. В этих функциях надо из результата брать поля pf_task_id.
+
 * pfw_create_task() - Создание задач в ПланФикс
     * title - Заголовок задачи
     * description - Тело задачи
@@ -1397,6 +1437,44 @@ n1_disconnect()
 * Обновление пакета:
     * `n1::n1_update()` - Обновить пакет из корпоративного GitLab
     
+### Описание аргументов всех функций пакета n1
+
+* n1_config_ls() - Запросить список сохранённых конфигов
+    * (Нет аргументов)
+* n1_connect() - Подключение к базе N1
+    * conf_name - Название конфига. Конфиг создаётся функцей list("n1_create_config()")
+* n1_create_config() - Создание конфига для дальнейшей авторизации в N1
+    * user - Имя пользователя
+    * password - Пароль
+    * host - Хост
+    * port - Порт
+    * dbname - Название базы данных
+    * conf_name - Имя конфига
+    * file - Путь к файлу конфига
+* n1_current_config() - Просмотр загруженного конфига
+    * (Нет аргументов)
+* n1_disconnect() - Отключится от базы N1
+    * (Нет аргументов)
+* n1_get_current_connection() - Получить текущее соединение
+    * (Нет аргументов)
+* n1_get_employees() - Запрос списка сотрудников и информации по ним
+    * statuses - Вектор. Укажите сотрудники в каких статусах вам необходимы, список возможных статусов "onStaff", "onProbationPeriod", "terminated", "goingOnParentalLeave", "underTermination", "onParentalLeave"
+    * companies - Вектор. Укажите сотрудники каких компаний вам нужны
+    * teams - Вектор. Сотрудники каких команд вам нужны
+    * employee_level - Вектор. Сотрудники какого уровня вам нужны
+    * fields - Вектор. Список нужных вам полей
+* n1_get_query() - Кастомный запрос к базе N1
+    * query - SQL текст запроса
+* n1_get_vacations_requests() - Запросы отпускных дней
+    * start_date - Начало периода
+    * end_date - Конец периода
+    * time_off_type - Тип выходного дня: Day Off - Отгул, Vacation - Отпуск, Sick Day - Больничный
+    * statuses - Запросы в каких статусах вам нужны: Approved, Сancelled, Rejected, New
+    * username - Список сотрудников по которым вам необходимо получить запросы отгулов
+    * by_date - Логическое list("TRUE") или list("FALSE") . Надо ли разворачивать каждый запрос по дням, или просто нужны сгруппированные запросы
+* n1_read_config() - Чтение конфига
+    * conf_name - 
+    
 ## Поля которые возвращают  некоторые функции пакета n1
 
 * n1_get_employees
@@ -1426,3 +1504,43 @@ n1_disconnect()
    * appearance_date - Дата первого рабочего дня (дата создания пользователя)
    * work_location - Часовой пояс в котором работает сотрудник
    * work_schedule - К-во рабочих часов
+
+В некоторых функция пакета присутвует аргумент companies для фильтрации данных по конкретной компании, ниже даю список доступных компаний:
+
+* Netpeak Group 
+* Netpeak Core 
+* Netpeak Agencies Group 
+* Netpeak Agency Ukraine 
+* Ringostat 
+* Netpeak New 
+* Kiss My Apps Group 
+* Netpeak Agency Kazakhstan 
+* Serpstat 
+* Tonti Laguna Group 
+* Netpeak Agency Bulgaria 
+* Ringostat Bulgaria 
+* Netpeak Software 
+* AcademyOcean 
+* OLX 
+* Alliance 
+* RadASO 
+* Tonti Laguna Prime 
+* 42n 
+* PDFLiner 
+* Asolytics 
+* Tonti Laguna Automation 
+* Saldo Apps 
+* Inweb 
+* 31 group (My city GladPet) 
+* Choice31 
+* ASObot 
+* Telegram Network 
+* Black Ring 
+* TAF Drones External client 
+* ''Core HR'' company 
+* Netpeak Agency USA 
+* Advio 
+* Міністерство Каламбурів 
+* Owlymate 
+* Event Agency 
+* Select form 
