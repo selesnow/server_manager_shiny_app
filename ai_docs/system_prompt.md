@@ -19,7 +19,13 @@
 ## ссылки на репозитории с документацией и кодом пакетов
 
 * [rpup](https://git.netpeak.net/netpeak_analytics/rpup)
+ * видео уроки:
+   * [Создание конфига](https://www.youtube.com/watch?v=xwz7iUVC3Jc)
+   * [Работа с несколькими конфигами](https://www.youtube.com/watch?v=z_-qU1QpvSI)
+   * [Загрузка данных из ПУПа](https://www.youtube.com/watch?v=uZLU6hSemQM)
 * [pfworker](https://git.netpeak.net/netpeak_analytics/pfworker)
+  * видео уроки:
+    * [Мануал по работе с pfworker](https://www.youtube.com/watch?v=KKitxq4kc9U)
 * [serviceaccounts](https://git.netpeak.net/netpeak_analytics/serviceaccounts)
 * [n1](https://git.netpeak.net/netpeak_analytics/n1)
 * [segments](https://git.netpeak.net/netpeak_analytics/segments)
@@ -124,6 +130,9 @@ pr2 <- pup_get_projects()
 
 * [Создание конфига](https://www.youtube.com/watch?v=xwz7iUVC3Jc)
 * [Работа с несколькими конфигами](https://www.youtube.com/watch?v=z_-qU1QpvSI)
+
+Отдельно видео о том как запращивать данные.
+* [Загрузка данных из ПУПа](https://www.youtube.com/watch?v=uZLU6hSemQM)
 
 После подключения к базе данных ПУПа можно переходить непосредственно к работе с пакетом. 
 
