@@ -2,6 +2,7 @@
 library(googlesheets4)
 library(googledrive)
 library(glue)
+library(shinyjs) # Убедитесь, что эта библиотека подключена в вашем приложении
 
 # Создаём чат для анализа Rout
 chat <- ellmer::chat_gemini(
@@ -16,6 +17,23 @@ mod_tab_tasks_ui <- function(id) {
   
   tabPanel(
     title = "Задачи",
+    # Подключаем shinyjs
+    shinyjs::useShinyjs(),
+    
+    # Стили для поиска
+    tags$head(
+      tags$style(HTML("
+        .highlight {
+          background-color: yellow;
+          color: black;
+        }
+        .current-highlight {
+          background-color: orange !important;
+          color: black;
+          font-weight: bold;
+        }
+      "))
+    ),
     
     # Первый вертикальный блок - фильтры и управление задачами
     fluidRow(
@@ -25,7 +43,6 @@ mod_tab_tasks_ui <- function(id) {
             div(class = "card-header", "Фильтры и управление задачами"),
             div(class = "card-body",
                 fluidRow(
-                  # Блок с фильтрами
                   column(
                     width = 2,
                     div(class = "mb-3", 
@@ -33,10 +50,9 @@ mod_tab_tasks_ui <- function(id) {
                         uiOutput(ns("author_filter")),
                         uiOutput(ns("runas_filter")),
                         uiOutput(ns("last_result_filter")),
-                        uiOutput(ns("client_filter")) # Добавляем фильтр по клиенту
+                        uiOutput(ns("client_filter"))
                     )
                   ),
-                  # Блок с управлением задачами
                   column(
                     width = 5,
                     div(class = "mb-3",
@@ -46,9 +62,9 @@ mod_tab_tasks_ui <- function(id) {
                             uiOutput(ns("run_button")),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                             actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info"),
+                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
                             actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
                         ),
-                        # Добавляем блок информации о задаче
                         div(class = "card mt-3", id = ns("task_info_card"),
                             div(class = "card-header", "Информация о задаче"),
                             div(class = "card-body",
@@ -67,7 +83,6 @@ mod_tab_tasks_ui <- function(id) {
       )
     ),
     
-    # Блок с выводом README - заменяем div на uiOutput
     fluidRow(
       column(
         width = 12,
@@ -75,7 +90,6 @@ mod_tab_tasks_ui <- function(id) {
       )
     ),
     
-    # Таблица задач
     fluidRow(
       column(
         width = 12,
@@ -100,6 +114,125 @@ mod_tab_tasks_ui <- function(id) {
 mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
+    
+    # Код для подсветки текста и поиска - более простая реализация
+    search_js <- "
+    function initScriptSearch() {
+      // Получить элементы
+      var searchInput = document.getElementById('%s-script_search_term');
+      var scriptContent = document.getElementById('%s-task_script_content');
+      var nextBtn = document.getElementById('%s-search_next');
+      var prevBtn = document.getElementById('%s-search_prev');
+      
+      if (!searchInput || !scriptContent) return;
+      
+      var matches = [];
+      var currentMatchIndex = -1;
+      
+      // Функция подсветки
+      function highlightMatches() {
+        // Получить текст скрипта и запрос поиска
+        var scriptText = scriptContent.innerText || scriptContent.textContent;
+        var searchText = searchInput.value.trim();
+        
+        // Если поиск пустой - очищаем подсветку
+        if (!searchText) {
+          scriptContent.innerHTML = '<pre>' + scriptText + '</pre>';
+          matches = [];
+          currentMatchIndex = -1;
+          return;
+        }
+        
+        // Создаем регулярное выражение для поиска
+        try {
+          var regex = new RegExp(searchText, 'gi');
+          var match;
+          var lastIndex = 0;
+          var highlightedText = '';
+          matches = [];
+          
+          // Заменяем текст на подсвеченный
+          while ((match = regex.exec(scriptText)) !== null) {
+            highlightedText += scriptText.substring(lastIndex, match.index);
+            highlightedText += '<span class=\"highlight\">' + match[0] + '</span>';
+            lastIndex = regex.lastIndex;
+            matches.push(match.index);
+          }
+          
+          // Добавляем оставшийся текст
+          highlightedText += scriptText.substring(lastIndex);
+          
+          // Обновляем контент с подсветкой
+          scriptContent.innerHTML = '<pre>' + highlightedText + '</pre>';
+          
+          // Сбрасываем индекс текущего совпадения
+          currentMatchIndex = -1;
+          
+          // Если есть совпадения, переходим к первому
+          if (matches.length > 0) {
+            navigateToMatch(1);
+          }
+        } catch (e) {
+          console.error('Error in regex search:', e);
+        }
+      }
+      
+      // Функция для перехода к совпадению
+      function navigateToMatch(direction) {
+        if (matches.length === 0) return;
+        
+        // Обновляем индекс текущего совпадения
+        currentMatchIndex += direction;
+        if (currentMatchIndex >= matches.length) currentMatchIndex = 0;
+        if (currentMatchIndex < 0) currentMatchIndex = matches.length - 1;
+        
+        // Находим все подсвеченные элементы
+        var highlightElements = scriptContent.querySelectorAll('.highlight');
+        
+        // Убираем класс текущего выделения со всех элементов
+        highlightElements.forEach(function(el) {
+          el.classList.remove('current-highlight');
+        });
+        
+        // Добавляем класс текущего выделения к нужному элементу
+        highlightElements[currentMatchIndex].classList.add('current-highlight');
+        
+        // Прокручиваем к элементу
+        highlightElements[currentMatchIndex].scrollIntoView({
+          behavior: 'smooth', 
+          block: 'center'
+        });
+      }
+      
+      // Добавляем обработчики событий
+      searchInput.addEventListener('input', highlightMatches);
+      
+      if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+          navigateToMatch(1);
+        });
+      }
+      
+      if (prevBtn) {
+        prevBtn.addEventListener('click', function() {
+          navigateToMatch(-1);
+        });
+      }
+      
+      console.log('Script search initialized successfully');
+    }
+    
+    // Запускаем инициализацию при загрузке вкладки
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initScriptSearch, 500);
+    });
+    
+    // Добавляем функцию для вызова из R
+    window.reinitScriptSearch = function() {
+      console.log('Reinitializing script search...');
+      setTimeout(initScriptSearch, 500);
+    };
+    "
     
     output$task_log_markdown <- renderUI({
       # По умолчанию пустой блок
@@ -214,6 +347,22 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                       class = "light-mode-log",
                       uiOutput(ns("task_log_markdown"))
                     )
+                  ),
+                  tabPanel(
+                    title = tagList(icon("code"), "Скрипт"),
+                    value = "script",
+                    fluidRow(
+                      column(8, textInput(ns("script_search_term"), label = NULL, placeholder = "Поиск в коде...")),
+                      column(2, actionButton(ns("search_prev"), label = "↑", class = "btn-secondary")),
+                      column(2, actionButton(ns("search_next"), label = "↓", class = "btn-secondary"))
+                    ),
+                    tags$div(
+                      style = "background-color: #1f1f1f; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      verbatimTextOutput(ns("task_script_content")),
+                      # Инлайновый JavaScript
+                      tags$script(HTML(sprintf(search_js, ns(""), ns(""), ns(""), ns(""))))
+                    )
                   )
                 )
             )
@@ -224,6 +373,14 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     # Добавляем реактивные значения для управления видимостью карточек
     show_log_card <- reactiveVal(FALSE)
     show_readme_card <- reactiveVal(FALSE)
+    
+    # Следим за изменениями вкладки
+    observeEvent(input$log_tabs, {
+      if (input$log_tabs == "script") {
+        # Запускаем JavaScript-функцию для инициализации поиска
+        shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
+      }
+    })
     
     # Рендерим карточку с README
     output$readme_card <- renderUI({
@@ -276,6 +433,36 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         }
       } else {
         showNotification("Задача не найдена", type = "error")
+      }
+    })
+    
+    # Обработчик кнопки "Код"
+    observeEvent(input$view_script, {
+      req(input$selected_task)
+      selected_task_data <- all_tasks_reactive() %>% filter(TaskName == input$selected_task)
+      
+      if (nrow(selected_task_data) > 0) {
+        task_to_run <- selected_task_data$`Task To Run`
+        start_in    <- selected_task_data$`Start In`
+        
+        if (!is.null(task_to_run) && !is.null(start_in)) {
+          script_content <- try(find_script(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+          
+          if (inherits(script_content, "try-error") || is.null(script_content)) {
+            output$task_script_content <- renderText({ "Ошибка при чтении скрипта" })
+          } else {
+            output$task_script_content <- renderText({ script_content })
+          }
+          
+          output$log_task_name <- renderText({ paste("Скрипт задачи:", input$selected_task) })
+          show_log_card(TRUE)
+          updateTabsetPanel(session, "log_tabs", selected = "script")
+          
+          # Инициализация JavaScript для поиска после загрузки скрипта
+          shinyjs::delay(500, {
+            shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
+          })
+        }
       }
     })
     
@@ -416,7 +603,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
             log_cut <- substr(log_content, 
                               max(1, nchar(log_content) - 29999), 
                               nchar(log_content))
-                              
+            
             # Сообщение в чат Gemini
             out <- chat$chat(
               glue::glue(
@@ -446,7 +633,16 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       } else {
         showNotification("Задача не найдена", type = "error")
       }
-    }) 
+    })
+    
+    # Обработчики поиска для кнопок
+    observeEvent(input$search_next, {
+      shinyjs::runjs("if(window.reinitScriptSearch) { window.navigateToNext(); }")
+    })
+    
+    observeEvent(input$search_prev, {
+      shinyjs::runjs("if(window.reinitScriptSearch) { window.navigateToPrev(); }")
+    })
     
   })
 }
