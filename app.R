@@ -85,7 +85,10 @@ server <- function(input, output, session) {
         
         # Используем правильную структуру заголовка без встроенных стилей
         titlePanel(
-          title = str_glue("{yaml::read_yaml(here::here('app_info.yml'))$name} v{yaml::read_yaml(here::here('app_info.yml'))$version}"),
+          title = tagList(
+            tags$img(src = "favicon.png", height = "30px", style = "vertical-align: middle; margin-right: 10px;"),
+            str_glue("{yaml::read_yaml(here::here('app_info.yml'))$name} v{yaml::read_yaml(here::here('app_info.yml'))$version}")
+          ),
           windowTitle = "Server Manager"
         ),
         

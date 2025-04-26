@@ -54,6 +54,7 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
           div(class = "login-container",
               fluidRow(
                 column(12, class = "form-container",
+                       tags$img(src = "favicon.png", height = "50px", style = "display: block; margin: 0 auto 20px;"),
                        tags$h2(id = "title-panel", "Авторизация"),
                        textInput(ns("login"), "Логин"),
                        passwordInput(ns("password"), "Пароль"),
