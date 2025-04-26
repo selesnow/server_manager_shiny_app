@@ -18,6 +18,13 @@ mod_tab_tasks_ui <- function(id) {
   
   tabPanel(
     title = "Задачи",
+    tags$head(
+      # highlight.js css
+      tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"),
+      # highlight.js js
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"),
+      tags$script("hljs.highlightAll();")
+    ),
     
     # Первый вертикальный блок - фильтры и управление задачами
     fluidRow(
@@ -219,9 +226,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                     title = tagList(icon("code"), "Скрипт"),
                     value = "script",
                     tags$div(
-                      style = "background-color: #1f1f1f; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
                       class = "light-mode-log",
-                      verbatimTextOutput(ns("task_script_content")),
+                      uiOutput(ns("task_script_markdown"))
                     )
                   ),
                   tabPanel(
@@ -242,6 +249,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     # Добавляем реактивные значения для управления видимостью карточек
     show_log_card <- reactiveVal(FALSE)
     show_readme_card <- reactiveVal(FALSE)
+    script_content_reactive <- reactiveVal(NULL)
     
     # Следим за изменениями вкладки
     observeEvent(input$log_tabs, {
@@ -308,7 +316,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     # Обработчик кнопки "Код"
     observeEvent(input$view_script, {
       req(input$selected_task)
-      selected_task_data <- all_tasks_reactive() %>% filter(TaskName == input$selected_task)
+      
+      selected_task_data <- all_tasks_reactive() %>% 
+        filter(TaskName == input$selected_task)
       
       if (nrow(selected_task_data) > 0) {
         task_to_run <- selected_task_data$`Task To Run`
@@ -318,19 +328,31 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           script_content <- try(find_script(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
           
           if (inherits(script_content, "try-error") || is.null(script_content)) {
-            output$task_script_content <- renderText({ "Ошибка при чтении скрипта" })
+            script_content_reactive("Ошибка при чтении скрипта")
           } else {
-            output$task_script_content <- renderText({ script_content })
+            script_content_reactive(script_content)
           }
           
           output$log_task_name <- renderText({ paste("Скрипт задачи:", input$selected_task) })
           show_log_card(TRUE)
           updateTabsetPanel(session, "log_tabs", selected = "script")
           
-          # Инициализация JavaScript для поиска после загрузки скрипта
-          shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
+          # Реинициализация подсветки кода через highlight.js
+          shinyjs::runjs("setTimeout(function() { hljs.highlightAll(); }, 500);")
         }
       }
+    })
+    
+    # Рендер скрипта на вкладке "Скрипт"
+    output$task_script_markdown <- renderUI({
+      req(script_content_reactive())
+      
+      script_text <- script_content_reactive()
+      
+      HTML(markdown::markdownToHTML(
+        text = paste0("```r\n", script_text, "\n```"),
+        fragment.only = TRUE
+      ))
     })
     
     # Обработчик кнопки "README"
