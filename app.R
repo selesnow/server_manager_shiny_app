@@ -273,6 +273,8 @@ server <- function(input, output, session) {
         chat_append("simple_chat", stream)
       })
       
+      chat_append("simple_chat", "Привет, в этом чате я буду помогать тебе писать код с использованием корпоративных пакетов rpup, n1, pfworker, serviceaccounts и alspy, а так же помогать исправлять ошибки в твоих скриптах.")
+      
       # Модуль процессов
       process_data <- reactive({
         get_processes()
