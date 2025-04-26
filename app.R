@@ -360,5 +360,5 @@ server <- function(input, output, session) {
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
   shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
 } else {
-  shinyApp(ui, server, options = list(port = 81))
+  shinyApp(ui, server, options = list(port = 8080))
 }
