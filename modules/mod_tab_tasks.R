@@ -12,28 +12,12 @@ chat <- ellmer::chat_gemini(
 )
 
 # UI часть модуля
+# UI часть модуля
 mod_tab_tasks_ui <- function(id) {
   ns <- NS(id)
   
   tabPanel(
     title = "Задачи",
-    # Подключаем shinyjs
-    shinyjs::useShinyjs(),
-    
-    # Стили для поиска
-    tags$head(
-      tags$style(HTML("
-        .highlight {
-          background-color: yellow;
-          color: black;
-        }
-        .current-highlight {
-          background-color: orange !important;
-          color: black;
-          font-weight: bold;
-        }
-      "))
-    ),
     
     # Первый вертикальный блок - фильтры и управление задачами
     fluidRow(
@@ -62,8 +46,8 @@ mod_tab_tasks_ui <- function(id) {
                             uiOutput(ns("run_button")),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                             actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info"),
-                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
-                            actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
+                            actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info"),
+                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info")
                         ),
                         div(class = "card mt-3", id = ns("task_info_card"),
                             div(class = "card-header", "Информация о задаче"),
@@ -115,124 +99,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # Код для подсветки текста и поиска - более простая реализация
-    search_js <- "
-    function initScriptSearch() {
-      // Получить элементы
-      var searchInput = document.getElementById('%s-script_search_term');
-      var scriptContent = document.getElementById('%s-task_script_content');
-      var nextBtn = document.getElementById('%s-search_next');
-      var prevBtn = document.getElementById('%s-search_prev');
-      
-      if (!searchInput || !scriptContent) return;
-      
-      var matches = [];
-      var currentMatchIndex = -1;
-      
-      // Функция подсветки
-      function highlightMatches() {
-        // Получить текст скрипта и запрос поиска
-        var scriptText = scriptContent.innerText || scriptContent.textContent;
-        var searchText = searchInput.value.trim();
-        
-        // Если поиск пустой - очищаем подсветку
-        if (!searchText) {
-          scriptContent.innerHTML = '<pre>' + scriptText + '</pre>';
-          matches = [];
-          currentMatchIndex = -1;
-          return;
-        }
-        
-        // Создаем регулярное выражение для поиска
-        try {
-          var regex = new RegExp(searchText, 'gi');
-          var match;
-          var lastIndex = 0;
-          var highlightedText = '';
-          matches = [];
-          
-          // Заменяем текст на подсвеченный
-          while ((match = regex.exec(scriptText)) !== null) {
-            highlightedText += scriptText.substring(lastIndex, match.index);
-            highlightedText += '<span class=\"highlight\">' + match[0] + '</span>';
-            lastIndex = regex.lastIndex;
-            matches.push(match.index);
-          }
-          
-          // Добавляем оставшийся текст
-          highlightedText += scriptText.substring(lastIndex);
-          
-          // Обновляем контент с подсветкой
-          scriptContent.innerHTML = '<pre>' + highlightedText + '</pre>';
-          
-          // Сбрасываем индекс текущего совпадения
-          currentMatchIndex = -1;
-          
-          // Если есть совпадения, переходим к первому
-          if (matches.length > 0) {
-            navigateToMatch(1);
-          }
-        } catch (e) {
-          console.error('Error in regex search:', e);
-        }
-      }
-      
-      // Функция для перехода к совпадению
-      function navigateToMatch(direction) {
-        if (matches.length === 0) return;
-        
-        // Обновляем индекс текущего совпадения
-        currentMatchIndex += direction;
-        if (currentMatchIndex >= matches.length) currentMatchIndex = 0;
-        if (currentMatchIndex < 0) currentMatchIndex = matches.length - 1;
-        
-        // Находим все подсвеченные элементы
-        var highlightElements = scriptContent.querySelectorAll('.highlight');
-        
-        // Убираем класс текущего выделения со всех элементов
-        highlightElements.forEach(function(el) {
-          el.classList.remove('current-highlight');
-        });
-        
-        // Добавляем класс текущего выделения к нужному элементу
-        highlightElements[currentMatchIndex].classList.add('current-highlight');
-        
-        // Прокручиваем к элементу
-        highlightElements[currentMatchIndex].scrollIntoView({
-          behavior: 'smooth', 
-          block: 'center'
-        });
-      }
-      
-      // Добавляем обработчики событий
-      searchInput.addEventListener('input', highlightMatches);
-      
-      if (nextBtn) {
-        nextBtn.addEventListener('click', function() {
-          navigateToMatch(1);
-        });
-      }
-      
-      if (prevBtn) {
-        prevBtn.addEventListener('click', function() {
-          navigateToMatch(-1);
-        });
-      }
-      
-      console.log('Script search initialized successfully');
-    }
-    
-    // Запускаем инициализацию при загрузке вкладки
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(initScriptSearch, 500);
-    });
-    
-    // Добавляем функцию для вызова из R
-    window.reinitScriptSearch = function() {
-      console.log('Reinitializing script search...');
-      setTimeout(initScriptSearch, 500);
-    };
-    "
     
     output$task_log_markdown <- renderUI({
       # По умолчанию пустой блок
@@ -351,17 +217,10 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                   tabPanel(
                     title = tagList(icon("code"), "Скрипт"),
                     value = "script",
-                    fluidRow(
-                      column(8, textInput(ns("script_search_term"), label = NULL, placeholder = "Поиск в коде...")),
-                      column(2, actionButton(ns("search_prev"), label = "↑", class = "btn-secondary")),
-                      column(2, actionButton(ns("search_next"), label = "↓", class = "btn-secondary"))
-                    ),
                     tags$div(
                       style = "background-color: #1f1f1f; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
                       class = "light-mode-log",
                       verbatimTextOutput(ns("task_script_content")),
-                      # Инлайновый JavaScript
-                      tags$script(HTML(sprintf(search_js, ns(""), ns(""), ns(""), ns(""))))
                     )
                   )
                 )
@@ -459,9 +318,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           updateTabsetPanel(session, "log_tabs", selected = "script")
           
           # Инициализация JavaScript для поиска после загрузки скрипта
-          shinyjs::delay(500, {
-            shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
-          })
+          shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
         }
       }
     })
@@ -633,15 +490,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       } else {
         showNotification("Задача не найдена", type = "error")
       }
-    })
-    
-    # Обработчики поиска для кнопок
-    observeEvent(input$search_next, {
-      shinyjs::runjs("if(window.reinitScriptSearch) { window.navigateToNext(); }")
-    })
-    
-    observeEvent(input$search_prev, {
-      shinyjs::runjs("if(window.reinitScriptSearch) { window.navigateToPrev(); }")
     })
     
   })
