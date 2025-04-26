@@ -266,14 +266,13 @@ server <- function(input, output, session) {
         model = 'gemini-2.0-flash',  
         echo  = 'none'
       )
-      
+
       observeEvent(input$simple_chat_user_input, {
         message("Получен ввод:", input$simple_chat_user_input)
         stream <- dev_chat$stream_async(input$simple_chat_user_input)
         chat_append("simple_chat", stream)
       })
       
-      chat_append("simple_chat", "Привет, в этом чате я буду помогать тебе писать код с использованием корпоративных пакетов rpup, n1, pfworker, serviceaccounts и alspy, а так же помогать исправлять ошибки в твоих скриптах.")
       
       # Модуль процессов
       process_data <- reactive({
@@ -344,5 +343,5 @@ server <- function(input, output, session) {
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
   shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
 } else {
-  shinyApp(ui, server, options = list(port = 8080))
+  shinyApp(ui, server, options = list(port = 81))
 }

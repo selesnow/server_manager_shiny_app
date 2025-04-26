@@ -46,8 +46,9 @@ mod_tab_tasks_ui <- function(id) {
                             uiOutput(ns("run_button")),
                             actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                             actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info"),
-                            actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info"),
-                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info")
+                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
+                            actionButton(ns("analyze_script"), "Объясни код", icon = icon("lightbulb"), class = "btn-info"),
+                            actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
                         ),
                         div(class = "card mt-3", id = ns("task_info_card"),
                             div(class = "card-header", "Информация о задаче"),
@@ -221,6 +222,15 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                       style = "background-color: #1f1f1f; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
                       class = "light-mode-log",
                       verbatimTextOutput(ns("task_script_content")),
+                    )
+                  ),
+                  tabPanel(
+                    title = tagList(icon("lightbulb"), "Анализ кода"),
+                    value = "script_analysis",
+                    tags$div(
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      uiOutput(ns("task_script_analysis"))
                     )
                   )
                 )
@@ -483,6 +493,62 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
             
             show_log_card(TRUE)
             updateTabsetPanel(session, "log_tabs", selected = "analysis")
+          }
+        } else {
+          showNotification("Не удалось найти данные для задачи", type = "error")
+        }
+      } else {
+        showNotification("Задача не найдена", type = "error")
+      }
+    })
+    
+    # Анализ R кода
+    observeEvent(input$analyze_script, {
+      req(input$selected_task)
+      
+      selected_task_data <- all_tasks_reactive() %>% 
+        filter(TaskName == input$selected_task)
+      
+      if (nrow(selected_task_data) > 0) {
+        task_to_run <- selected_task_data$`Task To Run`
+        start_in    <- selected_task_data$`Start In`
+        
+        if (!is.null(task_to_run) && !is.null(start_in)) {
+          script_content <- try(find_script(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+          
+          if (inherits(script_content, "try-error") || is.null(script_content)) {
+            output$task_script_analysis <- renderUI({ 
+              HTML("<p>Ошибка при чтении скрипта</p>") 
+            })
+          } else {
+            
+            cat('Начинал анализ R кода')
+            
+            # Отправляем скрипт в чат Gemini
+            out <- chat$chat(
+              glue::glue(
+                'Ниже я тебе отправлю текст скрипта на языке R.\n',
+                'Твоя задача: подробно объяснить, что делает этот скрипт.\n',
+                'При аналтзе R кода используй документацию о корпоративных пакетах, которую я тебе предоставил.',
+                'Если в коде есть ошибки или места для оптимизации — напиши об этом в конце.\n\n',
+                'Ответ начинай с саммари - пошагового оиснаия алгоритма работы скрипта, ',
+                'т.е. по шагам объясни какие дейтвия выполняются,',
+                'Не трать много времени на анализ кода, твоя задача просто объяснить что он делает.',
+                '## Текст скрипта\n\n',
+                '{script_content}'
+              ),
+              echo = FALSE
+            )
+            
+            # Выводим результат как HTML с поддержкой markdown
+            output$task_script_analysis <- renderUI({ 
+              HTML(markdown::markdownToHTML(text = out, fragment.only = TRUE)) 
+            })
+            
+            output$log_task_name <- renderText({ paste("Скрипт задачи:", input$selected_task) })
+            
+            show_log_card(TRUE)
+            updateTabsetPanel(session, "log_tabs", selected = "script_analysis")
           }
         } else {
           showNotification("Не удалось найти данные для задачи", type = "error")
