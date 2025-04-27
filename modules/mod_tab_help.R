@@ -36,7 +36,7 @@ mod_help_ui <- function(id) {
                 h4("Видео мануал:", style = "margin-bottom: 20px;"),
                 div(style = "text-align:center;",
                     tags$iframe(
-                      src = "https://www.youtube.com/embed/RBn8vfgrVUo?si=59EpzUUFcyhD0eVe",
+                      src = "https://www.youtube.com/embed/Io25a8W6Gz8?si=tOFC7-ykzkldtPzW",
                       width = "560",
                       height = "315",
                       frameborder = "0",
