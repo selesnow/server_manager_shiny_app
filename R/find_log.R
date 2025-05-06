@@ -98,11 +98,19 @@ find_log <- function(task_to_run = '', start_in = NULL) {
       return(rout_file)
     }
   }
+
+  # Попытка найти лог-файл другими способами, с явной обработкой ошибок
+  log_fallback <- tryCatch(
+    {
+      read_log_files(start_in)
+    },
+    error = function(e) {
+      str_glue("Не удалось прочитать лог. Возможно, проблема с кодировкой или повреждённый файл.\n\nОшибка: {e$message}")
+    }
+  )
   
-  print('I am here, look 1')
-  try(return(read_log_files(start_in)))
-  print('I am here, look 2')
-  return('Лог не найден!')
+  return(log_fallback)
+
 }
 
 # дополнительный поиск файлов
@@ -118,7 +126,7 @@ read_log_files <- function(start_in, patterns = c("*.log", "*.txt"), recursive =
   files_info <- file.info(files)
   newest_file <- rownames(files_info)[which.max(files_info$mtime)]
   
-  log_ctn <- readLines(newest_file, warn = FALSE, encoding = '1251') %>% str_c(collapse = '\n')
+  log_ctn <- readLines(newest_file, warn = FALSE) %>% str_c(collapse = '\n')
   log_header  <- format_file_info(files)
   
   str_c(log_header,
