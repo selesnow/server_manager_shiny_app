@@ -62,63 +62,77 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
       waiter_hide()
     })
     
-    observe({
-      data <- processes()
-      updateSelectInput(session, "filter_username", choices = unique(data$username))
-      updateSelectInput(session, "filter_name", choices = unique(data$name))
-      updateSelectInput(session, "filter_client", choices = unique(data$client))
-    })
-    
-    observe({
+    # Реактивка для фильтрации файлов — зависит от других фильтров
+    processes_filtered_for_files <- reactive({
       data <- processes()
       
-      if (!is.null(input$filter_username)) {
+      if (!is.null(input$filter_username) && length(input$filter_username) > 0) {
         data <- data[data$username %in% input$filter_username, ]
       }
-      if (!is.null(input$filter_name)) {
+      if (!is.null(input$filter_name) && length(input$filter_name) > 0) {
         data <- data[data$name %in% input$filter_name, ]
       }
-      if (!is.null(input$filter_client)) {
+      if (!is.null(input$filter_client) && length(input$filter_client) > 0) {
         data <- data[data$client %in% input$filter_client, ]
       }
-      if (!is.null(input$filter_dir)) {
-        data <- data[data$dir %in% input$filter_dir, ]
-      }
-      
-      updateSelectInput(session, "filter_dir", choices = unique(data$dir))
-      updateSelectInput(session, "filter_files", choices = unique(data$files))
-    })
-    
-    filtered_processes <- reactive({
-      data <- processes()
-      
-      if (!is.null(input$filter_username)) {
-        data <- data[data$username %in% input$filter_username, ]
-      }
-      if (!is.null(input$filter_name)) {
-        data <- data[data$name %in% input$filter_name, ]
-      }
-      if (!is.null(input$filter_client)) {
-        data <- data[data$client %in% input$filter_client, ]
-      }
-      if (!is.null(input$filter_dir)) {
+      if (!is.null(input$filter_dir) && length(input$filter_dir) > 0) {
         data <- data[data$dir %in% input$filter_dir, ]
       }
       
       data
     })
     
+    # Окончательная таблица — применяем все фильтры
+    filtered_processes <- reactive({
+      data <- processes_filtered_for_files()
+      
+      if (!is.null(input$filter_files) && nzchar(input$filter_files)) {
+        data <- data[data$files == input$filter_files, ]
+      }
+      
+      data
+    })
+    
+    # Автообновление фильтров и автоустановка "файла"
+    observe({
+      all_data <- processes()
+      filtered_data <- processes_filtered_for_files()
+      
+      updateSelectInput(session, "filter_username", choices = sort(unique(all_data$username)), selected = isolate(input$filter_username))
+      updateSelectInput(session, "filter_name", choices = sort(unique(all_data$name)), selected = isolate(input$filter_name))
+      updateSelectInput(session, "filter_client", choices = sort(unique(all_data$client)), selected = isolate(input$filter_client))
+      updateSelectInput(session, "filter_dir", choices = sort(unique(all_data$dir)), selected = isolate(input$filter_dir))
+      
+      # Обновление filter_files с автосменой selected
+      files_choices <- sort(unique(filtered_data$files))
+      selected_file <- isolate(input$filter_files)
+      
+      if (length(files_choices) > 0) {
+        if (is.null(selected_file) || !(selected_file %in% files_choices)) {
+          selected_file <- files_choices[1]
+        }
+      } else {
+        selected_file <- ""
+      }
+      
+      updateSelectInput(session, "filter_files", choices = files_choices, selected = selected_file)
+    })
+    
     output$process_table <- renderDT({
-      datatable(filtered_processes(), filter = "top", options = list(pageLength = 25, scrollX = TRUE))
+      datatable(
+        filtered_processes(),
+        filter = "top",
+        options = list(pageLength = 25, scrollX = TRUE)
+      )
     })
     
     observeEvent(input$kill_process, {
       req(input$filter_files)
       
       data <- processes()
-      target_pids <- data %>% 
-        filter(files == input$filter_files) %>% 
-        pull(pid) %>% 
+      target_pids <- data %>%
+        filter(files == input$filter_files) %>%
+        pull(pid) %>%
         unique()
       
       for (pid in target_pids) {
@@ -134,3 +148,5 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     })
   })
 }
+
+
