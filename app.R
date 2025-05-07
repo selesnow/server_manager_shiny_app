@@ -1,3 +1,7 @@
+# options
+options(httr_config = httr::config(timeout = 9000, connecttimeout = 9000))
+
+# library
 library(shiny)
 library(shinyjs)
 library(shinychat)
