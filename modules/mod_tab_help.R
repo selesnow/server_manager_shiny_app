@@ -28,6 +28,7 @@ mod_help_ui <- function(id) {
       )
     ),
     
+    # Видео мануал
     fluidRow(
       column(
         width = 12,
@@ -48,7 +49,57 @@ mod_help_ui <- function(id) {
       )
     ),
     
-    # Блок с README.md
+    # Установка сертификата
+    fluidRow(
+      column(
+        width = 12,
+        div(class = "card",
+            div(class = "card-body",
+                h4("Установка SSL-сертификата", style = "margin-bottom: 20px;"),
+                HTML("
+                  <p>Для безопасного подключения к приложению используется самоподписанный сертификат <code>server.crt</code>.</p>
+                  <p>Его необходимо установить на ваше устройство, чтобы избежать предупреждений о небезопасном соединении.</p>
+                  <p><b>Скачать сертификат:</b> <a href='server.crt' download>server.crt</a></p>
+                  <p>Видеоинструкции по установке сертификата:</p>
+                "),
+                div(style = "display: flex; justify-content: space-around; flex-wrap: wrap;",
+                    tags$div(
+                      tags$h5("Windows", style = "text-align:center;"),
+                      tags$iframe(
+                        src = "https://www.youtube.com/embed/Zi1PggpUO1k",
+                        width = "300",
+                        height = "170",
+                        frameborder = "0",
+                        allowfullscreen = NA
+                      )
+                    ),
+                    tags$div(
+                      tags$h5("Android", style = "text-align:center;"),
+                      tags$iframe(
+                        src = "https://www.youtube.com/embed/S0A01beKRGU",
+                        width = "300",
+                        height = "170",
+                        frameborder = "0",
+                        allowfullscreen = NA
+                      )
+                    ),
+                    tags$div(
+                      tags$h5("MacOS", style = "text-align:center;"),
+                      tags$iframe(
+                        src = "https://www.youtube.com/embed/urOmsDIgQR4",
+                        width = "300",
+                        height = "170",
+                        frameborder = "0",
+                        allowfullscreen = NA
+                      )
+                    )
+                )
+            )
+        )
+      )
+    ),
+    
+    # README.md
     fluidRow(
       column(
         width = 12,
