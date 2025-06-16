@@ -2030,6 +2030,7 @@ n1_disconnect()
    * employee_level - Уровень сотрудника
    * hire_date - Дата выхода на работу
    * employment_date - Дата прохождения испытательного срока
+   * fired_date - Дата увольнения
    * employee_status - Статус сотрудника
    * direct_manager - Прямой руководитель сотрудника
    * sex - Пол сотрудник
@@ -2070,7 +2071,7 @@ n1_disconnect()
 * Telegram Network 
 * Black Ring 
 * TAF Drones External client 
-* ''Core HR'' company 
+* 'Core HR' company 
 * Netpeak Agency USA 
 * Advio 
 * Міністерство Каламбурів 
