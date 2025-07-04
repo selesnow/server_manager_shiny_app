@@ -1,5 +1,8 @@
 # options
-options(httr_config = httr::config(timeout = 9000, connecttimeout = 9000))
+options(
+  httr_config = httr::config(timeout = 9000, connecttimeout = 9000),
+  ellmer_timeout_s = 600
+  )
 
 # library
 library(shiny)
@@ -282,7 +285,7 @@ server <- function(input, output, session) {
       
       # Модуль AI чата - добавлен напрямую в код (вне модулей)
       # Создаем чат с системным промптом
-      dev_chat <- ellmer::chat_gemini(
+      dev_chat <- ellmer::chat_google_gemini(
         system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"),
         model = 'gemini-2.0-flash',  
         echo  = 'none'
