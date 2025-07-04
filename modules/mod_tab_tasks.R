@@ -2,60 +2,69 @@
 library(googlesheets4)
 library(googledrive)
 library(glue)
-library(shinyjs) # Убедитесь, что эта библиотека подключена в вашем приложении
+library(shinyjs)
+library(DT)
+library(dplyr)
 
 # Создаём чат для анализа Rout
 chat <- ellmer::chat_gemini(
-  system_prompt = paste(readLines(here::here('ai_docs', 'system_prompt.md')), collapse = "\n"), 
-  model = 'gemini-2.0-flash',  
-  echo = 'none'
+  system_prompt = paste(readLines(here::here("ai_docs", "system_prompt.md")), collapse = "\n"),
+  model = "gemini-2.0-flash",
+  echo  = "none"
 )
 
-# UI часть модуля
-# UI часть модуля
+# ─────────────────────────── UI ────────────────────────────
 mod_tab_tasks_ui <- function(id) {
   ns <- NS(id)
   
   tabPanel(
     title = "Задачи",
     tags$head(
-      # highlight.js css
-      tags$link(rel = "stylesheet", href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"),
-      # highlight.js js
+      tags$link(rel = "stylesheet",
+                href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"),
       tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"),
       tags$script("hljs.highlightAll();")
     ),
     
-    # Первый вертикальный блок - фильтры и управление задачами
+    # ----- Блок фильтров и управления -----
     fluidRow(
       column(
         width = 12,
-        div(class = "card", 
+        div(class = "card",
             div(class = "card-header", "Фильтры и управление задачами"),
             div(class = "card-body",
                 fluidRow(
+                  # ----------- ФИЛЬТРЫ -----------
                   column(
                     width = 2,
-                    div(class = "mb-3", 
+                    div(class = "mb-3",
                         h4("Фильтры задач"),
                         uiOutput(ns("author_filter")),
                         uiOutput(ns("runas_filter")),
                         uiOutput(ns("last_result_filter")),
-                        uiOutput(ns("client_filter"))
+                        uiOutput(ns("client_filter")),
+                        uiOutput(ns("task_state_filter"))  # 👈 новый фильтр
                     )
                   ),
+                  # --------- Управление ----------
                   column(
                     width = 5,
                     div(class = "mb-3",
                         h4("Управление задачами"),
-                        selectInput(ns("selected_task"), "Выберите задачу:", choices = NULL, width = '750px'),
+                        selectInput(ns("selected_task"), "Выберите задачу:",
+                                    choices = NULL, width = "750px"),
                         div(class = "action-buttons",
                             uiOutput(ns("run_button")),
-                            actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
-                            actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info"),
-                            actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
-                            actionButton(ns("analyze_script"), "Объясни код", icon = icon("lightbulb"), class = "btn-info"),
-                            actionButton(ns("view_task_readme"), "README", icon = icon("file-alt"), class = "btn-info")
+                            actionButton(ns("view_task_logs"),  "Логи",
+                                         icon = icon("file-alt"),  class = "btn-info"),
+                            actionButton(ns("analyze_log"),     "Анализ Rout",
+                                         icon = icon("brain"),     class = "btn-info"),
+                            actionButton(ns("view_script"),     "Код",
+                                         icon = icon("code"),      class = "btn-info"),
+                            actionButton(ns("analyze_script"),  "Объясни код",
+                                         icon = icon("lightbulb"), class = "btn-info"),
+                            actionButton(ns("view_task_readme"), "README",
+                                         icon = icon("file-alt"),   class = "btn-info")
                         ),
                         div(class = "card mt-3", id = ns("task_info_card"),
                             div(class = "card-header", "Информация о задаче"),
@@ -65,23 +74,18 @@ mod_tab_tasks_ui <- function(id) {
                         )
                     )
                   ),
-                  column(
-                    width = 5,
-                    uiOutput(ns("log_card"))
-                  )
+                  # ---------- Логи / анализ ----------
+                  column(width = 5, uiOutput(ns("log_card")))
                 )
             )
         )
       )
     ),
     
-    fluidRow(
-      column(
-        width = 12,
-        uiOutput(ns("readme_card"))
-      )
-    ),
+    # README
+    fluidRow(column(12, uiOutput(ns("readme_card")))),
     
+    # ----- Таблица задач -----
     fluidRow(
       column(
         width = 12,
@@ -89,11 +93,10 @@ mod_tab_tasks_ui <- function(id) {
             div(class = "card-header", "Задачи"),
             div(class = "card-body",
                 DTOutput(ns("task_table")),
-                tagList(
-                  div(class = "mt-3",
-                      actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets", class = "btn btn-success"),
-                      uiOutput(ns("open_gs_btn")) 
-                  )
+                div(class = "mt-3",
+                    actionButton(ns("upload_to_gs"), "Выгрузить в Google Sheets",
+                                 class = "btn btn-success"),
+                    uiOutput(ns("open_gs_btn"))
                 )
             )
         )
@@ -102,91 +105,105 @@ mod_tab_tasks_ui <- function(id) {
   )
 }
 
-# Серверная часть модуля
+# ─────────────────────── SERVER ────────────────────────────
 mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
   moduleServer(id, function(input, output, session) {
+    
     ns <- session$ns
     
-    
-    output$task_log_markdown <- renderUI({
-      # По умолчанию пустой блок
-      HTML("")
-    })
-    
+    # ────────── Реактивы ──────────
     sheet_url <- reactiveVal(NULL)
-    log_content_type <- reactiveVal("text") 
+    log_content_type <- reactiveVal("text")
+    show_log_card   <- reactiveVal(FALSE)
+    show_readme_card <- reactiveVal(FALSE)
+    script_content_reactive <- reactiveVal(NULL)
     
-    # Реактивные значения
+    # --- Главная реактивка с учётом всех фильтров ---
     task_data <- reactive({
       req(all_tasks_reactive())
       task <- all_tasks_reactive()
       
-      if (!is.null(input$filter_author)) {
+      if (!is.null(input$filter_author))
         task <- task %>% filter(Author %in% input$filter_author)
-      }
-      if (!is.null(input$filter_runas)) {
+      if (!is.null(input$filter_runas))
         task <- task %>% filter(`Run As User` %in% input$filter_runas)
-      }
-      if (!is.null(input$filter_last_result)) {
+      if (!is.null(input$filter_last_result))
         task <- task %>% filter(`Last Result` %in% input$filter_last_result)
-      }
-      if (!is.null(input$filter_client)) {
+      if (!is.null(input$filter_client))
         task <- task %>% filter(Client %in% input$filter_client)
-      }
+      if (!is.null(input$filter_task_state))
+        task <- task %>% filter(`Scheduled Task State` %in% input$filter_task_state)
       
       task
     })
     
-    filtered_task_names <- reactive({
-      task_data()$TaskName
-    })
-    
+    # Для selectInput задач
     observe({
-      updateSelectInput(session, "selected_task", choices = filtered_task_names())
+      updateSelectInput(session, "selected_task",
+                        choices = task_data()$TaskName)
     })
     
-    # Фильтры
+    # ──────────── UI‑фильтры ────────────
     output$author_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_author"), "Author:", choices = unique(all_tasks_reactive()$Author), multiple = TRUE)
+      selectInput(ns("filter_author"), "Author:",
+                  choices = sort(unique(all_tasks_reactive()$Author)),
+                  multiple = TRUE)
     })
     
     output$runas_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_runas"), "Run As User:", choices = unique(all_tasks_reactive()$`Run As User`), multiple = TRUE)
+      selectInput(ns("filter_runas"), "Run As User:",
+                  choices = sort(unique(all_tasks_reactive()$`Run As User`)),
+                  multiple = TRUE)
     })
     
     output$last_result_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_last_result"), "Last Result:", choices = unique(all_tasks_reactive()$`Last Result`), multiple = TRUE)
+      selectInput(ns("filter_last_result"), "Last Result:",
+                  choices = sort(unique(all_tasks_reactive()$`Last Result`)),
+                  multiple = TRUE)
     })
     
     output$client_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_client"), "Client:", choices = unique(all_tasks_reactive()$Client), multiple = TRUE)
+      selectInput(ns("filter_client"), "Client:",
+                  choices = sort(unique(all_tasks_reactive()$Client)),
+                  multiple = TRUE)
     })
     
-    # Таблица задач
-    filtered_task_data <- reactive({
-      data <- task_data()
+    # ---------- НОВЫЙ фильтр Scheduled Task State ----------
+    output$task_state_filter <- renderUI({
+      req(all_tasks_reactive())
+      states <- sort(unique(all_tasks_reactive()$`Scheduled Task State`))
+      # по умолчанию Enabled, если есть
+      default_sel <- if ("Enabled" %in% states) "Enabled" else NULL
       
-      if (!is.null(input$task_search) && input$task_search != "") {
-        search_term <- tolower(input$task_search)
-        data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
-      }
-      
-      return(data)
+      selectInput(ns("filter_task_state"), "Scheduled Task State:",
+                  choices   = states,
+                  multiple  = TRUE,
+                  selected  = default_sel)
     })
     
+    # ───── Таблица с поиском по всем столбцам ─────
     output$task_table <- renderDT({
-      datatable(filtered_task_data(), filter = "top", options = list(pageLength = 25, scrollX = TRUE))
+      datatable(task_data(),
+                filter   = "top",
+                options  = list(pageLength = 25, scrollX = TRUE))
     })
     
-    # Запуск задачи
+    # ───────────── КНОПКИ и обработчики ─────────────
+    output$run_button <- renderUI({
+      if (user_role() %in% c("admin", "user"))
+        actionButton(ns("run_task"), "Запустить",
+                     icon = icon("play"), class = "btn-success")
+    })
+    
     observeEvent(input$run_task, {
       req(input$selected_task)
       taskscheduler_runnow(taskname = input$selected_task)
-      showNotification(str_glue("Задача '{input$selected_task}' запущена."), type = "message")
+      showNotification(glue("Задача '{input$selected_task}' запущена."),
+                       type = "message")
     })
     
     output$run_button <- renderUI({
@@ -402,7 +419,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       req(input$selected_task)
       all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task) %>%
-        select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`)
+        select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`, `Scheduled Task State`)
     })
     
     # Рендерим информацию о выбранной задаче
@@ -415,6 +432,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         div(
           div(class = "mb-2", strong("Автор: "), span(task$Author)),
           div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
+          div(class = "mb-2", strong("Статус задачи: "), span(task$`Scheduled Task State`)),
           div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
           div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
           div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),

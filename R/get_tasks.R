@@ -16,7 +16,6 @@ get_tasks <- function() {
       `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
-    filter(`Scheduled Task State` == "Enabled") %>% 
     mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
     rowwise() %>% 
     mutate(

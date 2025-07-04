@@ -8,6 +8,7 @@
 get_client_stats <- function(tasks) {
   
   tasks <- tasks %>%
+    filter(`Scheduled Task State` == "Enabled") %>% 
     select(TaskName, Client, Author, `New Structure`) %>% 
     unique()
   
