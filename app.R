@@ -26,7 +26,7 @@ library(ellmer)
 library(bslib)
 
 # Загрузка вспомогательных функций
-for(fun in dir(here::here("R"))) source(here::here("R", fun))
+for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
 
 # Загрузка модулей
 for(mod in dir(here::here("modules"))) source(here::here("modules", mod))
@@ -290,6 +290,15 @@ server <- function(input, output, session) {
         model = 'gemini-2.0-flash',  
         echo  = 'none'
       )
+      
+      # Добавляем боту инструментарий для поиска логов по задачам
+      dev_chat$register_tool(tool(
+        get_task_data,
+        "Получить текст лога выполнения скрипта по названию задачи из планировщика заданий Windows",
+        task_name = type_string(
+          "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
+        )
+      ))
 
       observeEvent(input$simple_chat_user_input, {
         message("Получен ввод:", input$simple_chat_user_input)
