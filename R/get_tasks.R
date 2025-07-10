@@ -62,6 +62,12 @@ get_tasks <- function() {
         `Last Result` == "-1073741502" ~ "Ошибка: сбой при инициализации DLL (-1073741502)",
         .default = str_glue("Ошибка (код {`Last Result`})")
       )
+    ) %>%
+    group_by(across(-c(`Start Time`, `Start Date`))) %>%
+    summarise(
+      `Start Times` = str_c(unique(`Start Time`), collapse = ", "),
+      `Start Dates` = str_c(unique(`Start Date`), collapse = ", "),
+      .groups = "drop"
     )
   
 }
