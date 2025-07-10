@@ -1,14 +1,11 @@
-#' Поиск лога выполнения R скрипта по названию задачи из планировщика
-#' @details
-#' Используется только AI ассистентом для работы по логам задач
-#' 
+#' Поиск листинга скрипта по названию задачи из планировщика
 #'
 #' @param task_name Путь и название задачи в планировщике заданий Windows
 #'
 #' @returns Текст лога выполнения скрипта
 #' @export
 #'
-get_task_data <- function(task_name) {
+get_task_script <- function(task_name) {
   
   tasks <- get_tasks() %>% 
     filter(TaskName == task_name) %>% 
@@ -19,7 +16,7 @@ get_task_data <- function(task_name) {
     return('Задача не найдена')
   } 
   
-  task_log <- find_log(tasks$`Task To Run`, start_in = tasks$`Start In`)
+  task_log <- find_script(tasks$`Task To Run`, start_in = tasks$`Start In`)
   
   return(task_log)
   
