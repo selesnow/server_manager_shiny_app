@@ -2,7 +2,7 @@
 #'
 #' @param task_name Путь и название задачи в планировщике заданий Windows
 #'
-#' @returns Текст лога выполнения скрипта
+#' @returns Листинг кода скрипта
 #' @export
 #'
 get_task_script <- function(task_name) {
