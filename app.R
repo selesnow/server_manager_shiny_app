@@ -344,6 +344,18 @@ server <- function(input, output, session) {
           "Название задачи из планировщика заданий Windows которую надо запустить на сервере."
         )
       ))
+      
+      # Добавляем инструмент для активации и деактивации задач в планировщике заданий Windows
+      dev_chat$register_tool(tool(
+        task_state_change,
+        "Активировать (включать) и деактивировать (выключать) залачи в планировщике заданий Windows, изменяет параметр Scheduled Task State.",
+        task_name = type_string(
+          "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
+        ),
+        action = type_string(
+          "Какое действие надо выполнить с задачей, Enable - активировать (включить) задачу, Disable - деактивировать (отключить) заадчу."
+        )
+      ))
 
       observeEvent(input$simple_chat_user_input, {
         message("Получен ввод:", input$simple_chat_user_input)
