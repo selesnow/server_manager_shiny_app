@@ -33,6 +33,7 @@ update_code:
     - rpup_pak_updater
   script:
     - cd C:\scripts\alsey\netpeak_core\nc_analytics_team\shiny_task_service_manager
+    - powershell -Command "Get-ChildItem -Path . -Filter 'desktop.ini' -Recurse -Force -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue"
     - git -c safe.directory="*" reset --hard
     - git -c safe.directory="*" pull origin master
   only:
