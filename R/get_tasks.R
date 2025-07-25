@@ -8,6 +8,7 @@ get_tasks <- function() {
   analysts_team <- dept::dp_get_team()
   analysts <- names(analysts_team)
   analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
+  responsibles <- configr::read.config(here::here(r"(C:\scripts\alsey\netpeak_core\nc_analytics_team\task_scheduler_checker\config.cfg)"), rcmd.parse = TRUE)$responsibles
   
   taskscheduler_ls(fill = TRUE) %>%
     mutate(
@@ -68,6 +69,7 @@ get_tasks <- function() {
       `Start Times` = str_c(unique(`Start Time`), collapse = ", "),
       `Start Dates` = str_c(unique(`Start Date`), collapse = ", "),
       .groups = "drop"
-    )
-  
+    ) %>% 
+    mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]]))
+
 }

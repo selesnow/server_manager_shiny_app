@@ -41,9 +41,10 @@ mod_tab_tasks_ui <- function(id) {
                         h4("Фильтры задач"),
                         uiOutput(ns("author_filter")),
                         uiOutput(ns("runas_filter")),
+                        uiOutput(ns("responsible_filter")),
                         uiOutput(ns("last_result_filter")),
                         uiOutput(ns("client_filter")),
-                        uiOutput(ns("task_state_filter"))  # 👈 новый фильтр
+                        uiOutput(ns("task_state_filter")) 
                     )
                   ),
                   # --------- Управление ----------
@@ -129,6 +130,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         task <- task %>% filter(`Run As User` %in% input$filter_runas)
       if (!is.null(input$filter_last_result))
         task <- task %>% filter(`Last Result` %in% input$filter_last_result)
+      if (!is.null(input$filter_responsible))
+        task <- task %>% filter(`Responsible` %in% input$filter_responsible)
       if (!is.null(input$filter_client))
         task <- task %>% filter(Client %in% input$filter_client)
       if (!is.null(input$filter_task_state))
@@ -155,6 +158,13 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       req(all_tasks_reactive())
       selectInput(ns("filter_runas"), "Run As User:",
                   choices = sort(unique(all_tasks_reactive()$`Run As User`)),
+                  multiple = TRUE)
+    })
+    
+    output$responsible_filter <- renderUI({
+      req(all_tasks_reactive())
+      selectInput(ns("filter_responsible"), "Responsible:",
+                  choices = sort(unique(all_tasks_reactive()$`Responsible`)),
                   multiple = TRUE)
     })
     
@@ -419,7 +429,18 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       req(input$selected_task)
       all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task) %>%
-        select(TaskName, Author, `Run As User`, `Start In`, `Task To Run`, Client, Comment, `Last Run Time`, `Last Result`, `Scheduled Task State`)
+        select(
+          TaskName, 
+          Author, 
+          `Run As User`, 
+          `Start In`, 
+          `Task To Run`, 
+          Client, 
+          Comment, 
+          `Last Run Time`, 
+          `Last Result`, 
+          `Scheduled Task State`,
+          Responsible)
     })
     
     # Рендерим информацию о выбранной задаче
@@ -432,6 +453,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         div(
           div(class = "mb-2", strong("Автор: "), span(task$Author)),
           div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
+          div(class = "mb-2", strong("Ответственный: "), span(task$`Responsible`)),
           div(class = "mb-2", strong("Статус задачи: "), span(task$`Scheduled Task State`)),
           div(class = "mb-2", strong("Директория: "), span(task$`Start In`)),
           div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
