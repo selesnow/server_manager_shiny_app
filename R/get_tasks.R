@@ -12,7 +12,7 @@ get_tasks <- function() {
   taskscheduler_ls(fill = TRUE) %>%
     mutate(
       `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
-      Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|"),
+      Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
       `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
