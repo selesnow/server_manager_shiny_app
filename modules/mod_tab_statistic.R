@@ -115,6 +115,7 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     output$task_info_plot <- renderPlot({
       dbReadTable(con, "task_info_daily") %>% 
         mutate(log_time = str_sub(log_time, 1, 10) %>% as.Date()) %>% 
+        filter(author != "Microsoft Visual Studio") %>%
         summarise(failed_tasks = n_distinct(task_name), .by = log_time) %>% 
         filter(between(log_time, Sys.Date() - 90, Sys.Date())) %>% 
         ggplot(aes(x = log_time, y = failed_tasks)) + 
