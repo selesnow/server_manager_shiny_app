@@ -1006,6 +1006,7 @@ pr2 <- pup_get_projects()
     * contacts_telegram - Рабочий Telegram сотрудника
     * find_user_source - Каким способом был найден сотрудник
     * responsible_hr - Ответвенный HR
+    * must_checkin - Должен ли сотрудник чекиниться в ПУПе
     * vacs_link - Ссылка на задачу - вакансию
     * day_work_hours - Количество рабочих часов в день
     * has_rates_correction - Предусмотрена ли компенсация зарплаты по курсу валют
