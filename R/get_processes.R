@@ -4,6 +4,7 @@ get_processes <- function() {
   analysts <- names(analysts_team)
   analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
   
+  retry::retry({
   ps::ps() %>% 
     filter(name %in% c('Rterm.exe', 'R.exe', 'python.exe')) %>% 
     rowwise() %>% 
@@ -33,5 +34,8 @@ get_processes <- function() {
     ) %>% 
     ungroup() %>% 
     filter(str_detect(tolower(username), analyst_filter)) 
+  }, 
+  when = 'No such process'
+  )
   
 }

@@ -451,6 +451,11 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       if(nrow(task_info) > 0) {
         task <- task_info[1, ]
         div(
+          div(class = "mb-2",
+              strong("Название: "),
+              span(id = ns("task_name_text"), input$selected_task, style = "cursor: pointer;"),
+              actionButton(ns("copy_task_name"), label = NULL, icon = icon("copy"), class = "btn btn-sm btn-outline-secondary", style = "margin-left: 5px;")
+          ),
           div(class = "mb-2", strong("Автор: "), span(task$Author)),
           div(class = "mb-2", strong("Запускается от имени: "), span(task$`Run As User`)),
           div(class = "mb-2", strong("Ответственный: "), span(task$`Responsible`)),
@@ -465,6 +470,18 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       } else {
         div("Информация недоступна")
       }
+    })
+    
+    # копирование название задачи
+    observeEvent(input$copy_task_name, {
+      task_name_escaped <- gsub("\\\\", "\\\\\\\\", input$selected_task)
+      js_code <- sprintf("navigator.clipboard.writeText('%s')", task_name_escaped)
+      shinyjs::runjs(js_code)
+      showNotification("Название задачи скопировано", type = "message")
+    })
+    
+    observeEvent(input$task_name_copied, {
+      showNotification("Название задачи скопировано", type = "message")
     })
     
     # Показываем информацию при выборе задачи
