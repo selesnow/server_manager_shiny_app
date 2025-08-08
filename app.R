@@ -299,7 +299,12 @@ server <- function(input, output, session) {
       )
       
       # добавление ассистенту инструментов
-      #source(here::here('ai_tools', 'ai_tools.R'))
+      dev_chat$register_tool(tool(
+        Sys.Date,
+        name = "get_current_date",
+        description = "Получить сегодняшнюю дату, поможет при запросе данных за текущий спринт, или запросе расчётов по юнит экономике за текущий месяц"
+      ))
+
       # Получить текст лога выполнения скрипта по названию задачи
       dev_chat$register_tool(tool(
         get_task_log,
