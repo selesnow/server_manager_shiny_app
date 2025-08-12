@@ -367,6 +367,18 @@ server <- function(input, output, session) {
         )
       ))
       
+      # Получить данные по задаче из Планфикс
+      dev_chat$register_tool(tool(
+        find_pf_task_data,
+        name = "find_pf_task_data",
+        description = "Получить данные о задаче из Планфикс, описание задачи хранится в поле description. Данные возвращаются в JSON формате.",
+        arguments = list(
+          task_link = type_string(
+            "Ссылка на задачу в Планфикс."
+          )
+        )
+      ))
+      
       # Активировать или деактивировать задачу
       dev_chat$register_tool(tool(
         task_state_change,
