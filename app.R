@@ -125,7 +125,7 @@ server <- function(input, output, session) {
           
           # Модуль AI разработки
           tabPanel(
-            "AI разработка",
+            "AI Ассистент",
             bslib::page_fluid(
               div(class = "stats-description",
                 HTML(glue::glue(
@@ -190,6 +190,17 @@ server <- function(input, output, session) {
             }
           "))
         ),
+        
+        tags$script(HTML("
+          (function waitForChat() {
+            var el = document.getElementById('simple_chat');
+            if (el) {
+              Shiny.setInputValue('simple_chat_ready', true, {priority: 'event'});
+            } else {
+              setTimeout(waitForChat, 150);
+            }
+          })();
+        ")),
         
         # JavaScript для переключения темной/светлой темы
         tags$script(HTML("
@@ -415,13 +426,19 @@ server <- function(input, output, session) {
           date_to = type_string("Конечная дата периода расчёта в формате YYYY-MM-DD.")
         )
       ))
+      
+      # после создания dev_chat и после всех register_tool
+      observeEvent(input$simple_chat_ready, {
+        req(input$simple_chat_ready)
+        chat_append("simple_chat", "👋 Привет, чем могу тебе сегодня помочь?")
+      }, once = TRUE)
+      
 
       observeEvent(input$simple_chat_user_input, {
         message("Получен ввод:", input$simple_chat_user_input)
         stream <- dev_chat$stream_async(input$simple_chat_user_input)
         chat_append("simple_chat", stream)
       })
-      
       
       # Модуль процессов
       process_data <- reactive({
@@ -486,7 +503,6 @@ server <- function(input, output, session) {
     showNotification("Данные успешно обновлены", type = "message", duration = 3)
     
   })
-  
 }
 
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {

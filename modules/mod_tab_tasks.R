@@ -490,6 +490,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     })
     
     # Кнопка выгрузки в докс
+    filtered_task_data <- reactive({
+      data <- task_data()
+      
+      if (!is.null(input$task_search) && input$task_search != "") {
+        search_term <- tolower(input$task_search)
+        data <- data[apply(data, 1, function(row) any(grepl(search_term, tolower(row), fixed = TRUE))), ]
+      }
+      
+      return(data)
+    })
+    
     observeEvent(input$upload_to_gs, {
       req(filtered_task_data())
       
