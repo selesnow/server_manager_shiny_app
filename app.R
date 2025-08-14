@@ -154,7 +154,7 @@ server <- function(input, output, session) {
                    <li>Выводить информацию по юнит экономике за любой месяц</li>",
                   "</ul>"
                   )
-                ),
+                  ),
               ),
               chat_ui("simple_chat")
             )
