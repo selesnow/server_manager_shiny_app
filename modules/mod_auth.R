@@ -10,6 +10,9 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
+    # подхватываем логин пользователя
+    user <- reactiveVal(NULL)
+    
     output$auth_ui <- renderUI({
       if (!logged_in()) {
         fluidPage(
@@ -72,9 +75,18 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
       if (!is.null(res)) {
         logged_in(TRUE)
         user_role(res$role[1])
+        
+        # Сохраняем только login (и raw row если нужно)
+        user(list(
+          login = input$login
+        ))
+        
       } else {
         output$login_message <- renderText("Неверный логин или пароль")
       }
     })
+    
+    return(list(user = user))
+    
   })
 }

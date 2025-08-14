@@ -22,6 +22,7 @@ library(purrr)
 library(ps)
 library(tidyr)
 library(waiter)
+library(later)
 library(ellmer)
 library(bslib)
 
@@ -69,7 +70,8 @@ server <- function(input, output, session) {
   user_role <- reactiveVal(NULL)
   
   # Модуль авторизации
-  mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
+  #mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
+  auth <- mod_auth_server("auth", logged_in, user_role, check_user)
   
   # UI для основного контента
   output$app_ui <- renderUI({
@@ -427,12 +429,20 @@ server <- function(input, output, session) {
         )
       ))
       
-      # после создания dev_chat и после всех register_tool
+      # Приветвенное сообщение в чате
       observeEvent(input$simple_chat_ready, {
         req(input$simple_chat_ready)
-        chat_append("simple_chat", "👋 Привет, чем могу тебе сегодня помочь?")
+        # быстрый вариант: сразу пробуем взять логин из модуля
+        usr <- auth$user()
+        if (!is.null(usr) && !is.null(usr$login) && nzchar(usr$login)) {
+          chat_append(
+            "simple_chat", 
+            paste0("👋 Привет, <b>", snakecase::to_title_case(usr$login), 
+                   "</b>!<Br><Br>Я умею писать код для работы со всеми внутренними источниками данных, такими как ПУП, N1, Планфикс, умею работать со скриптами на сервере аналитики, а так же запрашивать информацию о задачах из Планфикс.<Br><Br>Чем могу тебе помочь?")
+            )
+          return()
+        }
       }, once = TRUE)
-      
 
       observeEvent(input$simple_chat_user_input, {
         message("Получен ввод:", input$simple_chat_user_input)
