@@ -9,7 +9,7 @@ find_pf_task_data <- function(task_link) {
   rpup::pup_set_config_name('replica.cfg')
   rpup::pup_connection()
   pf_task_data <- rpup::pup_get_pf_task(
-    '2024-09-08',
+    '2014-09-08',
     general_ids = str_extract(task_link, '\\d+')
     )
   
