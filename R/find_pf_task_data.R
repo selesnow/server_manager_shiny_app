@@ -14,7 +14,7 @@ find_pf_task_data <- function(task_link) {
     )
   
   if (nrow(pf_task_data) > 0) {
-    task_info <- pfworker::pfw_get_tasks(pf_task_data$pf_task_id)
+    task_info <- pfworker::pfw_get_tasks(pf_task_data$pf_task_id, raw_result = TRUE)
     return(jsonlite::toJSON(task_info, pretty = T, auto_unbox = T))
   } else {
     return('Данные по указанной задаче не найдены!')
