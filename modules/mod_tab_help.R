@@ -31,19 +31,40 @@ mod_help_ui <- function(id) {
     # Видео мануал
     fluidRow(
       column(
-        width = 12,
+        width = 6,
         div(class = "card",
             div(class = "card-body",
-                h4("Видео мануал:", style = "margin-bottom: 20px;"),
-                div(style = "text-align:center;",
-                    tags$iframe(
-                      src = "https://www.youtube.com/embed/Io25a8W6Gz8?si=tOFC7-ykzkldtPzW",
-                      width = "560",
-                      height = "315",
-                      frameborder = "0",
-                      allowfullscreen = NA
-                    )
-                )
+                h5("Общий мануал по приложению", style = "margin-bottom: 15px;"),
+                tags$div(
+                  class = "video-container",
+                  style = "position:relative; width:100%; padding-bottom:56.25%; height:0; overflow:hidden;",
+                  tags$iframe(
+                    src = "https://www.youtube.com/embed/Io25a8W6Gz8?si=tOFC7-ykzkldtPzW",
+                    style = "position:absolute; top:0; left:0; width:100%; height:100%; border:0;",
+                    allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                    allowfullscreen = NA
+                  )
+                ),
+                p("Краткий обзор базового функционала приложения.", style = "text-align:center; margin-top: 10px;")
+            )
+        )
+      ),
+      column(
+        width = 6,
+        div(class = "card",
+            div(class = "card-body",
+                h5("AI-ассистент в приложении", style = "margin-bottom: 15px;"),
+                tags$div(
+                  class = "video-container",
+                  style = "position:relative; width:100%; padding-bottom:56.25%; height:0; overflow:hidden;",
+                  tags$iframe(
+                    src = "https://www.youtube.com/embed/sQRPMJYIxMA?si=bjsXC1JOTqeeYzHJ",
+                    style = "position:absolute; top:0; left:0; width:100%; height:100%; border:0;",
+                    allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+                    allowfullscreen = NA
+                  )
+                ),
+                p("Подробный разбор возможностей встроенного AI-помощника.", style = "text-align:center; margin-top: 10px;")
             )
         )
       )
