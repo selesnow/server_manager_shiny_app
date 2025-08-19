@@ -33,7 +33,8 @@ get_processes <- function() {
       )
     ) %>% 
     ungroup() %>% 
-    filter(str_detect(tolower(username), analyst_filter)) 
+    filter(str_detect(tolower(username), analyst_filter)) %>% 
+    mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
   }, 
   when = 'No such process'
   )

@@ -72,6 +72,7 @@ get_tasks <- function() {
       `Start Dates` = str_c(unique(`Start Date`), collapse = ", "),
       .groups = "drop"
     ) %>% 
-    mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]]))
+    mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]])) %>% 
+    mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
 
 }

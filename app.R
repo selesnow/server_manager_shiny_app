@@ -25,6 +25,10 @@ library(waiter)
 library(later)
 library(ellmer)
 library(bslib)
+library(promises)
+library(future)
+
+plan(multisession)
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
@@ -251,28 +255,17 @@ server <- function(input, output, session) {
     user_role(NULL)
   })
   
-  # Инфо по задачам
+  # Инфо по задачам, процессам и службам
   all_tasks <- reactiveVal(NULL)
+  services_store <- reactiveVal(NULL)
+  processes_store <- reactiveVal(NULL)
   
   # Добавляем реактивное значение для отслеживания обновлений
   refresh_trigger <- reactiveVal(0)
   
   # Модифицируем реактивное значение services_data, чтобы оно зависело от refresh_trigger
   services_data <- reactive({
-    waiter_show(
-      html = HTML(paste(
-        spin_fading_circles(),
-        br(),
-        h4("Загрузка служб...")
-      )),
-      color = "#333"
-    )
-    # Это заставит services_data пересчитываться каждый раз при изменении refresh_trigger
-    refresh_trigger()
-    services <- get_services()
-    #waiter_hide()
-    return(services)
-    
+    services_store()
   })
   
   # Основная логика приложения, запускается после логина
@@ -297,7 +290,56 @@ server <- function(input, output, session) {
           )),
           color = "#333"
         )
-        all_tasks(get_tasks())
+        # показываем общий лоадер интерфейса
+        waiter_show(
+          html = HTML(paste(spin_fading_circles(), br(), h4("Загрузка интерфейса..."))),
+          color = "#333"
+        )
+        
+        # параллельные запросы
+        p_tasks    <- future_promise({ get_tasks() })
+        p_services <- future_promise({ get_services() })
+        p_process  <- future_promise({ get_processes() })
+        
+        # обновляем хранилища по мере готовности (UI не блокируется)
+        p_tasks %...>% (function(x) {
+          all_tasks(x)
+          showNotification("Задачи загружены", type = "message", duration = 2)
+        }) %...!% (function(e) {
+          showNotification(paste("Ошибка загрузки задач:", conditionMessage(e)), type = "error", duration = 6)
+        })
+        
+        p_services %...>% (function(x) {
+          services_store(x)
+          showNotification("Службы загружены", type = "message", duration = 2)
+        }) %...!% (function(e) {
+          showNotification(paste("Ошибка загрузки служб:", conditionMessage(e)), type = "error", duration = 6)
+        })
+        
+        p_process %...>% (function(x) {
+          processes_store(x)
+          showNotification("Процессы загружены", type = "message", duration = 2)
+        }) %...!% (function(e) {
+          showNotification(paste("Ошибка загрузки процессов:", conditionMessage(e)), type = "error", duration = 6)
+        })
+        
+        # как только всё трое завершатся — прячем общий лоадер
+        promise_all(
+          tasks = p_tasks,
+          services = p_services,
+          processes = p_process
+        ) %...>% with({
+          # Этот блок выполняется когда всё завершено
+          all_tasks(tasks)
+          services_store(services)
+          processes_store(processes)
+          waiter_hide()
+          showNotification("Все данные загружены", type = "message", duration = 3)
+        }) %...!% (function(e) {
+          waiter_hide()
+          showNotification(paste("Ошибка общей загрузки:", conditionMessage(e)), type = "error", duration = 6)
+        })
+        
         #waiter_hide()
       })
       
@@ -459,11 +501,12 @@ server <- function(input, output, session) {
       
       # Модуль процессов
       process_data <- reactive({
-        get_processes()
+        processes_store()
       })
       
       #mod_tab_processes_server("processes_tab", process_data)
-      mod_tab_processes_server("processes_tab", refresh_trigger = refresh_trigger)
+      #mod_tab_processes_server("processes_tab", refresh_trigger = refresh_trigger)
+      mod_tab_processes_server("processes_tab", process_data = process_data)
       
       # Модуль поощь и новости
       mod_help_server("help")
@@ -498,27 +541,36 @@ server <- function(input, output, session) {
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
-    
-    
+    # Можно показать компактный лоадер
     waiter_show(
-      html = HTML(paste(
-        spin_fading_circles(),
-        br(),
-        h4("Загрузка данных планировщика заданий...")
-      )),
+      html = HTML(paste(spin_fading_circles(), br(), h4("Обновляем данные..."))),
       color = "#333"
     )
-    # Обновляем данные о задачах
-    all_tasks(get_tasks())
     
-    #waiter_hide()
+    p_tasks    <- future_promise({ get_tasks() })
+    p_services <- future_promise({ get_services() })
+    p_process  <- future_promise({ get_processes() })
     
-    # Увеличиваем значение refresh_trigger, что вызовет перерасчет services_data()
-    refresh_trigger(refresh_trigger() + 1)
+    p_tasks    %...>% (function(x) all_tasks(x))    %...!% (function(e) showNotification(paste("Ошибка задач:",    conditionMessage(e)), type = "error", duration = 6))
+    p_services %...>% (function(x) services_store(x)) %...!% (function(e) showNotification(paste("Ошибка служб:",    conditionMessage(e)), type = "error", duration = 6))
+    p_process  %...>% (function(x) processes_store(x))%...!% (function(e) showNotification(paste("Ошибка процессов:", conditionMessage(e)), type = "error", duration = 6))
     
-    # Показываем уведомление об успешном обновлении
-    showNotification("Данные успешно обновлены", type = "message", duration = 3)
-    
+    # Объединяем всё через promise_all
+    promise_all(
+      tasks = p_tasks,
+      services = p_services,
+      processes = p_process
+    ) %...>% with({
+      # Этот блок выполняется когда всё завершено
+      all_tasks(tasks)
+      services_store(services)
+      processes_store(processes)
+      waiter_hide()
+      showNotification("Все данные загружены", type = "message", duration = 3)
+    }) %...!% (function(e) {
+      waiter_hide()
+      showNotification(paste("Ошибка общей загрузки:", conditionMessage(e)), type = "error", duration = 6)
+    })
   })
 }
 

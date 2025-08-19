@@ -80,5 +80,6 @@ get_services <- function() {
         }
       }
     ) %>%
-    ungroup()
+    ungroup() %>% 
+    mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
 }

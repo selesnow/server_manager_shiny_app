@@ -43,28 +43,14 @@ mod_tab_processes_ui <- function(id) {
   )
 }
 
-mod_tab_processes_server <- function(id, refresh_trigger) {
+mod_tab_processes_server <- function(id, process_data) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    processes <- reactiveVal(get_processes())
-    
-    observeEvent(refresh_trigger(), {
-      waiter_show(
-        html = HTML(paste(
-          spin_fading_circles(),
-          br(),
-          h4("Загрузка процессов...")
-        )),
-        color = "#333"
-      )
-      processes(get_processes())
-      waiter_hide()
-    })
-    
     # Реактивка для фильтрации файлов — зависит от других фильтров
     processes_filtered_for_files <- reactive({
-      data <- processes()
+      data <- process_data()
+      req(data)
       
       if (!is.null(input$filter_username) && length(input$filter_username) > 0) {
         data <- data[data$username %in% input$filter_username, ]
@@ -95,7 +81,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     
     # Автообновление фильтров и автоустановка "файла"
     observe({
-      all_data <- processes()
+      all_data <- process_data()
       filtered_data <- processes_filtered_for_files()
       
       updateSelectInput(session, "filter_username", choices = sort(unique(all_data$username)), selected = isolate(input$filter_username))
@@ -119,6 +105,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     })
     
     output$process_table <- renderDT({
+      req(process_data())
       datatable(
         filtered_processes(),
         filter = "top",
@@ -129,7 +116,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
     observeEvent(input$kill_process, {
       req(input$filter_files)
       
-      data <- processes()
+      data <- process_data()
       target_pids <- data %>%
         filter(files == input$filter_files) %>%
         pull(pid) %>%
@@ -144,7 +131,7 @@ mod_tab_processes_server <- function(id, refresh_trigger) {
       }
       
       showNotification("Процессы остановлены", type = "message")
-      processes(get_processes())
+
     })
   })
 }
