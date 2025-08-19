@@ -19,7 +19,8 @@ mod_tab_services_ui <- function(id) {
                       uiOutput(ns("service_buttons"))
                   )
                 )
-            )
+            ),
+            textOutput(ns("last_update"))
         )
       )
     ),
@@ -49,7 +50,7 @@ mod_tab_services_server <- function(id, services_data, user_role) {
     })
     
     output$service_table <- renderDT({
-      datatable(services_data(), options = list(pageLength = 5))
+      datatable(services_data() %>% select(-update_time), options = list(pageLength = 5))
     })
     
     observeEvent(services_data(), {
@@ -72,6 +73,15 @@ mod_tab_services_server <- function(id, services_data, user_role) {
           actionButton(ns("restart_service"), "Перезапустить", icon = icon("sync"), class = "btn-warning")
         )
       }
+    })
+    
+    # Время обновления данных
+    output$last_update <- renderText({
+      data <- services_data()
+      req(data)
+      
+      last_time <- max(data$update_time, na.rm = TRUE)
+      paste0("Данные обновлены: ", format(last_time, "%Y-%m-%d %H:%M:%S %Z"))
     })
     
     observeEvent(input$start_service, {

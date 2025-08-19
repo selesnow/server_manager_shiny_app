@@ -44,7 +44,8 @@ mod_tab_tasks_ui <- function(id) {
                         uiOutput(ns("responsible_filter")),
                         uiOutput(ns("last_result_filter")),
                         uiOutput(ns("client_filter")),
-                        uiOutput(ns("task_state_filter")) 
+                        uiOutput(ns("task_state_filter")),
+                        textOutput(ns("last_update"))
                     )
                   ),
                   # --------- Управление ----------
@@ -195,9 +196,19 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                   selected  = default_sel)
     })
     
+    # ───── Информация про время обновления данных ─────
+    output$last_update <- renderText({
+      data <- task_data()
+      req(data)
+      
+      last_time <- max(data$update_time, na.rm = TRUE)
+      paste0("Данные обновлены: ", format(last_time, "%Y-%m-%d %H:%M:%S %Z"))
+    })
+    
+    
     # ───── Таблица с поиском по всем столбцам ─────
     output$task_table <- renderDT({
-      datatable(task_data(),
+      datatable(task_data() %>% select(-update_time),
                 filter   = "top",
                 options  = list(pageLength = 25, scrollX = TRUE))
     })

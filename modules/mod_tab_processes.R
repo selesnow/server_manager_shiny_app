@@ -16,7 +16,8 @@ mod_tab_processes_ui <- function(id) {
                     selectInput(ns("filter_username"), "Пользователь", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_name"), "Имя процесса", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_client"), "Клиент", choices = NULL, multiple = TRUE),
-                    selectInput(ns("filter_dir"), "Рабочая директория", choices = NULL, multiple = TRUE, width = "90%")
+                    selectInput(ns("filter_dir"), "Рабочая директория", choices = NULL, multiple = TRUE, width = "90%"),
+                    textOutput(ns("last_update"))
                   ),
                   column(
                     width = 4,
@@ -79,6 +80,14 @@ mod_tab_processes_server <- function(id, process_data) {
       data
     })
     
+    output$last_update <- renderText({
+      data <- process_data()
+      req(data)
+      
+      last_time <- max(data$update_time, na.rm = TRUE)
+      paste0("Данные обновлены: ", format(last_time, "%Y-%m-%d %H:%M:%S %Z"))
+    })
+    
     # Автообновление фильтров и автоустановка "файла"
     observe({
       all_data <- process_data()
@@ -107,7 +116,7 @@ mod_tab_processes_server <- function(id, process_data) {
     output$process_table <- renderDT({
       req(process_data())
       datatable(
-        filtered_processes(),
+        filtered_processes() %>% select(-update_time),
         filter = "top",
         options = list(pageLength = 25, scrollX = TRUE)
       )
