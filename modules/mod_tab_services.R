@@ -50,7 +50,9 @@ mod_tab_services_server <- function(id, services_data, user_role) {
     })
     
     output$service_table <- renderDT({
-      datatable(services_data() %>% select(-update_time), options = list(pageLength = 5))
+      datatable(services_data() %>% select(-update_time), ,
+                filter   = "top",
+                options  = list(pageLength = 25, scrollX = TRUE))
     })
     
     observeEvent(services_data(), {
