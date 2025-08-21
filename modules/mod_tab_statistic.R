@@ -51,6 +51,17 @@ mod_tab_statistic_ui <- function(id) {
       )
     ),
     fluidRow(
+      column(
+        width = 12,
+        div(class = "card",
+            div(class = "card-header", "Статистика по наличию элементов проекта"),
+            div(class = "card-body",
+                DTOutput(ns("proj_elements_stats_table"))
+            )
+        )
+      )
+    ),
+    fluidRow(
       column(6, plotOutput(ns("task_log_plot"))),
       column(6, plotOutput(ns("task_info_plot")))
     )
@@ -76,6 +87,11 @@ mod_tab_statistic_server <- function(id, all_tasks) {
       get_author_stats(all_tasks())
     })
     
+    proj_elements_stat <- reactive({
+      req(all_tasks())
+      get_proj_elements_stat(all_tasks())
+    })
+    
     # Вывод общей статистики
     output$overall_stats_summary <- renderUI({
       stats <- overall_stats()
@@ -95,6 +111,10 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     
     output$author_stats_table <- renderDT({
       datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
+    })
+    
+    output$proj_elements_stats_table <- renderDT({
+      datatable(proj_elements_stat(), options = list(pageLength = 10, scrollX = TRUE))
     })
     
     # Подключение к базе данных для графиков
