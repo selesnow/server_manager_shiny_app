@@ -27,6 +27,7 @@ library(ellmer)
 library(bslib)
 library(promises)
 library(future)
+library(forcats)
 
 plan(multisession)
 
