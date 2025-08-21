@@ -407,6 +407,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         
         # Если данные получены, вызываем функцию find_readme
         if(!is.null(start_in)) {
+          
+          # очищаем от папки R
+          start_in <- str_remove(start_in, '\\\\R$|/R$|/R/$')
           readme_content <- try(find_readme(start_in = start_in), silent = TRUE)
           
           output$task_readme_content <- renderUI({
