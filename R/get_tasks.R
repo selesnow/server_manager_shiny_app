@@ -76,7 +76,6 @@ get_tasks <- function() {
     mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]])) %>% 
     # проверка наличия readme, news, git и проекта RStudio
     mutate(
-      test = str_remove(`Start In`, '\\\\R$|/R$|/R/$'),
       readme = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ file.exists(file.path(.x, "README.md"))),
       news   = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ file.exists(file.path(.x, "NEWS.md"))),
       git    = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ {
