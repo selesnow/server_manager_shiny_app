@@ -28,7 +28,7 @@ get_tasks <- function() {
     ) %>% 
     ungroup() %>% 
     filter(Author != "Microsoft Visual Studio") %>% 
-    # расшифровка статуса
+    # расшифровка статуса ошибки
     mutate(
       `Last Result` = case_when(
         `Last Result` == "0"       ~ "Успешно (0)",
@@ -72,7 +72,23 @@ get_tasks <- function() {
       `Start Dates` = str_c(unique(`Start Date`), collapse = ", "),
       .groups = "drop"
     ) %>% 
+    ungroup() %>% 
     mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]])) %>% 
+    # проверка наличия readme, news, git и проекта RStudio
+    mutate(
+      test = str_remove(`Start In`, '\\\\R$|/R$|/R/$'),
+      readme = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ file.exists(file.path(.x, "README.md"))),
+      news   = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ file.exists(file.path(.x, "NEWS.md"))),
+      git    = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ {
+        git_path <- file.path(.x, ".git")
+        dir.exists(git_path) || file.exists(git_path)
+      }),
+      rproj  = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ {
+        if (!dir.exists(.x)) return(FALSE)
+        any(grepl("\\.Rproj$", list.files(.x, all.files = TRUE, full.names = FALSE)))
+      })
+    ) %>% 
+    # дата обновления данных в таблице
     mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
 
 }

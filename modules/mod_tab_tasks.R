@@ -451,7 +451,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           `Last Run Time`, 
           `Last Result`, 
           `Scheduled Task State`,
-          Responsible)
+          Responsible,
+          readme, news, git, rproj
+          )
     })
     
     # Рендерим информацию о выбранной задаче
@@ -476,7 +478,18 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
           div(class = "mb-2", strong("Результат прошлого запуска: "), span(task$`Last Result`)),
           div(class = "mb-2", strong("Клиент: "), span(task$Client)),
-          div(class = "mb-2", strong("Краткое описание: "), span(task$Comment))
+          div(class = "mb-2", strong("Краткое описание: "), span(task$Comment)),
+          # Новая строка с индикаторами
+          div(class = "mb-2", 
+              strong("Наличие элементов проекта: "),
+              br(),
+              div(style = "margin-top: 5px;",
+                  create_indicator("readme", task$readme, "README"),
+                  create_indicator("news", task$news, "NEWS"),
+                  create_indicator("git", task$git, "Git"),
+                  create_indicator("rproj", task$rproj, "Rproj")
+              )
+          )
         )
       } else {
         div("Информация недоступна")
