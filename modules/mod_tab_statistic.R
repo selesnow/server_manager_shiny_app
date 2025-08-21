@@ -6,7 +6,7 @@ mod_tab_statistic_ui <- function(id) {
     title = "Статистика",
     fluidRow(
       column(
-        width = 12,
+        width = 5,
         div(class = "card",
             div(class = "card-header", "Общая статистика задач"),
             div(class = "card-body",
@@ -26,7 +26,8 @@ mod_tab_statistic_ui <- function(id) {
                 )
             )
         )
-      )
+      ),
+      column(7, style = "height: 44.2vh;", plotOutput(ns("proj_elements_plot"), height = "100%")),
     ),
     fluidRow(
       column(
@@ -122,6 +123,36 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     output$proj_elements_stats_table <- renderDT({
       datatable(proj_elements_stat(), options = list(pageLength = 10, scrollX = TRUE))
     })
+    
+    # График наличия элементов проекта
+    output$proj_elements_plot <- renderPlot(({
+      
+      as.data.frame(overall_stats()) %>% 
+        select(-matches('rate')) %>% 
+        pivot_longer(everything()) %>% 
+        filter(!name %in% c('new_structure_crons', 'crons_to_move', 'new_structure_percent', 'to_move_percent')) %>% 
+        arrange(desc(value)) %>% 
+        mutate(
+          name = recode(
+            name, 
+            total_crons = 'Crons',
+            has_log     = 'Has Logs',
+            rproj       = 'Is Projects',
+            readme      = 'Has README',
+            git         = 'Use Git',
+            news        = 'Has NEWS'
+          )
+        ) %>% 
+        ggplot(aes(x = value, y = fct_reorder(name, value))) +
+        scale_fill_gradient(low=hcl(15,100,75), high=hcl(195,100,75)) +
+        geom_col(aes(fill = value)) +
+        guides(fill=FALSE) +
+        labs(x = NULL, y = NULL) +
+        theme(
+          axis.text.y = element_text(size = 16), # крупные подписи
+        )
+      
+    }))
     
     # Подключение к базе данных для графиков
     con <- dbConnect(SQLite(), r"(C:\\scripts\\alsey\\netpeak_core\\nc_analytics_team\\telegram_bot\\bot_db.db)")
