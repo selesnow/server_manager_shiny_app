@@ -100,7 +100,12 @@ mod_tab_statistic_server <- function(id, all_tasks) {
         "<div class='stats-item'>◦ Активных кронов в новой файловой структуре: ", 
         stats$new_structure_crons, " (", stats$new_structure_percent, " %)</div>",
         "<div class='stats-item'>◦ Активных кронов которые надо перенести: ", 
-        stats$crons_to_move, " (", stats$to_move_percent, " %)</div>"
+        stats$crons_to_move, " (", stats$to_move_percent, " %)</div>",
+        "<div class='stats-item'>◦ Наличие элементов проектов: <br>",
+        "<div style='margin-left: 30px;'>◦ README: ", stats$readme, " (",  stats$readme_rate, "%)</div>", 
+        "<div style='margin-left: 30px;'>◦ NEWS: ", stats$news, " (",  stats$news_rate, "%)</div>", 
+        "<div style='margin-left: 30px;'>◦ Git: ", stats$git, " (",  stats$git_rate, "%)</div>", 
+        "<div style='margin-left: 30px;'>◦ Rproj: ",  stats$rproj, " (",  stats$rproj_rate, "%)</div></div>"
       ))
     })
     
