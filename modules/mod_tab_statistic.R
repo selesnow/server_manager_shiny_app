@@ -127,29 +127,48 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     # График наличия элементов проекта
     output$proj_elements_plot <- renderPlot(({
       
-      as.data.frame(overall_stats()) %>% 
-        select(-matches('rate')) %>% 
+      indicators <- as.data.frame(overall_stats()) %>% 
+        select(matches('rate|new_structure_percent')) %>% 
         pivot_longer(everything()) %>% 
-        filter(!name %in% c('new_structure_crons', 'crons_to_move', 'new_structure_percent', 'to_move_percent')) %>% 
         arrange(desc(value)) %>% 
+        mutate(value = value / 100, target = 1, ypos = -row_number()) %>% 
         mutate(
           name = recode(
             name, 
-            total_crons = 'Crons',
-            has_log     = 'Has Logs',
-            rproj       = 'Is Projects',
-            readme      = 'Has README',
-            git         = 'Use Git',
-            news        = 'Has NEWS'
+            new_structure_percent = 'New Structure',
+            has_log_rate          = 'Has Logs',
+            rproj_rate            = 'Is Projects',
+            readme_rate           = 'Has README',
+            git_rate              = 'Use Git',
+            news_rate             = 'Has NEWS'
           )
-        ) %>% 
-        ggplot(aes(x = value, y = fct_reorder(name, value))) +
-        scale_fill_gradient(low=hcl(15,100,75), high=hcl(195,100,75)) +
-        geom_col(aes(fill = value)) +
-        guides(fill=FALSE) +
+        )
+      
+      ggplot(indicators, aes(y = ypos)) +
+        # фоновые зоны (например, красный-жёлтый-зелёный)
+        geom_rect(aes(xmin = 0, xmax = 0.5, ymin = ypos - 0.2, ymax = ypos + 0.2),
+                  fill = "#ffcccc") +
+        geom_rect(aes(xmin = 0.5, xmax = 0.8, ymin = ypos - 0.2, ymax = ypos + 0.2),
+                  fill = "#fff2cc") +
+        geom_rect(aes(xmin = 0.8, xmax = 1.0, ymin = ypos - 0.2, ymax = ypos + 0.2),
+                  fill = "#d9ead3") +
+        # фактическое значение (тёмная полоса)
+        geom_rect(aes(xmin = 0, xmax = value, ymin = ypos - 0.1, ymax = ypos + 0.1),
+                  fill = "steelblue") +
+        # цель (вертикальная линия)
+        geom_segment(aes(x = target, xend = target, y = ypos - 0.25, yend = ypos + 0.25),
+                     color = "black", size = 1) +
+        # подпись справа
+        geom_text(aes(x = 1.05, label = scales::percent(value, accuracy = 1)),
+                  hjust = 0, size = 4) +
+        scale_x_continuous(labels = scales::percent, limits = c(0, 1.1)) +
+        scale_y_continuous(breaks = indicators$ypos, labels = indicators$name) +
         labs(x = NULL, y = NULL) +
+        theme_minimal(base_size = 14) +
         theme(
-          axis.text.y = element_text(size = 16), # крупные подписи
+          panel.grid  = element_blank(),
+          axis.ticks  = element_blank(),
+          axis.text.y = element_text(size = 16)
         )
       
     }))
@@ -179,6 +198,6 @@ mod_tab_statistic_server <- function(id, all_tasks) {
         geom_line() + geom_point() + 
         labs(title = 'Динамика количества настроенных заданий в планировщике', x = '', y = '')
     })
-
+    
   })
 }
