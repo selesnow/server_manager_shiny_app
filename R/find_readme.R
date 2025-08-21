@@ -8,6 +8,7 @@
 find_readme <- function(start_in = ".") {  
   # приоритет сначала README.Rmd, потом README.md
   files <- c("README.Rmd", "README.md")
+  start_in <- str_remove(start_in, '\\\\R$|/R$|/R/$')
   full_paths <- here::here(start_in, files)
   existing_file <- full_paths[file.exists(full_paths)][1]  # первый найденный
   
