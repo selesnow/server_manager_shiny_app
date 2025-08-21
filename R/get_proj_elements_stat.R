@@ -9,7 +9,7 @@ get_proj_elements_stat <- function(tasks) {
   
   tasks <- tasks %>%
     filter(`Scheduled Task State` == "Enabled") %>% 
-    select(TaskName, Author, readme, news, git, rproj) %>% 
+    select(TaskName, Author, readme, news, git, rproj, has_log) %>% 
     unique()
   
   tasks %>% 
@@ -19,14 +19,16 @@ get_proj_elements_stat <- function(tasks) {
       readme = sum(readme),
       news   = sum(news),
       git    = sum(git),
-      rproj  = sum(rproj)
+      rproj  = sum(rproj),
+      logs   = sum(has_log)
     ) %>%
     ungroup() %>%
     mutate(
       `readme rate` = round(readme / crons * 100, 0),
       `news rate`   = round(news / crons * 100, 0),
       `git rate`    = round(git / crons * 100, 0),
-      `rproj rate`  = round(rproj / crons * 100, 0)
+      `rproj rate`  = round(rproj / crons * 100, 0),
+      `logs rate`   = round(logs / crons * 100, 0)
     ) %>%
     arrange(desc(crons)) %>%
     select(
@@ -35,6 +37,7 @@ get_proj_elements_stat <- function(tasks) {
       readme, 'readme rate',
       news, 'news rate',
       git, 'git rate',
-      rproj, 'rproj rate'
+      rproj, 'rproj rate',
+      logs, 'logs rate'
     )
 }

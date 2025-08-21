@@ -105,7 +105,8 @@ mod_tab_statistic_server <- function(id, all_tasks) {
         "<div style='margin-left: 30px;'>◦ README: ", stats$readme, " (",  stats$readme_rate, "%)</div>", 
         "<div style='margin-left: 30px;'>◦ NEWS: ", stats$news, " (",  stats$news_rate, "%)</div>", 
         "<div style='margin-left: 30px;'>◦ Git: ", stats$git, " (",  stats$git_rate, "%)</div>", 
-        "<div style='margin-left: 30px;'>◦ Rproj: ",  stats$rproj, " (",  stats$rproj_rate, "%)</div></div>"
+        "<div style='margin-left: 30px;'>◦ Rproj: ",  stats$rproj, " (",  stats$rproj_rate, "%)</div>",
+        "<div style='margin-left: 30px;'>◦ Logs: ",  stats$has_log, " (",  stats$has_log_rate, "%)</div></div>"
       ))
     })
     

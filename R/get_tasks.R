@@ -85,7 +85,8 @@ get_tasks <- function() {
       rproj  = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ {
         if (!dir.exists(.x)) return(FALSE)
         any(grepl("\\.Rproj$", list.files(.x, all.files = TRUE, full.names = FALSE)))
-      })
+      }),
+      has_log = suppressWarnings(purrr::map2_lgl(`Task To Run`, `Start In`, purrr::possibly(task_has_log, FALSE)))
     ) %>% 
     # дата обновления данных в таблице
     mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))

@@ -455,7 +455,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           `Last Result`, 
           `Scheduled Task State`,
           Responsible,
-          readme, news, git, rproj
+          readme, news, git, rproj, has_log
           )
     })
     
@@ -491,7 +491,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
                   create_indicator("readme", task$readme, "README"),
                   create_indicator("news", task$news, "NEWS"),
                   create_indicator("git", task$git, "Git"),
-                  create_indicator("rproj", task$rproj, "Rproj")
+                  create_indicator("rproj", task$rproj, "Rproj"),
+                  create_indicator("has_log", task$has_log, "Log")
               )
           )
         )

@@ -8,7 +8,7 @@
 get_overall_stats <- function(tasks) {
   tasks <- tasks %>%
     filter(`Scheduled Task State` == "Enabled") %>% 
-    select(TaskName, Client, Author, `New Structure`, readme, news, git, rproj) %>% 
+    select(TaskName, Client, Author, `New Structure`, readme, news, git, rproj, has_log) %>% 
     unique()
   
   total_crons <- length(unique(tasks$TaskName))
@@ -22,6 +22,7 @@ get_overall_stats <- function(tasks) {
   news_rate <- round(sum(tasks$news) / total_crons * 100, 0)
   git_rate <- round(sum(tasks$git) / total_crons * 100, 0)
   rproj_rate <- round(sum(tasks$rproj) / total_crons * 100, 0)
+  has_log_rate <- round(sum(tasks$has_log) / total_crons * 100, 0)
   
   list(
     total_crons           = total_crons,
@@ -36,6 +37,8 @@ get_overall_stats <- function(tasks) {
     git                   = sum(tasks$git),
     git_rate              = git_rate,
     rproj                 = sum(tasks$rproj),
-    rproj_rate            = rproj_rate
+    rproj_rate            = rproj_rate,
+    has_log               = sum(tasks$has_log),
+    has_log_rate          = has_log_rate
   )
 }
