@@ -479,6 +479,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           div(class = "mb-2", strong("Результат прошлого запуска: "), span(task$`Last Result`)),
           div(class = "mb-2", strong("Клиент: "), span(task$Client)),
           div(class = "mb-2", strong("Краткое описание: "), span(task$Comment)),
+          br(),
           # Новая строка с индикаторами
           div(class = "mb-2", 
               strong("Наличие элементов проекта: "),
