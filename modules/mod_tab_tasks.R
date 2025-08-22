@@ -211,7 +211,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       datatable(task_data() %>% select(-update_time),
                 filter   = "top",
                 options  = list(pageLength = 25, scrollX = TRUE),
-                selection = 'none')
+                selection = 'single')
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────
@@ -679,6 +679,55 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
         showNotification("Задача не найдена", type = "error")
       }
     })
+    
+    # Popup с информацией о задаче по клику на строку таблицы
+    observeEvent(input$task_table_rows_selected, {
+      idx <- input$task_table_rows_selected
+      req(idx)
+      
+      # Берем данные ровно той строки, по которой кликнули
+      df <- task_data()
+      req(nrow(df) >= idx)
+      row <- df[idx, , drop = FALSE]
+      
+      showModal(modalDialog(
+        title = paste("Информация о задаче:", row$TaskName),
+        size = "l",
+        easyClose = TRUE,
+        footer = modalButton("Закрыть"),
+        div(
+          div(class = "mb-2",
+              strong("Название: "),
+              span(row$TaskName)
+          ),
+          div(class = "mb-2", strong("Автор: "),              span(row$Author)),
+          div(class = "mb-2", strong("Запускается от имени: "), span(row$`Run As User`)),
+          div(class = "mb-2", strong("Ответственный: "),      span(row$Responsible)),
+          div(class = "mb-2", strong("Статус задачи: "),      span(row$`Scheduled Task State`)),
+          div(class = "mb-2", strong("Директория: "),         span(row$`Start In`)),
+          div(class = "mb-2", strong("Команда запуска: "),    span(row$`Task To Run`)),
+          div(class = "mb-2", strong("Время прошлого запуска: "), span(row$`Last Run Time`)),
+          div(class = "mb-2", strong("Результат прошлого запуска: "), span(row$`Last Result`)),
+          div(class = "mb-2", strong("Клиент: "),             span(row$Client)),
+          div(class = "mb-2", strong("Краткое описание: "),   span(row$Comment)),
+          tags$hr(),
+          div(class = "mb-2",
+              strong("Наличие элементов проекта:"),
+              br(),
+              div(
+                style = "margin-top: 5px;",
+                # Используем те же индикаторы, что в верхнем блоке
+                create_indicator("readme",  isTRUE(row$readme),  "README"),
+                create_indicator("news",    isTRUE(row$news),    "NEWS"),
+                create_indicator("git",     isTRUE(row$git),     "Git"),
+                create_indicator("rproj",   isTRUE(row$rproj),   "Rproj"),
+                create_indicator("has_log", isTRUE(row$has_log), "Log")
+              )
+          )
+        )
+      ))
+    })
+    
     
   })
 }

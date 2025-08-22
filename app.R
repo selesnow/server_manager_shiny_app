@@ -215,6 +215,23 @@ server <- function(input, output, session) {
             }
           "))
         ),
+        # CSS для popup который появляется при клике на таблицу задач
+        tags$style(HTML("
+          .modal-content {
+            background-color: #2b2b2b;   /* тёмный фон */
+            color: #f0f0f0;              /* светлый текст */
+          }
+          .modal-header, .modal-footer {
+            border: none;                /* убираем белые бордеры */
+          }
+          .modal-title {
+            color: #ffffff;              /* заголовок яркий */
+            font-weight: bold;
+          }
+          .modal-body strong {
+            color: #c9e6ff;              /* выделение для strong */
+          }
+        ")),
         
         tags$script(HTML("
           (function waitForChat() {
