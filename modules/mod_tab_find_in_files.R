@@ -1,4 +1,7 @@
+# ========================
 # Модуль поиска по файлам
+# ========================
+
 # UI часть модуля
 mod_tab_find_in_files_ui <- function(id) {
   ns <- NS(id)
@@ -14,12 +17,23 @@ mod_tab_find_in_files_ui <- function(id) {
                 div(
                   h4("Введите текст для поиска"),
                   uiOutput(ns("file_search_ui")),
+                  
+                  # --- выбор типов файлов ---
+                  checkboxGroupInput(
+                    ns("file_types"),
+                    "Типы файлов:",
+                    choices = c("R", "py", "cfg", "ini", "yaml", "yml", "json"),
+                    selected = c("R", "py"),
+                    inline = TRUE
+                  ),
+                  
                   fluidRow(
                     column(10,
                            textInput(ns("file_pattern"), NULL, placeholder = "Введите строку для поиска...")),
                     column(2,
                            actionButton(ns("search_btn"), "Найти", class = "btn-primary"))
                   ),
+                  
                   hr(),
                   div(style = "margin-bottom: 10px;",
                       tags$small(class = "text-muted", 
@@ -51,13 +65,16 @@ mod_tab_find_in_files_server <- function(id) {
     
     observeEvent(input$search_btn, {
       req(input$file_pattern)
-      pattern <- input$file_pattern
+      req(input$file_types)  # без выбранных расширений не ищем
       
-      results <- map_dfr(
+      pattern <- input$file_pattern
+      extensions <- input$file_types
+      
+      results <- purrr::map_dfr(
         search_dirs,
         ~ {
           fif <- findInFiles(
-            extensions = c('R', 'py'), 
+            extensions = extensions, 
             pattern    = pattern, 
             root       = .x,
             output     = "tibble"
@@ -109,7 +126,7 @@ mod_tab_find_in_files_server <- function(id) {
       )
     })
     
-    # Простое копирование через серверную логику
+    # Копирование имени файла + уведомление
     observeEvent(input$search_results_rows_selected, {
       selected_row <- input$search_results_rows_selected
       if (!is.null(selected_row)) {
@@ -118,12 +135,11 @@ mod_tab_find_in_files_server <- function(id) {
           file_path <- df[selected_row, "file", drop = TRUE]
           file_name <- basename(file_path)
           
-          # Копируем в буфер через JS
-          session$sendCustomMessage("copyToClipboard", file_name)
+          # копируем в буфер
+          clipr::write_clip(file_name)
           
-          # Уведомление о копировании названия файла
           showNotification(
-            paste("Название файл скопировано в буфер обмена:", file_name),
+            paste("Выбран файл:", file_name),
             type = "message",
             duration = 5
           )
