@@ -6,7 +6,7 @@ mod_tab_statistic_ui <- function(id) {
     title = "Статистика",
     fluidRow(
       column(
-        width = 5,
+        width = 12,
         div(class = "card",
             div(class = "card-header", "Общая статистика задач"),
             div(class = "card-body",
@@ -27,7 +27,9 @@ mod_tab_statistic_ui <- function(id) {
             )
         )
       ),
-      column(7, style = "height: 44.2vh;", plotOutput(ns("proj_elements_plot"), height = "100%")),
+    ),
+    fluidRow(
+      column(12, style = "height: 44.2vh;", plotOutput(ns("proj_elements_plot"), height = "100%"))
     ),
     fluidRow(
       column(
@@ -169,7 +171,8 @@ mod_tab_statistic_server <- function(id, all_tasks) {
           panel.grid  = element_blank(),
           axis.ticks  = element_blank(),
           axis.text.y = element_text(size = 16)
-        )
+        ) + 
+        labs(title = 'Наличие элементов проекта у скриптов')
       
     }))
     
