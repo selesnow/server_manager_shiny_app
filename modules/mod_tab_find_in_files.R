@@ -21,6 +21,10 @@ mod_tab_find_in_files_ui <- function(id) {
                            actionButton(ns("search_btn"), "Найти", class = "btn-primary"))
                   ),
                   hr(),
+                  div(style = "margin-bottom: 10px;",
+                      tags$small(class = "text-muted", 
+                                 icon("info-circle"), 
+                                 " Кликните на строку, чтобы скопировать имя файла")),
                   DT::dataTableOutput(ns("search_results")),
                   uiOutput(ns("search_message"))
                 )
@@ -92,8 +96,8 @@ mod_tab_find_in_files_server <- function(id) {
       
       df_chr <- df %>%
         mutate(
-          match = format(match),              # заменить as.character на format
-          across(-match, as.character)        # остальные колонки — в текст
+          match = format(match),
+          across(-match, as.character)
         )
       
       DT::datatable(
@@ -101,8 +105,30 @@ mod_tab_find_in_files_server <- function(id) {
         options = list(pageLength = 10),
         rownames = FALSE,
         escape = FALSE,
-        selection = 'none'
+        selection = 'single'
       )
+    })
+    
+    # Простое копирование через серверную логику
+    observeEvent(input$search_results_rows_selected, {
+      selected_row <- input$search_results_rows_selected
+      if (!is.null(selected_row)) {
+        df <- search_data()
+        if (!is.null(df) && nrow(df) >= selected_row) {
+          file_path <- df[selected_row, "file", drop = TRUE]
+          file_name <- basename(file_path)
+          
+          # Копируем в буфер через JS
+          session$sendCustomMessage("copyToClipboard", file_name)
+          
+          # Уведомление о копировании названия файла
+          showNotification(
+            paste("Название файл скопировано в буфер обмена:", file_name),
+            type = "message",
+            duration = 5
+          )
+        }
+      }
     })
     
     # Сообщение, если ничего не найдено

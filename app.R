@@ -227,6 +227,17 @@ server <- function(input, output, session) {
           })();
         ")),
         
+        # скрипт копирования названия файла в буфер обмена на вкладке поиска по файлам
+        tags$script("
+          Shiny.addCustomMessageHandler('copyToClipboard', function(message) {
+            navigator.clipboard.writeText(message).then(function() {
+              console.log('Copied to clipboard: ' + message);
+            }, function(err) {
+              console.error('Failed to copy: ', err);
+            });
+          });
+        "),
+        
         # JavaScript для переключения темной/светлой темы
         tags$script(HTML("
           $(document).ready(function() {
