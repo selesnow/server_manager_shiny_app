@@ -2,7 +2,6 @@
 # Модуль поиска по файлам
 # ========================
 
-# UI часть модуля
 mod_tab_find_in_files_ui <- function(id) {
   ns <- NS(id)
   
@@ -34,6 +33,9 @@ mod_tab_find_in_files_ui <- function(id) {
                            actionButton(ns("search_btn"), "Найти", class = "btn-primary"))
                   ),
                   
+                  # --- время обновления ---
+                  uiOutput(ns("search_time_ui")),
+                  
                   hr(),
                   div(style = "margin-bottom: 10px;",
                       tags$small(class = "text-muted", 
@@ -49,10 +51,9 @@ mod_tab_find_in_files_ui <- function(id) {
   )
 }
 
-# Серверная часть модуля
+# Сервер
 mod_tab_find_in_files_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    # Заранее определённые директории
     search_dirs <- c(
       'C:/my_develop_workshop',
       'C:/scripts',
@@ -60,12 +61,11 @@ mod_tab_find_in_files_server <- function(id) {
       'C:/Users/persey/Documents'
     )
     
-    # Состояние для хранения результатов
     search_data <- reactiveVal(NULL)
+    search_time <- reactiveVal(NULL)  # <- время поиска
     
     observeEvent(input$search_btn, {
-      req(input$file_pattern)
-      req(input$file_types)  # без выбранных расширений не ищем
+      req(input$file_pattern, input$file_types)
       
       pattern <- input$file_pattern
       extensions <- input$file_types
@@ -82,18 +82,15 @@ mod_tab_find_in_files_server <- function(id) {
             as_tibble() %>% 
             mutate(file = as.character(file.path(.x, file)))
           
-          if (nrow(fif) == 0) {
-            return(tibble())
-          } else {
-            return(fif)
-          }
+          if (nrow(fif) == 0) tibble() else fif
         }
       )
       
       search_data(results)
+      search_time(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))  # сохраняем время
     })
     
-    # UI чат-истории
+    # UI блок "вы искали"
     output$file_search_ui <- renderUI({
       pattern <- input$file_pattern
       if (!is.null(pattern) && nzchar(pattern)) {
@@ -105,7 +102,17 @@ mod_tab_find_in_files_server <- function(id) {
       }
     })
     
-    # Вывод результатов
+    # --- вывод времени поиска ---
+    output$search_time_ui <- renderUI({
+      time <- search_time()
+      if (!is.null(time)) {
+        div(
+          style = "margin-top: 5px; font-size: 0.9em; color: #555;",
+          paste("Результаты обновлены:", format(time, "%Y-%m-%d %H:%M:%S"))
+        )
+      }
+    })
+    
     output$search_results <- DT::renderDataTable({
       df <- search_data()
       req(df)
@@ -126,7 +133,6 @@ mod_tab_find_in_files_server <- function(id) {
       )
     })
     
-    # Копирование имени файла + уведомление
     observeEvent(input$search_results_rows_selected, {
       selected_row <- input$search_results_rows_selected
       if (!is.null(selected_row)) {
@@ -135,7 +141,6 @@ mod_tab_find_in_files_server <- function(id) {
           file_path <- df[selected_row, "file", drop = TRUE]
           file_name <- basename(file_path)
           
-          # копируем в буфер
           clipr::write_clip(file_name)
           
           showNotification(
@@ -147,7 +152,6 @@ mod_tab_find_in_files_server <- function(id) {
       }
     })
     
-    # Сообщение, если ничего не найдено
     output$search_message <- renderUI({
       df <- search_data()
       if (!is.null(df) && nrow(df) == 0) {
