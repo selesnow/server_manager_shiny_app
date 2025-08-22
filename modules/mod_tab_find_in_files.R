@@ -52,7 +52,11 @@ mod_tab_find_in_files_ui <- function(id) {
 }
 
 # Сервер
+<<<<<<< HEAD
 mod_tab_find_in_files_server <- function(id) {
+=======
+mod_tab_find_in_files_server <- function(id, tasks_data) {
+>>>>>>> dev-alsey-fif-file-ext
   moduleServer(id, function(input, output, session) {
     search_dirs <- c(
       'C:/my_develop_workshop',
@@ -85,6 +89,22 @@ mod_tab_find_in_files_server <- function(id) {
           if (nrow(fif) == 0) tibble() else fif
         }
       )
+      
+      if (nrow(results) > 0) {
+        # таблица задач
+        tasks <- tasks_data()
+        
+        results <- results %>%
+          rowwise() %>%
+          mutate(
+            file_dir = normalizePath(dirname(file)),
+            file_name = basename(file),
+            TaskName = map2_chr(file_name, file_dir, possibly(\(x, y) filter(tasks, str_detect(`Task To Run`, x) & `Start In` == y) %>% pull(TaskName) %>% str_c(collapse = '\n'), NA)),
+            TaskState = map2_chr(file_name, file_dir, possibly(\(x, y) filter(tasks, str_detect(`Task To Run`, x) & `Start In` == y) %>% pull(`Scheduled Task State`) %>% str_c(collapse = '\n'), NA))
+          ) %>%
+          ungroup() %>%
+          select(-file_dir, -file_name)
+      }
       
       search_data(results)
       search_time(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))  # сохраняем время

@@ -480,7 +480,7 @@ server <- function(input, output, session) {
   mod_tab_cmd_server("cmd")
   
   # Поиск по файлам ---------------------------------------------------------
-  mod_tab_find_in_files_server("file_search")
+  mod_tab_find_in_files_server("file_search", all_tasks)
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
