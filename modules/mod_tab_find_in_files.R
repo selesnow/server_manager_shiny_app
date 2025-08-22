@@ -21,7 +21,7 @@ mod_tab_find_in_files_ui <- function(id) {
                   checkboxGroupInput(
                     ns("file_types"),
                     "Типы файлов:",
-                    choices = c("R", "py", "cfg", "ini", "yaml", "yml", "json"),
+                    choices = c("R", "py", "cfg", "ini", "yaml", "yml", "json", "bat"),
                     selected = c("R", "py"),
                     inline = TRUE
                   ),
@@ -52,11 +52,7 @@ mod_tab_find_in_files_ui <- function(id) {
 }
 
 # Сервер
-<<<<<<< HEAD
-mod_tab_find_in_files_server <- function(id) {
-=======
 mod_tab_find_in_files_server <- function(id, tasks_data) {
->>>>>>> dev-alsey-fif-file-ext
   moduleServer(id, function(input, output, session) {
     search_dirs <- c(
       'C:/my_develop_workshop',
