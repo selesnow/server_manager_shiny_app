@@ -100,7 +100,8 @@ mod_tab_find_in_files_server <- function(id) {
         df_chr,
         options = list(pageLength = 10),
         rownames = FALSE,
-        escape = FALSE
+        escape = FALSE,
+        selection = 'none'
       )
     })
     

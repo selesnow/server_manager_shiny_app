@@ -115,15 +115,15 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     
     # Рендеринг таблиц статистики
     output$client_stats_table <- renderDT({
-      datatable(client_stats(), options = list(pageLength = 10, scrollX = TRUE))
+      datatable(client_stats(), options = list(pageLength = 10, scrollX = TRUE), selection = 'none')
     })
     
     output$author_stats_table <- renderDT({
-      datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE))
+      datatable(author_stats(), options = list(pageLength = 10, scrollX = TRUE), selection = 'none')
     })
     
     output$proj_elements_stats_table <- renderDT({
-      datatable(proj_elements_stat(), options = list(pageLength = 10, scrollX = TRUE))
+      datatable(proj_elements_stat(), options = list(pageLength = 10, scrollX = TRUE), selection = 'none')
     })
     
     # График наличия элементов проекта

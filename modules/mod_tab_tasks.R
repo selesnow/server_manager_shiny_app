@@ -210,7 +210,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     output$task_table <- renderDT({
       datatable(task_data() %>% select(-update_time),
                 filter   = "top",
-                options  = list(pageLength = 25, scrollX = TRUE))
+                options  = list(pageLength = 25, scrollX = TRUE),
+                selection = 'none')
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────

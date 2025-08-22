@@ -118,7 +118,8 @@ mod_tab_processes_server <- function(id, process_data) {
       datatable(
         filtered_processes() %>% select(-update_time),
         filter = "top",
-        options = list(pageLength = 25, scrollX = TRUE)
+        options = list(pageLength = 25, scrollX = TRUE),
+        selection = 'none'
       )
     })
     
