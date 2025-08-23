@@ -26,6 +26,34 @@ mod_tab_tasks_ui <- function(id) {
       tags$script("hljs.highlightAll();")
     ),
     
+    # двойной клик на попап
+    tags$head(
+      tags$link(rel = "stylesheet",
+                href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"),
+      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"),
+      tags$script("hljs.highlightAll();"),
+      
+      # ===== ИСПРАВЛЕННЫЙ JavaScript код =====
+      tags$script(HTML(paste0("
+          $(document).ready(function() {
+            // Используем делегированный обработчик событий
+            $(document).on('dblclick', '#", id, "-task_table tbody tr', function(e) {
+              e.preventDefault();
+              
+              // Получаем индекс строки напрямую из DOM
+              var rowIdx = $(this).index();
+              
+              // Отправляем событие в Shiny
+              Shiny.setInputValue('", id, "-task_table_cell_clicked', {
+                row: rowIdx,
+                value: 'dblclick',
+                timestamp: new Date().getTime()
+              }, {priority: 'event'});
+            });
+          });
+        ")))
+        ),
+    
     # ----- Блок фильтров и управления -----
     fluidRow(
       column(
@@ -92,7 +120,7 @@ mod_tab_tasks_ui <- function(id) {
       column(
         width = 12,
         div(class = "card",
-            div(class = "card-header", "Задачи"),
+            div(class = "card-header", "Задачи", tags$small(class = "text-muted ms-2", "(двойной клик по строке для подробной информации)")),
             div(class = "card-body",
                 DTOutput(ns("task_table")),
                 div(class = "mt-3",
@@ -210,8 +238,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     output$task_table <- renderDT({
       datatable(task_data() %>% select(-update_time),
                 filter   = "top",
-                options  = list(pageLength = 25, scrollX = TRUE),
-                selection = 'single')
+                options  = list(
+                  pageLength = 25, 
+                  scrollX = TRUE,
+                  # Убираем некоторые настройки, которые могут конфликтовать
+                  dom = 'Bfrtip'
+                ),
+                # Убираем selection, так как используем собственный обработчик
+                selection = 'none') %>%
+        # Добавляем стиль курсора для указания на кликабельность
+        formatStyle(columns = 1:ncol(task_data() %>% select(-update_time)), 
+                    cursor = 'pointer')
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────
@@ -681,53 +718,62 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     })
     
     # Popup с информацией о задаче по клику на строку таблицы
-    observeEvent(input$task_table_rows_selected, {
-      idx <- input$task_table_rows_selected
-      req(idx)
+    observeEvent(input$task_table_cell_clicked, {
+      click_info <- input$task_table_cell_clicked
+      req(click_info)
       
-      # Берем данные ровно той строки, по которой кликнули
-      df <- task_data()
-      req(nrow(df) >= idx)
-      row <- df[idx, , drop = FALSE]
-      
-      showModal(modalDialog(
-        title = paste("Информация о задаче:", row$TaskName),
-        size = "l",
-        easyClose = TRUE,
-        footer = modalButton("Закрыть"),
-        div(
-          div(class = "mb-2",
-              strong("Название: "),
-              span(row$TaskName)
-          ),
-          div(class = "mb-2", strong("Автор: "),              span(row$Author)),
-          div(class = "mb-2", strong("Запускается от имени: "), span(row$`Run As User`)),
-          div(class = "mb-2", strong("Ответственный: "),      span(row$Responsible)),
-          div(class = "mb-2", strong("Статус задачи: "),      span(row$`Scheduled Task State`)),
-          div(class = "mb-2", strong("Директория: "),         span(row$`Start In`)),
-          div(class = "mb-2", strong("Команда запуска: "),    span(row$`Task To Run`)),
-          div(class = "mb-2", strong("Время прошлого запуска: "), span(row$`Last Run Time`)),
-          div(class = "mb-2", strong("Результат прошлого запуска: "), span(row$`Last Result`)),
-          div(class = "mb-2", strong("Клиент: "),             span(row$Client)),
-          div(class = "mb-2", strong("Краткое описание: "),   span(row$Comment)),
-          tags$hr(),
-          div(class = "mb-2",
-              strong("Наличие элементов проекта:"),
-              br(),
-              div(
-                style = "margin-top: 5px;",
-                # Используем те же индикаторы, что в верхнем блоке
-                create_indicator("readme",  isTRUE(row$readme),  "README"),
-                create_indicator("news",    isTRUE(row$news),    "NEWS"),
-                create_indicator("git",     isTRUE(row$git),     "Git"),
-                create_indicator("rproj",   isTRUE(row$rproj),   "Rproj"),
-                create_indicator("has_log", isTRUE(row$has_log), "Log")
+      # Проверяем, что это двойной клик
+      if (!is.null(click_info$value) && click_info$value == "dblclick") {
+        row_idx <- click_info$row + 1  # Приводим к 1-based индексу R
+        
+        # Берем данные ровно той строки, по которой кликнули
+        df <- task_data()
+        
+        # Дополнительная проверка корректности индекса
+        if (nrow(df) >= row_idx && row_idx > 0) {
+          row <- df[row_idx, , drop = FALSE]
+          
+          showModal(modalDialog(
+            title = paste("Информация о задаче:", row$TaskName),
+            size = "l",
+            easyClose = TRUE,
+            footer = modalButton("Закрыть"),
+            div(
+              div(class = "mb-2",
+                  strong("Название: "),
+                  span(row$TaskName)
+              ),
+              div(class = "mb-2", strong("Автор: "),              span(row$Author)),
+              div(class = "mb-2", strong("Запускается от имени: "), span(row$`Run As User`)),
+              div(class = "mb-2", strong("Ответственный: "),      span(row$Responsible)),
+              div(class = "mb-2", strong("Статус задачи: "),      span(row$`Scheduled Task State`)),
+              div(class = "mb-2", strong("Директория: "),         span(row$`Start In`)),
+              div(class = "mb-2", strong("Команда запуска: "),    span(row$`Task To Run`)),
+              div(class = "mb-2", strong("Время прошлого запуска: "), span(row$`Last Run Time`)),
+              div(class = "mb-2", strong("Результат прошлого запуска: "), span(row$`Last Result`)),
+              div(class = "mb-2", strong("Клиент: "),             span(row$Client)),
+              div(class = "mb-2", strong("Краткое описание: "),   span(row$Comment)),
+              tags$hr(),
+              div(class = "mb-2",
+                  strong("Наличие элементов проекта:"),
+                  br(),
+                  div(
+                    style = "margin-top: 5px;",
+                    create_indicator("readme",  isTRUE(row$readme),  "README"),
+                    create_indicator("news",    isTRUE(row$news),    "NEWS"),
+                    create_indicator("git",     isTRUE(row$git),     "Git"),
+                    create_indicator("rproj",   isTRUE(row$rproj),   "Rproj"),
+                    create_indicator("has_log", isTRUE(row$has_log), "Log")
+                  )
               )
-          )
-        )
-      ))
-    })
-    
+            )
+          ))
+        } else {
+          # Отладочное сообщение
+          cat("Ошибка: некорректный индекс строки:", row_idx, "из", nrow(df), "\n")
+        }
+      }
+    }, ignoreInit = TRUE)
     
   })
 }
