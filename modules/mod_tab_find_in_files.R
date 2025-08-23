@@ -145,28 +145,28 @@ mod_tab_find_in_files_server <- function(id, tasks_data) {
         options = list(pageLength = 10),
         rownames = FALSE,
         escape = FALSE,
-        selection = 'single'
+        selection = 'none'
       )
     })
     
-    observeEvent(input$search_results_rows_selected, {
-      selected_row <- input$search_results_rows_selected
-      if (!is.null(selected_row)) {
-        df <- search_data()
-        if (!is.null(df) && nrow(df) >= selected_row) {
-          file_path <- df[selected_row, "file", drop = TRUE]
-          file_name <- basename(file_path)
-          
-          clipr::write_clip(file_name)
-          
-          showNotification(
-            paste("Выбран файл:", file_name),
-            type = "message",
-            duration = 5
-          )
-        }
-      }
-    })
+    # observeEvent(input$search_results_rows_selected, {
+    #   selected_row <- input$search_results_rows_selected
+    #   if (!is.null(selected_row)) {
+    #     df <- search_data()
+    #     if (!is.null(df) && nrow(df) >= selected_row) {
+    #       file_path <- df[selected_row, "file", drop = TRUE]
+    #       file_name <- basename(file_path)
+    #       
+    #       clipr::write_clip(file_name)
+    #       
+    #       showNotification(
+    #         paste("Выбран файл:", file_name),
+    #         type = "message",
+    #         duration = 5
+    #       )
+    #     }
+    #   }
+    # })
     
     output$search_message <- renderUI({
       df <- search_data()
