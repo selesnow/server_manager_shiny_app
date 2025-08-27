@@ -726,6 +726,39 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       }
     })
     
+    
+    # Обработчик копирования названия задачи из popup
+    observeEvent(input$copy_popup_task_name, {
+      req(popup_task_name())
+      task_name_escaped <- gsub("\\\\", "\\\\\\\\", popup_task_name())
+      js_code <- sprintf("navigator.clipboard.writeText('%s')", task_name_escaped)
+      shinyjs::runjs(js_code)
+      showNotification("Название задачи скопировано", type = "message")
+    })
+    
+    # Обработчик деактивации задачи
+    observeEvent(input$deactivate_task_popup, {
+      req(popup_task_name())
+      tryCatch({
+        task_state_change(popup_task_name(), action = "Disable")
+        showNotification(glue("Задача '{popup_task_name()}' деактивирована."), type = "message")
+      }, error = function(e) {
+        showNotification(paste("Ошибка при деактивации:", e$message), type = "error")
+      })
+    })
+    
+    # Обработчик активации задачи
+    observeEvent(input$activate_task_popup, {
+      req(popup_task_name())
+      tryCatch({
+        task_state_change(popup_task_name(), action = "Enable")
+        showNotification(glue("Задача '{popup_task_name()}' активирована."), type = "message")
+      }, error = function(e) {
+        showNotification(paste("Ошибка при активации:", e$message), type = "error")
+      })
+    })
+    
+    # Окно с карточкой задачи при клике по строке задачи
     observeEvent(input$task_table_cell_clicked, {
       click_info <- input$task_table_cell_clicked
       req(click_info)
@@ -752,16 +785,26 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
             easyClose = TRUE,
             footer = tagList(
               if (user_role() %in% c("admin", "user")) {
-                actionButton(ns("run_task_popup"), "Запустить", 
-                             icon = icon("play"), 
-                             class = "btn btn-success")
+                tagList(
+                  actionButton(ns("run_task_popup"), "Запустить", 
+                               icon = icon("play"), 
+                               class = "btn btn-success"),
+                  actionButton(ns("deactivate_task_popup"), "Деактивировать", 
+                               icon = icon("pause"), 
+                               class = "btn btn-warning"),
+                  actionButton(ns("activate_task_popup"), "Активировать", 
+                               icon = icon("play-circle"), 
+                               class = "btn btn-info")
+                )
               },
               modalButton("Закрыть")
             ),
             div(
               div(class = "mb-2",
                   strong("Название: "),
-                  span(row$TaskName)
+                  span(id = ns("popup_task_name_text"), row$TaskName, style = "cursor: pointer;"),
+                  actionButton(ns("copy_popup_task_name"), label = NULL, icon = icon("copy"), 
+                               class = "btn btn-sm btn-outline-secondary", style = "margin-left: 5px;")
               ),
               div(class = "mb-2", strong("Автор: "),              span(row$Author)),
               div(class = "mb-2", strong("Запускается от имени: "), span(row$`Run As User`)),
