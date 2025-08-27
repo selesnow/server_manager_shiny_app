@@ -782,6 +782,61 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
           showModal(modalDialog(
             title = paste("Информация о задаче:", row$TaskName),
             size = "l",
+            tags$head(
+              tags$style(HTML("
+              @media (max-width: 768px) {
+                .modal-dialog {
+                  margin: 10px !important;
+                  max-width: calc(100vw - 20px) !important;
+                }
+                .modal-content {
+                  border-radius: 8px;
+                }
+                .btn {
+                  margin: 2px !important;
+                  font-size: 0.875rem;
+                }
+                .mb-2 {
+                  margin-bottom: 0.75rem !important;
+                }
+              }
+              @media (max-width: 480px) {
+                .modal-dialog {
+                  margin: 5px !important;
+                  max-width: calc(100vw - 10px) !important;
+                }
+                .modal-footer .btn {
+                  flex: 1;
+                  margin: 1px !important;
+                }
+              }
+              
+              /* Перенос длинных строк */
+              .modal-body span {
+                word-break: break-word !important;
+                word-wrap: break-word !important;
+                white-space: normal !important;
+                max-width: 100%;
+                display: inline-block;
+              }
+              
+              /* Специально для путей и команд */
+              .modal-body .mb-2 {
+                word-break: break-all !important;
+              }
+              
+              /* На мобильных делаем более агрессивный перенос */
+              @media (max-width: 768px) {
+                .modal-body span {
+                  word-break: break-all !important;
+                  hyphens: auto;
+                }
+                .modal-body div.mb-2 {
+                  margin-bottom: 0.5rem !important;
+                }
+              }
+            "))
+            ),
             easyClose = TRUE,
             footer = tagList(
               if (user_role() %in% c("admin", "user")) {
