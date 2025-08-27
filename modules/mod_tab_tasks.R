@@ -27,32 +27,28 @@ mod_tab_tasks_ui <- function(id) {
     ),
     
     # двойной клик на попап
-    tags$head(
-      tags$link(rel = "stylesheet",
-                href = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css"),
-      tags$script(src = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"),
-      tags$script("hljs.highlightAll();"),
-      
-      # ===== ИСПРАВЛЕННЫЙ JavaScript код =====
-      tags$script(HTML(paste0("
-          $(document).ready(function() {
-            // Используем делегированный обработчик событий
-            $(document).on('dblclick', '#", id, "-task_table tbody tr', function(e) {
-              e.preventDefault();
-              
-              // Получаем индекс строки напрямую из DOM
-              var rowIdx = $(this).index();
-              
-              // Отправляем событие в Shiny
-              Shiny.setInputValue('", id, "-task_table_cell_clicked', {
-                row: rowIdx,
-                value: 'dblclick',
-                timestamp: new Date().getTime()
-              }, {priority: 'event'});
-            });
-          });
-        ")))
-        ),
+    tags$script(HTML(paste0("
+    $(document).ready(function() {
+      $(document).on('dblclick', '#", id, "-task_table tbody tr', function(e) {
+        e.preventDefault();
+        
+        // Получаем TaskName из data-атрибута строки
+        var taskName = $(this).attr('data-task-name');
+        
+        // Если data-атрибут не найден, пробуем получить из первой ячейки
+        if (!taskName) {
+          taskName = $(this).find('td:first').text().trim();
+        }
+        
+        // Отправляем событие в Shiny с названием задачи вместо индекса
+        Shiny.setInputValue('", id, "-task_table_cell_clicked', {
+          taskName: taskName,
+          value: 'dblclick',
+          timestamp: new Date().getTime()
+        }, {priority: 'event'});
+      });
+    });
+  "))),
     
     # ----- Блок фильтров и управления -----
     fluidRow(
@@ -147,6 +143,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     show_log_card   <- reactiveVal(FALSE)
     show_readme_card <- reactiveVal(FALSE)
     script_content_reactive <- reactiveVal(NULL)
+    popup_task_name <- reactiveVal(NULL)
     
     # --- Главная реактивка с учётом всех фильтров ---
     task_data <- reactive({
@@ -236,19 +233,24 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
     
     # ───── Таблица с поиском по всем столбцам ─────
     output$task_table <- renderDT({
-      datatable(task_data() %>% select(-update_time),
+      df <- task_data() %>% select(-update_time)
+      
+      datatable(df,
                 filter   = "top",
                 options  = list(
                   pageLength = 25, 
                   scrollX = TRUE,
-                  # Убираем некоторые настройки, которые могут конфликтовать
-                  dom = 'Bfrtip'
+                  dom = 'Bfrtip',
+                  # Добавляем callback для каждой строки
+                  rowCallback = JS(
+                    "function(row, data, index) {",
+                    "  // Добавляем TaskName как data-атрибут к строке",
+                    "  $(row).attr('data-task-name', data[0]);", # data[0] - первый столбец (TaskName)
+                    "}"
+                  )
                 ),
-                # Убираем selection, так как используем собственный обработчик
                 selection = 'none') %>%
-        # Добавляем стиль курсора для указания на кликабельность
-        formatStyle(columns = 1:ncol(task_data() %>% select(-update_time)), 
-                    cursor = 'pointer')
+        formatStyle(columns = 1:ncol(df), cursor = 'pointer')
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────
@@ -262,6 +264,13 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       req(input$selected_task)
       taskscheduler_runnow(taskname = input$selected_task)
       showNotification(glue("Задача '{input$selected_task}' запущена."),
+                       type = "message")
+    })
+    
+    observeEvent(input$run_task_popup, {
+      req(input$selected_task)
+      taskscheduler_runnow(taskname = popup_task_name())
+      showNotification(glue("Задача '{popup_task_name()}' запущена."),
                        type = "message")
     })
     
@@ -717,27 +726,38 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
       }
     })
     
-    # Popup с информацией о задаче по клику на строку таблицы
     observeEvent(input$task_table_cell_clicked, {
       click_info <- input$task_table_cell_clicked
       req(click_info)
       
       # Проверяем, что это двойной клик
       if (!is.null(click_info$value) && click_info$value == "dblclick") {
-        row_idx <- click_info$row + 1  # Приводим к 1-based индексу R
+        task_name <- click_info$taskName
+
+        req(task_name)
         
-        # Берем данные ровно той строки, по которой кликнули
+        # Находим задачу по имени в отфильтрованных данных
         df <- task_data()
+        row <- df %>% slice(as.numeric(task_name))
         
-        # Дополнительная проверка корректности индекса
-        if (nrow(df) >= row_idx && row_idx > 0) {
-          row <- df[row_idx, , drop = FALSE]
+        if (nrow(row) > 0) {
+          row <- row[1, , drop = FALSE]  # Берем первую строку если дубликаты
+          
+          # подхватываем название задачи
+          popup_task_name(row$TaskName)
           
           showModal(modalDialog(
             title = paste("Информация о задаче:", row$TaskName),
             size = "l",
             easyClose = TRUE,
-            footer = modalButton("Закрыть"),
+            footer = tagList(
+              if (user_role() %in% c("admin", "user")) {
+                actionButton(ns("run_task_popup"), "Запустить", 
+                             icon = icon("play"), 
+                             class = "btn btn-success")
+              },
+              modalButton("Закрыть")
+            ),
             div(
               div(class = "mb-2",
                   strong("Название: "),
@@ -768,9 +788,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role) {
               )
             )
           ))
+          
         } else {
-          # Отладочное сообщение
-          cat("Ошибка: некорректный индекс строки:", row_idx, "из", nrow(df), "\n")
+          showNotification("Задача не найдена", type = "error")
         }
       }
     }, ignoreInit = TRUE)
