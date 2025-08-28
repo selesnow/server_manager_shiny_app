@@ -345,24 +345,8 @@ server <- function(input, output, session) {
   observeEvent(logged_in(), {
     if (logged_in()) {
       
-      waiter_show(
-        html = HTML(paste(
-          spin_fading_circles(),
-          br(),
-          h4("Загрузка интерфейса...")
-        )),
-        color = "#333"
-      )
-      
       observe({
-        waiter_show(
-          html = HTML(paste(
-            spin_fading_circles(),
-            br(),
-            h4("Загрузка данных планировщика заданий...")
-          )),
-          color = "#333"
-        )
+
         # показываем общий лоадер интерфейса
         waiter_show(
           html = HTML(paste(spin_fading_circles(), br(), h4("Загрузка интерфейса..."))),
