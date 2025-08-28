@@ -52,7 +52,7 @@ mod_tab_find_in_files_ui <- function(id) {
 }
 
 # Сервер
-mod_tab_find_in_files_server <- function(id, tasks_data) {
+mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
   moduleServer(id, function(input, output, session) {
     search_dirs <- c(
       'C:/my_develop_workshop',
@@ -62,10 +62,12 @@ mod_tab_find_in_files_server <- function(id, tasks_data) {
     )
     
     search_data <- reactiveVal(NULL)
-    search_time <- reactiveVal(NULL)  # <- время поиска
+    search_time <- reactiveVal(NULL) 
     
     observeEvent(input$search_btn, {
       req(input$file_pattern, input$file_types)
+      
+      write_action_log(user = auth$user()$login, func = 'Find in files', session_id)
       
       pattern <- input$file_pattern
       extensions <- input$file_types
@@ -149,24 +151,6 @@ mod_tab_find_in_files_server <- function(id, tasks_data) {
       )
     })
     
-    # observeEvent(input$search_results_rows_selected, {
-    #   selected_row <- input$search_results_rows_selected
-    #   if (!is.null(selected_row)) {
-    #     df <- search_data()
-    #     if (!is.null(df) && nrow(df) >= selected_row) {
-    #       file_path <- df[selected_row, "file", drop = TRUE]
-    #       file_name <- basename(file_path)
-    #       
-    #       clipr::write_clip(file_name)
-    #       
-    #       showNotification(
-    #         paste("Выбран файл:", file_name),
-    #         type = "message",
-    #         duration = 5
-    #       )
-    #     }
-    #   }
-    # })
     
     output$search_message <- renderUI({
       df <- search_data()

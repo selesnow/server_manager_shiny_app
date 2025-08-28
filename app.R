@@ -55,7 +55,7 @@ server <- function(input, output, session) {
   
   observe({
     if (logged_in() && user_role() == "admin") {
-      mod_access_server("access", conn = app_con)
+      mod_access_server("access", conn = app_con, auth, session_id = session$token)
     }
   })
   
@@ -81,6 +81,39 @@ server <- function(input, output, session) {
   # UI для основного контента
   output$app_ui <- renderUI({
     if (logged_in()) {
+      
+      # фиксируем старт сессии
+      user_login <- auth$user()$login
+      session$userData$login <- user_login
+      session$userData$logged_in <- TRUE
+      
+      # фиксируем старт сессии
+      session_log(
+        session_id = session$token,
+        user = auth$user()$login,
+        action = 'start'
+      )
+      
+      # фиксируем завершение сессии
+      session$onSessionEnded(function() {
+        # Этот код ГАРАНТИРОВАННО выполнится при:
+        # ✅ Закрытии браузера пользователем
+        # ✅ Потере соединения WebSocket 
+        # ✅ Зависании R-процесса (если сервер еще жив)
+        # ✅ Таймауте соединения
+        # ✅ Перезагрузке страницы
+        # ✅ "Замутнении" интерфейса
+        
+        if (isolate(logged_in())) {
+          session_log(
+            session_id = session$token,
+            user = session$userData$login,
+            action = 'end'
+          )
+        }
+        
+        message("Session ended: ", session$token)
+      })
       
       # Загрузка основного интерфейса
       fluidPage(
@@ -384,10 +417,10 @@ server <- function(input, output, session) {
       })
       
       # модуль служб ------------------------------------------------------------
-      mod_tab_services_server("services_tab", services_data, user_role)
+      mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token)
       
       # Модуль вкладки задач ----------------------------------------------------
-      mod_tab_tasks_server("tasks_tab", all_tasks, user_role)
+      mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token)
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
@@ -420,6 +453,9 @@ server <- function(input, output, session) {
       
       # Рабочий обработчик кнопки сброса чата
       observeEvent(input$reset_chat, {
+        
+        write_action_log(user = auth$user()$login, func = 'AI Assistant Reset Chat', session_id = session$token)
+        
         # Пересоздаем объект чата
         new_chat <- create_new_chat()
         dev_chat(new_chat)
@@ -437,6 +473,7 @@ server <- function(input, output, session) {
       # Обработчик пользовательского ввода
       observeEvent(input$simple_chat_user_input, {
         req(dev_chat()) # Проверяем что объект чата существует
+        write_action_log(user = auth$user()$login, func = 'AI Assistant', session_id = session$token)
         message("Получен ввод:", input$simple_chat_user_input)
         stream <- dev_chat()$stream_async(input$simple_chat_user_input)
         chat_append("simple_chat", stream)
@@ -447,9 +484,8 @@ server <- function(input, output, session) {
         processes_store()
       })
       
-      #mod_tab_processes_server("processes_tab", process_data)
-      #mod_tab_processes_server("processes_tab", refresh_trigger = refresh_trigger)
-      mod_tab_processes_server("processes_tab", process_data = process_data)
+      # модуль процессов
+      mod_tab_processes_server("processes_tab", process_data = process_data, auth, session_id = session$token)
       
       # Модуль поощь и новости
       mod_help_server("help")
@@ -477,10 +513,10 @@ server <- function(input, output, session) {
   )
   
   # Командная строка --------------------------------------------------------
-  mod_tab_cmd_server("cmd")
+  mod_tab_cmd_server("cmd", auth, session_id = session$token)
   
   # Поиск по файлам ---------------------------------------------------------
-  mod_tab_find_in_files_server("file_search", all_tasks)
+  mod_tab_find_in_files_server("file_search", all_tasks, auth, session_id = session$token)
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
@@ -515,6 +551,7 @@ server <- function(input, output, session) {
       showNotification(paste("Ошибка общей загрузки:", conditionMessage(e)), type = "error", duration = 6)
     })
   })
+  
 }
 
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {

@@ -29,13 +29,14 @@ mod_tab_cmd_ui <- function(id) {
 }
 
 
-mod_tab_cmd_server <- function(id) {
+mod_tab_cmd_server <- function(id, auth, session_id) {
   moduleServer(id, function(input, output, session) {
     
     # Командная строка --------------------------------------------------------
     chat_history <- reactiveVal(list())
     
     observeEvent(input$send_btn, {
+      write_action_log(user = auth$user()$login, func = 'CMD', session_id)
       cmd <- input$user_input
       if (nzchar(cmd)) {
         # Добавим команду пользователя в чат

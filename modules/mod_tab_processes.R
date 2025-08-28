@@ -44,7 +44,7 @@ mod_tab_processes_ui <- function(id) {
   )
 }
 
-mod_tab_processes_server <- function(id, process_data) {
+mod_tab_processes_server <- function(id, process_data, auth, session_id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -125,7 +125,7 @@ mod_tab_processes_server <- function(id, process_data) {
     
     observeEvent(input$kill_process, {
       req(input$filter_files)
-      
+      write_action_log(user = auth$user()$login, func = 'Process kill', session_id)
       data <- process_data()
       target_pids <- data %>%
         filter(files == input$filter_files) %>%

@@ -37,7 +37,7 @@ mod_access_ui <- function(id) {
   )
 }
 
-mod_access_server <- function(id, conn) {
+mod_access_server <- function(id, conn, auth, session_id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -75,6 +75,7 @@ mod_access_server <- function(id, conn) {
     })
     
     observeEvent(input$add_user, {
+      write_action_log(user = auth$user()$login, func = 'User add', session_id)
       if (input$new_password != input$confirm_password) {
         showNotification("Пароли не совпадают!", type = "error")
         return()
@@ -95,12 +96,14 @@ mod_access_server <- function(id, conn) {
     })
     
     observeEvent(input$delete_user, {
+      write_action_log(user = auth$user()$login, func = 'User remove', session_id)
       dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(input$user_to_delete))
       showNotification("Пользователь удалён", type = "message")
       users_trigger(users_trigger() + 1)
     })
     
     observeEvent(input$change_role, {
+      write_action_log(user = auth$user()$login, func = 'User change role', session_id)
       dbExecute(conn,
                 "UPDATE users SET role = ? WHERE login = ?",
                 params = list(input$updated_role, input$user_to_change))
@@ -109,6 +112,7 @@ mod_access_server <- function(id, conn) {
     })
     
     observeEvent(input$reset_password, {
+      write_action_log(user = auth$user()$login, func = 'User password reset', session_id)
       if (input$new_user_password != input$confirm_user_password) {
         showNotification("Пароли не совпадают!", type = "error")
         return()
