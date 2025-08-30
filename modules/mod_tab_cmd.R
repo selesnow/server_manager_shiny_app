@@ -36,7 +36,7 @@ mod_tab_cmd_server <- function(id, auth, session_id) {
     chat_history <- reactiveVal(list())
     
     observeEvent(input$send_btn, {
-      write_action_log(user = auth$user()$login, func = 'CMD', session_id)
+      write_action_log(user = auth$user()$login, func = 'CMD', session_id, value = input$user_input)
       cmd <- input$user_input
       if (nzchar(cmd)) {
         # Добавим команду пользователя в чат

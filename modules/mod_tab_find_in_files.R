@@ -67,7 +67,7 @@ mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
     observeEvent(input$search_btn, {
       req(input$file_pattern, input$file_types)
       
-      write_action_log(user = auth$user()$login, func = 'Find in files', session_id)
+      write_action_log(user = auth$user()$login, func = 'Find in files', session_id, value = input$file_pattern)
       
       pattern <- input$file_pattern
       extensions <- input$file_types

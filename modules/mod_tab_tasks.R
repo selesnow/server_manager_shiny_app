@@ -262,7 +262,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     observeEvent(input$run_task, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Task run', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task run', session_id, value = input$selected_task)
       taskscheduler_runnow(taskname = input$selected_task)
       showNotification(glue("Задача '{input$selected_task}' запущена."),
                        type = "message")
@@ -270,7 +270,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     observeEvent(input$run_task_popup, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Task run (popup)', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task run (popup)', session_id, value = popup_task_name())
       taskscheduler_runnow(taskname = popup_task_name())
       showNotification(glue("Задача '{popup_task_name()}' запущена."),
                        type = "message")
@@ -366,7 +366,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик кнопки "Логи"
     observeEvent(input$view_task_logs, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Task log', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task log', session_id, value = input$selected_task)
       # Находим выбранную задачу в таблице
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
@@ -403,7 +403,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик кнопки "Код"
     observeEvent(input$view_script, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Task script', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task script', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
       
@@ -445,7 +445,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик кнопки "README"
     observeEvent(input$view_task_readme, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Task README', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task README', session_id, value = input$selected_task)
       # Находим выбранную задачу в таблице
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
@@ -581,7 +581,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     observeEvent(input$upload_to_gs, {
       req(filtered_task_data())
-      write_action_log(user = auth$user()$login, func = 'Load task table to google sheet', session_id)
+
       # Авторизация
       gs4_auth(path = serviceaccounts::get_sa_from_internal_file())
       drive_auth(path = serviceaccounts::get_sa_from_internal_file())
@@ -596,6 +596,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       drive_mv(ss, path = "task_scheduller/")
       
       sheet_url(gs4_get(ss)$spreadsheet_url)
+      
+      write_action_log(user = auth$user()$login, func = 'Load task table to google sheet', session_id, value = sheet_url())
       
       # Можно тут ещё всплывающее уведомление или alert добавить
       showNotification("Файл успешно выгружен в Google Sheets!", type = "message")
@@ -616,7 +618,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Анализ Rout
     observeEvent(input$analyze_log, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Rout ai analyze', session_id)
+      write_action_log(user = auth$user()$login, func = 'Rout ai analyze', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
       
@@ -673,7 +675,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Анализ R кода
     observeEvent(input$analyze_script, {
       req(input$selected_task)
-      write_action_log(user = auth$user()$login, func = 'Script ai analyze', session_id)
+      write_action_log(user = auth$user()$login, func = 'Script ai analyze', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
       
@@ -741,7 +743,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик деактивации задачи
     observeEvent(input$deactivate_task_popup, {
       req(popup_task_name())
-      write_action_log(user = auth$user()$login, func = 'Task deactivate', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task deactivate (popup)', session_id, value = popup_task_name())
       tryCatch({
         task_state_change(popup_task_name(), action = "Disable")
         showNotification(glue("Задача '{popup_task_name()}' деактивирована."), type = "message")
@@ -753,7 +755,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик активации задачи
     observeEvent(input$activate_task_popup, {
       req(popup_task_name())
-      write_action_log(user = auth$user()$login, func = 'Task activate', session_id)
+      write_action_log(user = auth$user()$login, func = 'Task activate (popup)', session_id, value = popup_task_name())
       tryCatch({
         task_state_change(popup_task_name(), action = "Enable")
         showNotification(glue("Задача '{popup_task_name()}' активирована."), type = "message")

@@ -457,7 +457,7 @@ server <- function(input, output, session) {
       # Обработчик пользовательского ввода
       observeEvent(input$simple_chat_user_input, {
         req(dev_chat()) # Проверяем что объект чата существует
-        write_action_log(user = auth$user()$login, func = 'AI Assistant', session_id = session$token)
+        write_action_log(user = auth$user()$login, func = 'AI Assistant', session_id = session$token, value = input$simple_chat_user_input)
         message("Получен ввод:", input$simple_chat_user_input)
         stream <- dev_chat()$stream_async(input$simple_chat_user_input)
         chat_append("simple_chat", stream)

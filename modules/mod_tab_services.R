@@ -88,21 +88,21 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
     })
     
     observeEvent(input$start_service, {
-      write_action_log(user = auth$user()$login, func = 'Service start', session_id)
+      write_action_log(user = auth$user()$login, func = 'Service start', session_id, value = input$selected_service)
       req(input$selected_service)
       system(glue::glue("nssm start {input$selected_service}"), intern = TRUE)
       showNotification("Служба запущена", type = "message")
     })
     
     observeEvent(input$stop_service, {
-      write_action_log(user = auth$user()$login, func = 'Service stop', session_id)
+      write_action_log(user = auth$user()$login, func = 'Service stop', session_id, value = input$selected_service)
       req(input$selected_service)
       system(glue::glue("nssm stop {input$selected_service}"), intern = TRUE)
       showNotification("Служба остановлена", type = "warning")
     })
     
     observeEvent(input$restart_service, {
-      write_action_log(user = auth$user()$login, func = 'Service restart')
+      write_action_log(user = auth$user()$login, func = 'Service restart', session_id, value = input$selected_service)
       req(input$selected_service)
       system(glue::glue("nssm restart {input$selected_service}"), intern = TRUE)
       showNotification("Служба перезапущена", type = "message")

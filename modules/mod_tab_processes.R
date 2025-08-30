@@ -125,7 +125,7 @@ mod_tab_processes_server <- function(id, process_data, auth, session_id) {
     
     observeEvent(input$kill_process, {
       req(input$filter_files)
-      write_action_log(user = auth$user()$login, func = 'Process kill', session_id)
+      write_action_log(user = auth$user()$login, func = 'Process kill', session_id, value = input$filter_files)
       data <- process_data()
       target_pids <- data %>%
         filter(files == input$filter_files) %>%

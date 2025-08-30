@@ -8,8 +8,9 @@
 #'
 write_action_log <- function(
   func,
-  user = auth$user(),
-  session_id = 'x0'
+  user       = auth$user(),
+  session_id = 'x0',
+  value      = NULL
 ) {
   
   if (Sys.getenv('SM_ACTION_LOG')=="") {
@@ -20,7 +21,8 @@ write_action_log <- function(
         datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
         func_name  = func,
         user       = user,
-        session_id = session_id
+        session_id = session_id,
+        value      = value
       )
       
       dbWriteTable(con, 'action_log', log_row, append = TRUE)
