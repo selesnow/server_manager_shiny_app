@@ -58,18 +58,13 @@ mod_tab_logs_ui <- function(id) {
 }
 
 
-mod_tab_logs_server <- function(id) {
+mod_tab_logs_server <- function(id, session_store, action_store) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
     # Загружаем данные
-    sessions <- reactive({
-      get_session_log()
-    })
-    
-    actions <- reactive({
-      get_action_log()
-    })
+    sessions <- reactive({ session_store() })
+    actions  <- reactive({ action_store() })
     
     # --- Фильтры ---
     output$user_filter <- renderUI({

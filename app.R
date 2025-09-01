@@ -337,6 +337,8 @@ server <- function(input, output, session) {
   all_tasks <- reactiveVal(NULL)
   services_store <- reactiveVal(NULL)
   processes_store <- reactiveVal(NULL)
+  session_store <- reactiveVal(NULL)
+  action_store  <- reactiveVal(NULL)
   
   # Добавляем реактивное значение для отслеживания обновлений
   refresh_trigger <- reactiveVal(0)
@@ -362,6 +364,8 @@ server <- function(input, output, session) {
         p_tasks    <- future_promise({ get_tasks() })
         p_services <- future_promise({ get_services() })
         p_process  <- future_promise({ get_processes() })
+        p_sessions <- future_promise({ get_session_log() })
+        p_actions  <- future_promise({ get_action_log() })
         
         # обновляем хранилища по мере готовности (UI не блокируется)
         p_tasks %...>% (function(x) {
@@ -385,16 +389,29 @@ server <- function(input, output, session) {
           showNotification(paste("Ошибка загрузки процессов:", conditionMessage(e)), type = "error", duration = 6)
         })
         
+        p_sessions %...>% (function(x) {
+          session_store(x)
+          showNotification("Логи сессий загружены", type = "message", duration = 2)
+        })
+        p_actions  %...>% (function(x) {
+          action_store(x)
+          showNotification("Логи действий загружены", type = "message", duration = 2)
+        })
+        
         # как только всё трое завершатся — прячем общий лоадер
         promise_all(
           tasks = p_tasks,
           services = p_services,
-          processes = p_process
+          processes = p_process,
+          sessions = p_sessions,
+          actions  = p_actions
         ) %...>% with({
           # Этот блок выполняется когда всё завершено
           all_tasks(tasks)
           services_store(services)
           processes_store(processes)
+          session_store(sessions)
+          action_store(actions)
           waiter_hide()
           showNotification("Все данные загружены", type = "message", duration = 3)
         }) %...!% (function(e) {
@@ -481,7 +498,7 @@ server <- function(input, output, session) {
       mod_news_server("news")
       
       # Модуль логов
-      mod_tab_logs_server("logs_tab")
+      mod_tab_logs_server("logs_tab", session_store, action_store)
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
@@ -512,7 +529,6 @@ server <- function(input, output, session) {
   
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
-    # Можно показать компактный лоадер
     waiter_show(
       html = HTML(paste(spin_fading_circles(), br(), h4("Обновляем данные..."))),
       color = "#333"
@@ -521,21 +537,27 @@ server <- function(input, output, session) {
     p_tasks    <- future_promise({ get_tasks() })
     p_services <- future_promise({ get_services() })
     p_process  <- future_promise({ get_processes() })
+    p_sessions <- future_promise({ get_session_log() })
+    p_actions  <- future_promise({ get_action_log() })
     
-    p_tasks    %...>% (function(x) all_tasks(x))    %...!% (function(e) showNotification(paste("Ошибка задач:",    conditionMessage(e)), type = "error", duration = 6))
-    p_services %...>% (function(x) services_store(x)) %...!% (function(e) showNotification(paste("Ошибка служб:",    conditionMessage(e)), type = "error", duration = 6))
-    p_process  %...>% (function(x) processes_store(x))%...!% (function(e) showNotification(paste("Ошибка процессов:", conditionMessage(e)), type = "error", duration = 6))
+    p_tasks    %...>% (function(x) all_tasks(x))
+    p_services %...>% (function(x) services_store(x))
+    p_process  %...>% (function(x) processes_store(x))
+    p_sessions %...>% (function(x) session_store(x))
+    p_actions  %...>% (function(x) action_store(x))
     
-    # Объединяем всё через promise_all
     promise_all(
-      tasks = p_tasks,
+      tasks    = p_tasks,
       services = p_services,
-      processes = p_process
+      process  = p_process,
+      sessions = p_sessions,
+      actions  = p_actions
     ) %...>% with({
-      # Этот блок выполняется когда всё завершено
       all_tasks(tasks)
       services_store(services)
-      processes_store(processes)
+      processes_store(process)
+      session_store(sessions)
+      action_store(actions)
       waiter_hide()
       showNotification("Все данные загружены", type = "message", duration = 3)
     }) %...!% (function(e) {
