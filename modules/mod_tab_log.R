@@ -139,7 +139,7 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
       HTML(paste0(
         "<div>◦ Уникальных пользователей: ", users, "</div>",
         "<div>◦ Сессий: ", sessions_count, "</div>",
-        "<div>◦ Общая длительность (сек): ", format_seconds(total_duration), "</div>",
+        "<div>◦ Общая длительность: ", format_seconds(total_duration), "</div>",
         "<div>◦ Событий: ", actions_count, "</div>"
       ))
     })
