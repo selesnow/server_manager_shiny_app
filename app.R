@@ -232,6 +232,11 @@ server <- function(input, output, session) {
             tabPanel("Доступ", mod_access_ui("access"))
           },
           
+          # Вкладка логов
+          if (user_role() == "admin") {
+            mod_tab_logs_ui("logs_tab")
+          },
+          
           # Помощь и обновления
           mod_help_ui('help'),
           mod_news_ui('news')
@@ -474,6 +479,9 @@ server <- function(input, output, session) {
       # Модуль поощь и новости
       mod_help_server("help")
       mod_news_server("news")
+      
+      # Модуль логов
+      mod_tab_logs_server("logs_tab")
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
