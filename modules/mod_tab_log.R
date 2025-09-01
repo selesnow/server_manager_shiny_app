@@ -167,7 +167,7 @@ mod_tab_logs_server <- function(id) {
       req(filtered_sessions())
       filtered_sessions() %>%
         count(date) %>%
-        ggplot(aes(x = date, y = n)) +
+        ggplot(aes(x = date, y = n, group = 1)) +
         geom_line() + geom_point() +
         labs(title = "Количество сессий по дням", x = "", y = "")
     })
