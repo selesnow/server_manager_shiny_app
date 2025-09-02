@@ -80,17 +80,94 @@ mod_tab_tasks_ui <- function(id) {
                         selectInput(ns("selected_task"), "Выберите задачу:",
                                     choices = NULL, width = "750px"),
                         div(class = "action-buttons",
-                            uiOutput(ns("run_button")),
-                            actionButton(ns("view_task_logs"),  "Логи",
-                                         icon = icon("file-alt"),  class = "btn-info"),
-                            actionButton(ns("analyze_log"),     "Анализ Rout",
-                                         icon = icon("brain"),     class = "btn-info"),
-                            actionButton(ns("view_script"),     "Код",
-                                         icon = icon("code"),      class = "btn-info"),
-                            actionButton(ns("analyze_script"),  "Объясни код",
-                                         icon = icon("lightbulb"), class = "btn-info"),
-                            actionButton(ns("view_task_readme"), "README",
-                                         icon = icon("file-alt"),   class = "btn-info")
+                            style = "padding: 10px; background-color: #f8f9fa; border-radius: 8px; width: 100%; margin: 0 auto;",
+                            
+                            # Добавляем стили для кнопок
+                            tags$style("
+                                .action-buttons {
+                                  text-align: center;
+                                  width: 100%;
+                                }
+                                .action-buttons .btn-row {
+                                  display: flex !important;
+                                  justify-content: center !important;
+                                  align-items: center !important;
+                                  gap: 6px;
+                                  margin-bottom: 8px;
+                                  flex-wrap: wrap;
+                                  width: 100%;
+                                }
+                                .action-buttons .btn-row:last-child {
+                                  margin-bottom: 0;
+                                }
+                                .action-buttons .btn {
+                                  font-size: 12px !important;
+                                  padding: 5px 10px !important;
+                                  height: 34px !important;
+                                  min-width: 115px !important;
+                                  max-width: 125px !important;
+                                  white-space: nowrap !important;
+                                  overflow: hidden !important;
+                                  text-overflow: ellipsis !important;
+                                }
+                                
+                                /* Мобильные устройства */
+                                @media (max-width: 768px) {
+                                  .action-buttons .btn {
+                                    min-width: 90px !important;
+                                    max-width: 95px !important;
+                                    font-size: 11px !important;
+                                    padding: 4px 8px !important;
+                                    height: 32px !important;
+                                  }
+                                  .action-buttons .btn-row {
+                                    gap: 4px;
+                                  }
+                                }
+                                
+                                /* Очень маленькие экраны */
+                                @media (max-width: 480px) {
+                                  .action-buttons .btn {
+                                    min-width: 70px !important;
+                                    max-width: 75px !important;
+                                    font-size: 10px !important;
+                                    padding: 3px 6px !important;
+                                    height: 30px !important;
+                                  }
+                                  .action-buttons .btn-row {
+                                    gap: 3px;
+                                  }
+                                }
+                              "),
+                            
+                            # --- Ряд 1: Основные действия ---
+                            div(class = "btn-row",
+                                uiOutput(ns("run_button")),
+                                uiOutput(ns("activate_task")),
+                                uiOutput(ns("deactivate_task"))
+                            ),
+                            
+                            # --- Ряд 2: Дополнительные функции ---
+                            div(class = "btn-row",
+                                actionButton(ns("view_task_logs"),   "Логи",
+                                             icon = icon("file-alt"), 
+                                             class = "btn-info"),
+                                actionButton(ns("analyze_log"),      "Анализ",
+                                             icon = icon("brain"), 
+                                             class = "btn-info"),
+                                actionButton(ns("view_script"),      "Код",
+                                             icon = icon("code"), 
+                                             class = "btn-info"),
+                                actionButton(ns("analyze_script"),   "Объясни",
+                                             icon = icon("lightbulb"), 
+                                             class = "btn-info"),
+                                actionButton(ns("view_task_readme"), "README",
+                                             icon = icon("book"), 
+                                             class = "btn-info"),
+                                actionButton(ns("view_task_news"),   "NEWS",
+                                             icon = icon("newspaper"), 
+                                             class = "btn-info")
+                            )
                         ),
                         div(class = "card mt-3", id = ns("task_info_card"),
                             div(class = "card-header", "Информация о задаче"),
@@ -268,6 +345,28 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                        type = "message")
     })
     
+    # Активировать задачу (блок управления задачами)
+    observeEvent(input$activate_task, {
+      req(input$selected_task)
+      
+      write_action_log(user = auth$user()$login, func = 'Activate task',
+                       session_id, value = input$selected_task)
+      
+      task_state_change(input$selected_task, action = "Enable")
+      showNotification(paste("Задача", input$selected_task, "активирована"), type = "message")
+    })
+    
+    # Деактивировать задачу (блок управления задачами)
+    observeEvent(input$deactivate_task, {
+      write_action_log(user = auth$user()$login, func = 'Deactivate task',
+                       session_id, value = input$selected_task)
+      req(input$selected_task)
+      
+      task_state_change(input$selected_task, action = "Disable")
+      showNotification(paste("Задача", input$selected_task, "деактивирована"), type = "warning")
+    })
+    
+    
     observeEvent(input$run_task_popup, {
       req(input$selected_task)
       write_action_log(user = auth$user()$login, func = 'Task run (popup)', session_id, value = popup_task_name())
@@ -280,6 +379,22 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       role <- user_role()
       if (role %in% c("admin", "user")) {
         actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success")
+      }
+    })
+    
+    output$activate_task <- renderUI({
+      role <- user_role()
+      if (role %in% c("admin", "user")) {
+        actionButton(ns("activate_task"), "Активировать",
+                     icon = icon("toggle-on"), class = "btn-success")
+      }
+    })
+    
+    output$deactivate_task <- renderUI({
+      role <- user_role()
+      if (role %in% c("admin", "user")) {
+        actionButton(ns("deactivate_task"), "Деактивировать",
+                     icon = icon("toggle-off"), class = "btn-warning")
       }
     })
     
@@ -325,6 +440,16 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                       style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_script_analysis"))
+                    )
+                  ),
+                  tabPanel(
+                    title = tagList(icon("newspaper"), "NEWS"),
+                    value = "news",
+                    tags$div(
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; 
+                               border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      uiOutput(ns("task_news_content"))
                     )
                   )
                 )
@@ -487,6 +612,42 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
         showNotification("Задача не найдена", type = "error")
       }
     })
+    
+    # NEWS
+    observeEvent(input$view_task_news, {
+      req(input$selected_task)
+      write_action_log(user = auth$user()$login, func = 'Task NEWS', session_id, value = input$selected_task)
+      
+      selected_task_data <- all_tasks_reactive() %>% 
+        filter(TaskName == input$selected_task)
+      
+      if (nrow(selected_task_data) > 0) {
+        start_in <- selected_task_data$`Start In`
+        start_in <- str_remove(start_in, '\\\\R$|/R$|/R/$')
+        
+        news_content <- try(find_news(start_in = start_in), silent = TRUE)
+        
+        output$task_news_content <- renderUI({
+          md_path   <- file.path(unique(start_in), "NEWS.md")
+          html_path <- file.path(unique(start_in), "NEWS.html")
+          
+          if (file.exists(md_path)) {
+            includeMarkdown(md_path)
+          } else if (file.exists(html_path)) {
+            includeHTML(html_path)
+          } else {
+            HTML("<p>NEWS не найден!</p>")
+          }
+        })
+        
+        output$log_task_name <- renderText({ paste("NEWS:", input$selected_task) })
+        show_log_card(TRUE)
+        updateTabsetPanel(session, "log_tabs", selected = "news")
+      } else {
+        showNotification("Задача не найдена", type = "error")
+      }
+    })
+    
     
     # Вывод дополнительный информации о выбранной задаче
     selected_task_details <- reactive({
