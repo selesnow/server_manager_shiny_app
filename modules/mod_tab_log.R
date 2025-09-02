@@ -51,6 +51,22 @@ mod_tab_logs_ui <- function(id) {
       )
     ),
     fluidRow(
+      column(
+        6,
+        div(class = "card",
+            div(class = "card-header", "Активность пользователей"),
+            div(class = "card-body", DTOutput(ns("user_activity_table")))
+        )
+      ),
+      column(
+        6,
+        div(class = "card",
+            div(class = "card-header", "Используемый функционал"),
+            div(class = "card-body", DTOutput(ns("function_usage_table")))
+        )
+      )
+    ),
+    fluidRow(
       column(6, plotOutput(ns("sessions_plot"))),
       column(6, plotOutput(ns("actions_plot")))
     )
@@ -157,6 +173,35 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
       datatable(filtered_actions(), options = list(pageLength = 10, scrollX = TRUE))
     })
     
+    # --- Новая таблица: Активность пользователей ---
+    output$user_activity_table <- renderDT({
+      req(filtered_sessions(), filtered_actions())
+      activity <- filtered_sessions() %>%
+        group_by(user) %>%
+        summarise(
+          sessions = n_distinct(session_id),
+          actions = sum(session_id %in% filtered_actions()$session_id),
+          total_duration = sum(duration_seconds, na.rm = TRUE),
+          .groups = "drop"
+        ) %>% 
+        arrange(desc(sessions))
+      datatable(activity, options = list(pageLength = 10, scrollX = TRUE))
+    })
+    
+    # --- Новая таблица: Используемый функционал ---
+    output$function_usage_table <- renderDT({
+      req(filtered_actions())
+      usage <- filtered_actions() %>%
+        group_by(action) %>%
+        summarise(
+          total_used = n(),
+          sessions = n_distinct(session_id),
+          .groups = "drop"
+        ) %>% 
+        arrange(desc(total_used))
+      datatable(usage, options = list(pageLength = 10, scrollX = TRUE))
+    })
+    
     # --- Графики ---
     output$sessions_plot <- renderPlot({
       req(filtered_sessions())
@@ -172,7 +217,7 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
       filtered_actions() %>%
         mutate(date = as.Date(datetime)) %>%
         count(date) %>%
-        ggplot(aes(x = date, y = n)) +
+        ggplot(aes(x = date, y = n, group = 1)) +
         geom_line() + geom_point() +
         labs(title = "Количество событий по дням", x = "", y = "")
     })
