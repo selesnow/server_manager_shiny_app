@@ -67,6 +67,17 @@ mod_tab_logs_ui <- function(id) {
         )
       )
     ),
+    # 👉 Новый блок с таблицей ошибок
+    fluidRow(
+      column(
+        width = 12,
+        div(class = "card",
+            div(class = "card-header", "Лог ошибок приложения"),
+            div(class = "card-body", DTOutput(ns("error_log_table")))
+        )
+      )
+    ),
+    # Графики
     fluidRow(
       column(6, plotOutput(ns("sessions_plot"))),
       column(6, plotOutput(ns("actions_plot")))
@@ -82,6 +93,15 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     # Загружаем данные
     sessions <- reactive({ session_store() })
     actions  <- reactive({ action_store() })
+    
+    # --- Лог ошибок (читаем один раз при старте) ---
+    error_data <- get_error_log()
+    output$error_log_table <- renderDT({
+      datatable(
+        error_data,
+        options = list(pageLength = 10, scrollX = TRUE)
+      )
+    })
     
     # --- Фильтры ---
     output$user_filter <- renderUI({
@@ -225,7 +245,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         mutate(date = as.Date(datetime)) %>%
         count(date) %>%
         ggplot(aes(x = date, y = n, group = 1)) +
-        geom_line() +  # сглаженная линия без доверительного интервала
+        geom_line() +
         geom_point() +
         labs(title = "Количество событий по дням", x = "", y = "")
     })

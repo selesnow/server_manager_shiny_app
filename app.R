@@ -51,7 +51,6 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   
   options(shiny.error = function(...) {
-    print("ОШИБКА!!!")
     
     # Получаем последнее сообщение об ошибке
     last_error_msg <- geterrmessage()
@@ -70,7 +69,7 @@ server <- function(input, output, session) {
       }
     } else {
       # Если объект ошибки не передан, используем geterrmessage()
-      msg <- str_glue("Ошибка в приложении: {last_error_msg}")
+      msg <- str_glue("{last_error_msg}")
     }
     
     print(paste("Сообщение об ошибке:", msg))

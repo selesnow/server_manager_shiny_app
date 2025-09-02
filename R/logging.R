@@ -146,6 +146,21 @@ get_action_log <- function() {
   
 }
 
+get_error_log <- function() {
+  
+  con <- dbConnect(SQLite(), "app.db")
+  
+  error_log <- dbGetQuery(
+    con,
+    "SELECT * FROM error_log"
+  )
+  
+  dbDisconnect(con)
+  
+  return(error_log)
+  
+}
+
 format_seconds <- function(seconds) {
   h <- seconds %/% 3600
   m <- (seconds %% 3600) %/% 60
