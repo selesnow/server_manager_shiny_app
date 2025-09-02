@@ -19,7 +19,8 @@ mod_tab_logs_ui <- function(id) {
                   column(3, uiOutput(ns("tab_filter"))),
                   column(3, uiOutput(ns("action_filter")))
                 )
-            )
+            ),
+            div(class = "card-footer", textOutput(ns("last_update")))
         )
       )
     ),
@@ -74,7 +75,7 @@ mod_tab_logs_ui <- function(id) {
 }
 
 
-mod_tab_logs_server <- function(id, session_store, action_store) {
+mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -112,6 +113,11 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
         df <- df %>% filter(user == input$user)
       }
       df
+    })
+    
+    output$last_update <- renderText({
+      req(logs_last_update())
+      paste("Данные логов обновлены:", format(logs_last_update(), "%Y-%m-%d %H:%M:%S"))
     })
     
     # выбранная сессия
@@ -208,7 +214,8 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
       filtered_sessions() %>%
         count(date) %>%
         ggplot(aes(x = date, y = n, group = 1)) +
-        geom_line() + geom_point() +
+        geom_line() + 
+        geom_point() +
         labs(title = "Количество сессий по дням", x = "", y = "")
     })
     
@@ -218,7 +225,8 @@ mod_tab_logs_server <- function(id, session_store, action_store) {
         mutate(date = as.Date(datetime)) %>%
         count(date) %>%
         ggplot(aes(x = date, y = n, group = 1)) +
-        geom_line() + geom_point() +
+        geom_line() +  # сглаженная линия без доверительного интервала
+        geom_point() +
         labs(title = "Количество событий по дням", x = "", y = "")
     })
   })

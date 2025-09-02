@@ -28,8 +28,10 @@ library(bslib)
 library(promises)
 library(future)
 library(forcats)
+library(ggthemr)
 
 plan(multisession)
+ggthemr('flat dark')
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
@@ -160,9 +162,6 @@ server <- function(input, output, session) {
           # Вкладка "Службы"
           mod_tab_services_ui("services_tab"),
           
-          # Улучшенная вкладка "Статистика"
-          mod_tab_statistic_ui("stats_tab"),
-          
           # Модуль AI разработки
           tabPanel(
             "AI Ассистент",
@@ -212,9 +211,9 @@ server <- function(input, output, session) {
             )
           ),
           
-          # CMD только для admin и user
+          # Поиск по файлам — только для admin и user
           if (user_role() %in% c("admin", "user")) {
-            mod_tab_cmd_ui("cmd")
+            mod_tab_find_in_files_ui("file_search")
           },
           
           # Процессы — только для admin и user
@@ -222,15 +221,18 @@ server <- function(input, output, session) {
             mod_tab_processes_ui("processes_tab")
           },
           
-          # Поиск по файлам — только для admin и user
+          # CMD только для admin и user
           if (user_role() %in% c("admin", "user")) {
-            mod_tab_find_in_files_ui("file_search")
+            mod_tab_cmd_ui("cmd")
           },
           
           # Доступы — только для admin
           if (user_role() == "admin") {
             tabPanel("Доступ", mod_access_ui("access"))
           },
+          
+          # Улучшенная вкладка "Статистика"
+          mod_tab_statistic_ui("stats_tab"),
           
           # Вкладка логов
           if (user_role() == "admin") {
@@ -339,6 +341,9 @@ server <- function(input, output, session) {
   processes_store <- reactiveVal(NULL)
   session_store <- reactiveVal(NULL)
   action_store  <- reactiveVal(NULL)
+  
+  # фиксация изменения логов
+  logs_last_update <- reactiveVal(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
   
   # Добавляем реактивное значение для отслеживания обновлений
   refresh_trigger <- reactiveVal(0)
@@ -498,7 +503,7 @@ server <- function(input, output, session) {
       mod_news_server("news")
       
       # Модуль логов
-      mod_tab_logs_server("logs_tab", session_store, action_store)
+      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update)
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
@@ -558,6 +563,9 @@ server <- function(input, output, session) {
       processes_store(process)
       session_store(sessions)
       action_store(actions)
+      
+      logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
+      
       waiter_hide()
       showNotification("Все данные загружены", type = "message", duration = 3)
     }) %...!% (function(e) {
