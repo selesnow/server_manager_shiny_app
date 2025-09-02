@@ -58,6 +58,27 @@ session_log <- function(
   
 }
 
+error_log <- function(
+      session_id = "x0",
+      user       = "",
+      error      = ""
+) {
+  
+  con <- dbConnect(SQLite(), "app.db")
+  
+  log_row <- tibble(
+    datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
+    session_id = session_id,
+    user       = user,
+    error      = error
+  )
+  
+  dbWriteTable(con, 'error_log', log_row, append = TRUE)
+  
+  dbDisconnect(con)
+  
+} 
+
 get_session_log <- function() {
   
   con <- dbConnect(SQLite(), "app.db")

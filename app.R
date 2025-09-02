@@ -50,6 +50,43 @@ ui <- fluidPage(
 # Серверная часть ---------------------------------------------------------
 server <- function(input, output, session) {
   
+  options(shiny.error = function(...) {
+    print("ОШИБКА!!!")
+    
+    # Получаем последнее сообщение об ошибке
+    last_error_msg <- geterrmessage()
+    
+    # Получаем стек вызовов
+    call_stack <- sys.calls()
+    
+    # Формируем сообщение
+    if (length(list(...)) > 0 && !is.null(list(...)[[1]])) {
+      # Если объект ошибки передан
+      e <- list(...)[[1]]
+      msg <- if(is.null(e$call)) {
+        as.character(e$message)
+      } else {
+        str_glue("Ошибка вызвана [{deparse(e$call, nlines = 1L)}]: {e$message}")
+      }
+    } else {
+      # Если объект ошибки не передан, используем geterrmessage()
+      msg <- str_glue("Ошибка в приложении: {last_error_msg}")
+    }
+    
+    print(paste("Сообщение об ошибке:", msg))
+    print(paste("Стек вызовов:", length(call_stack), "уровней"))
+    
+    tryCatch({
+      error_log(
+        session_id = session$token %||% "unknown", 
+        user = session$userData$login %||% "unknown", 
+        error = msg
+      )
+    }, error = function(err) {
+      cat("Не удалось записать ошибку в базу:", msg, "\n")
+    })
+  })
+  
   # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
   # Коннект к БД

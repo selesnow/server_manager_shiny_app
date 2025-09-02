@@ -29,6 +29,16 @@ CREATE TABLE IF NOT EXISTS session_log (
 ")
 
 dbExecute(con, "
+CREATE TABLE IF NOT EXISTS error_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  datetime   DATETIME,
+  session_id TEXT,
+  user       TEXT,
+  error      TEXT
+);
+")
+
+dbExecute(con, "
 CREATE TABLE IF NOT EXISTS users (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   login    TEXT UNIQUE NOT NULL,

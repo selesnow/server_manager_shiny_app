@@ -366,6 +366,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # Обработчик кнопки "Логи"
     observeEvent(input$view_task_logs, {
       req(input$selected_task)
+      
       write_action_log(user = auth$user()$login, func = 'Task log', session_id, value = input$selected_task)
       # Находим выбранную задачу в таблице
       selected_task_data <- all_tasks_reactive() %>% 
