@@ -152,13 +152,13 @@ mod_tab_tasks_ui <- function(id) {
                                 actionButton(ns("view_task_logs"),   "Логи",
                                              icon = icon("file-alt"), 
                                              class = "btn-info"),
-                                actionButton(ns("analyze_log"),      "Анализ",
+                                actionButton(ns("analyze_log"),      "Анализ Rout",
                                              icon = icon("brain"), 
                                              class = "btn-info"),
                                 actionButton(ns("view_script"),      "Код",
                                              icon = icon("code"), 
                                              class = "btn-info"),
-                                actionButton(ns("analyze_script"),   "Объясни",
+                                actionButton(ns("analyze_script"),   "Объясни код",
                                              icon = icon("lightbulb"), 
                                              class = "btn-info"),
                                 actionButton(ns("view_task_readme"), "README",
@@ -394,7 +394,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       role <- user_role()
       if (role %in% c("admin", "user")) {
         actionButton(ns("deactivate_task"), "Деактивировать",
-                     icon = icon("toggle-off"), class = "btn-warning")
+                     icon = icon("toggle-off"), class = "btn-danger btn-sm ml-2")
       }
     })
     
@@ -1012,12 +1012,12 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                   actionButton(ns("run_task_popup"), "Запустить", 
                                icon = icon("play"), 
                                class = "btn btn-success"),
-                  actionButton(ns("deactivate_task_popup"), "Деактивировать", 
-                               icon = icon("pause"), 
-                               class = "btn btn-warning"),
                   actionButton(ns("activate_task_popup"), "Активировать", 
-                               icon = icon("play-circle"), 
-                               class = "btn btn-info")
+                               icon = icon("toggle-on"), 
+                               class = "btn-success"),
+                  actionButton(ns("deactivate_task_popup"), "Деактивировать", 
+                               icon = icon("toggle-off"), 
+                               class = "btn-danger btn-sm ml-2")
                 )
               },
               modalButton("Закрыть")
