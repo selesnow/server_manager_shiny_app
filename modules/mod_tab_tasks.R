@@ -80,7 +80,7 @@ mod_tab_tasks_ui <- function(id) {
                         selectInput(ns("selected_task"), "Выберите задачу:",
                                     choices = NULL, width = "750px"),
                         div(class = "action-buttons",
-                            style = "padding: 10px; background-color: #f8f9fa; border-radius: 8px; width: 100%; margin: 0 auto;",
+                            style = "padding: 10px; background-color: #343a40; border-radius: 8px; width: 100%; margin: 0 auto;",
                             
                             # Добавляем стили для кнопок
                             tags$style("
@@ -105,7 +105,7 @@ mod_tab_tasks_ui <- function(id) {
                                   padding: 5px 10px !important;
                                   height: 34px !important;
                                   min-width: 115px !important;
-                                  max-width: 125px !important;
+                                  max-width: 140px !important;
                                   white-space: nowrap !important;
                                   overflow: hidden !important;
                                   text-overflow: ellipsis !important;
@@ -115,7 +115,7 @@ mod_tab_tasks_ui <- function(id) {
                                 @media (max-width: 768px) {
                                   .action-buttons .btn {
                                     min-width: 90px !important;
-                                    max-width: 95px !important;
+                                    max-width: 100px !important;
                                     font-size: 11px !important;
                                     padding: 4px 8px !important;
                                     height: 32px !important;
