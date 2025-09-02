@@ -53,6 +53,15 @@ mod_tab_logs_ui <- function(id) {
     ),
     fluidRow(
       column(
+        width = 12,
+        div(class = "card",
+            div(class = "card-header", "Лог ошибок приложения"),
+            div(class = "card-body", DTOutput(ns("error_log_table")))
+        )
+      )
+    ),
+    fluidRow(
+      column(
         6,
         div(class = "card",
             div(class = "card-header", "Активность пользователей"),
@@ -67,16 +76,6 @@ mod_tab_logs_ui <- function(id) {
         )
       )
     ),
-    # 👉 Новый блок с таблицей ошибок
-    fluidRow(
-      column(
-        width = 12,
-        div(class = "card",
-            div(class = "card-header", "Лог ошибок приложения"),
-            div(class = "card-body", DTOutput(ns("error_log_table")))
-        )
-      )
-    ),
     # Графики
     fluidRow(
       column(6, plotOutput(ns("sessions_plot"))),
@@ -85,28 +84,34 @@ mod_tab_logs_ui <- function(id) {
   )
 }
 
-
 mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # Загружаем данные
-    sessions <- reactive({ session_store() })
-    actions  <- reactive({ action_store() })
+    # --- Данные ---
+    all_sessions <- reactive({ session_store() })
+    actions      <- reactive({ action_store() })
     
     # --- Лог ошибок (читаем один раз при старте) ---
     error_data <- get_error_log()
     output$error_log_table <- renderDT({
       datatable(
         error_data,
+        selection = "single",
         options = list(pageLength = 10, scrollX = TRUE)
       )
     })
     
+    # выбранный session_id из error_log
+    selected_error_session_id <- reactive({
+      if (is.null(input$error_log_table_rows_selected)) return(NULL)
+      error_data[input$error_log_table_rows_selected, "session_id", drop = TRUE]
+    })
+    
     # --- Фильтры ---
     output$user_filter <- renderUI({
-      req(sessions())
-      users <- unique(sessions()$user)
+      req(all_sessions())
+      users <- unique(all_sessions()$user)
       selectInput(ns("user"), "Пользователь", choices = c("Все", users), selected = "Все")
     })
     
@@ -122,10 +127,10 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       selectInput(ns("action"), "Действие", choices = c("Все", acts), selected = "Все")
     })
     
-    # --- Фильтрованные данные ---
-    filtered_sessions <- reactive({
-      req(sessions())
-      df <- sessions()
+    # --- Базовая фильтрация сессий ---
+    filtered_sessions_base <- reactive({
+      req(all_sessions())
+      df <- all_sessions()
       if (!is.null(input$date_range)) {
         df <- df %>% filter(date >= input$date_range[1], date <= input$date_range[2])
       }
@@ -140,14 +145,32 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       paste("Данные логов обновлены:", format(logs_last_update(), "%Y-%m-%d %H:%M:%S"))
     })
     
-    # выбранная сессия
-    selected_session_id <- reactive({
-      if (is.null(input$sessions_table_rows_selected)) {
-        return(NULL)
-      }
-      filtered_sessions()[input$sessions_table_rows_selected, "session_id", drop = TRUE]
+    # выбранная сессия из таблицы sessions
+    selected_session_id_table <- reactive({
+      if (is.null(input$sessions_table_rows_selected)) return(NULL)
+      filtered_sessions_base()[input$sessions_table_rows_selected, "session_id", drop = TRUE]
     })
     
+    # --- Итоговый выбранный session_id ---
+    selected_session_id <- reactive({
+      if (!is.null(selected_error_session_id())) {
+        selected_error_session_id()
+      } else {
+        selected_session_id_table()
+      }
+    })
+    
+    # --- Финальные сессии ---
+    filtered_sessions_final <- reactive({
+      df <- filtered_sessions_base()
+      # если выбран error_log → фильтруем только по нему
+      if (!is.null(selected_error_session_id())) {
+        df <- df %>% filter(session_id == selected_error_session_id())
+      }
+      df
+    })
+    
+    # --- Фильтрованные действия ---
     filtered_actions <- reactive({
       req(actions())
       df <- actions()
@@ -163,34 +186,18 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       if (!is.null(input$action) && input$action != "Все") {
         df <- df %>% filter(action == input$action)
       }
-      # если выбрана конкретная сессия — фильтруем только её
+      # всегда фильтруем по выбранному session_id (из таблицы или error_log)
       if (!is.null(selected_session_id())) {
         df <- df %>% filter(session_id == selected_session_id())
       }
       df
     })
     
-    # --- Блок статистики ---
-    output$stats_summary <- renderUI({
-      req(filtered_sessions(), filtered_actions())
-      users <- n_distinct(filtered_sessions()$user)
-      sessions_count <- nrow(filtered_sessions())
-      total_duration <- sum(filtered_sessions()$duration_seconds, na.rm = TRUE)
-      actions_count <- nrow(filtered_actions())
-      
-      HTML(paste0(
-        "<div>◦ Уникальных пользователей: ", users, "</div>",
-        "<div>◦ Сессий: ", sessions_count, "</div>",
-        "<div>◦ Общая длительность: ", format_seconds(total_duration), "</div>",
-        "<div>◦ Событий: ", actions_count, "</div>"
-      ))
-    })
-    
     # --- Таблицы ---
     output$sessions_table <- renderDT({
       datatable(
-        filtered_sessions(),
-        selection = "single",   # теперь можно выбрать одну строку
+        filtered_sessions_final(),
+        selection = "single",
         options = list(pageLength = 10, scrollX = TRUE)
       )
     })
@@ -199,10 +206,10 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       datatable(filtered_actions(), options = list(pageLength = 10, scrollX = TRUE))
     })
     
-    # --- Новая таблица: Активность пользователей ---
+    # --- Активность пользователей ---
     output$user_activity_table <- renderDT({
-      req(filtered_sessions(), filtered_actions())
-      activity <- filtered_sessions() %>%
+      req(filtered_sessions_final(), filtered_actions())
+      activity <- filtered_sessions_final() %>%
         group_by(user) %>%
         summarise(
           sessions = n_distinct(session_id),
@@ -214,7 +221,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       datatable(activity, options = list(pageLength = 10, scrollX = TRUE))
     })
     
-    # --- Новая таблица: Используемый функционал ---
+    # --- Используемый функционал ---
     output$function_usage_table <- renderDT({
       req(filtered_actions())
       usage <- filtered_actions() %>%
@@ -230,8 +237,8 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     
     # --- Графики ---
     output$sessions_plot <- renderPlot({
-      req(filtered_sessions())
-      filtered_sessions() %>%
+      req(filtered_sessions_final())
+      filtered_sessions_final() %>%
         count(date) %>%
         ggplot(aes(x = date, y = n, group = 1)) +
         geom_line() + 
@@ -251,3 +258,5 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     })
   })
 }
+
+
