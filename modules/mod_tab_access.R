@@ -33,15 +33,19 @@ mod_access_ui <- function(id) {
              passwordInput(ns("confirm_user_password"), "Подтвердите"),
              actionButton(ns("reset_password"), "Сбросить", class = "btn btn-warning")
       )
-    )
+    ),
+    hr(),
+    h3("Редактирование ролей из конфигурации"),
+    uiOutput(ns("role_editor")),
+    actionButton(ns("save_config"), "💾 Сохранить изменения", class = "btn-success")
   )
 }
 
-mod_access_server <- function(id, conn, auth, session_id) {
+mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # триггер для обновления users
+    # === Работа с пользователями (как у тебя было) ===
     users_trigger <- reactiveVal(0)
     
     load_users <- reactive({
@@ -122,6 +126,47 @@ mod_access_server <- function(id, conn, auth, session_id) {
                 "UPDATE users SET password = ? WHERE login = ?",
                 params = list(input$new_user_password, input$user_to_reset))
       showNotification("Пароль обновлён", type = "message")
+    })
+    
+    
+    # === Работа с YAML-конфигом (перенесено из mod_config) ===
+    conf <- conf_rv
+    
+    output$role_editor <- renderUI({
+      conf_list <- conf()
+      tab_nodes <- conf_list$access_managemet
+      
+      role_choices <- c("admin", "user", "viewer")
+      
+      lapply(names(tab_nodes), function(node) {
+        selectInput(
+          ns(paste0("roles_", node)),
+          label = node,
+          choices = role_choices,
+          selected = tab_nodes[[node]],
+          multiple = TRUE
+        )
+      })
+    })
+    
+    observeEvent(input$save_config, {
+      
+      write_action_log(user = auth$user()$login, func = 'Access config change', session_id)
+      
+      new_conf <- conf()
+      
+      tab_nodes <- names(new_conf$access_managemet)
+      for (node in tab_nodes) {
+        input_id <- paste0("roles_", node)
+        if (!is.null(input[[input_id]])) {
+          new_conf$access_managemet[[node]] <- input[[input_id]]
+        }
+      }
+      
+      conf(new_conf)
+      yaml::write_yaml(new_conf, "config.yaml")
+      
+      showNotification("✅ Конфигурация обновлена", type = "message")
     })
   })
 }

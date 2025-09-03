@@ -97,8 +97,8 @@ server <- function(input, output, session) {
   app_con <- dbConnect(RSQLite::SQLite(), "app.db")
   
   observe({
-    if (logged_in() && user_role() %in% conf$access_managemet$tab_access) {
-      mod_access_server("access", conn = app_con, auth, session_id = session$token)
+    if (logged_in() && user_role() %in% c('admin')) {
+      mod_access_server("access", conn = app_con, auth = auth, session_id = session$token, conf_rv = conf_rv)
     }
   })
   
@@ -263,7 +263,7 @@ server <- function(input, output, session) {
           },
           
           # CMD только для admin и user
-          if (user_role() %in% conf$access_managemet$tab_access) {
+          if (user_role() %in% c("admin", "user")) {
             mod_tab_cmd_ui("cmd")
           },
           
@@ -278,10 +278,6 @@ server <- function(input, output, session) {
           # Вкладка логов
           if (user_role() == "admin") {
             mod_tab_logs_ui("logs_tab")
-          },
-          
-          if (user_role() == "admin") {
-            mod_config_ui("config_tab")
           },
           
           # Помощь и обновления
@@ -481,11 +477,6 @@ server <- function(input, output, session) {
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
-      
-      # Модуль конфигурации
-      if (user_role() == "admin") {
-        mod_config_server("config_tab", conf_rv)
-      }
       
       # Модуль AI чата - добавлен напрямую в код (вне модулей)
       # В серверной части - создаем реактивное значение для чата

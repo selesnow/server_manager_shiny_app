@@ -22,14 +22,12 @@ access_managemet:
   CMD:
   - admin
   - user
-  Доступ:
-  - admin
+  Доступ: admin
   Статистика:
   - admin
   - user
   - viewer
-  Логи: 
-  - admin
+  Логи: admin
   Readme:
   - admin
   - user
@@ -44,4 +42,3 @@ access_managemet:
   Активация задач:
   - admin
   - user
-

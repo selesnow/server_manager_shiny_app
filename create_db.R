@@ -87,6 +87,10 @@ INSERT OR IGNORE INTO actions (id, key, name, tab) VALUES
 (20, 'Script ai analyze', 'Анализ скрипта задачи', 'Задачи'),
 (21, 'Task deactivate (popup)', 'Деактивация задачи', 'Задачи'),
 (22, 'Task activate (popup)', 'Активация задачи', 'Задачи');
+(23, 'Task deactivate', 'Деактивация задачи', 'Задачи');
+(24, 'Task activate', 'Активация задачи', 'Задачи');
+(25, 'Task NEWS', 'Просмотр NEWS', 'Задачи');
+(26, 'Access config change', 'Изменение конфига доступов', 'Доступы');
 ")
 
 # Проверка
