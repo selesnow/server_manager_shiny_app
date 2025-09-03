@@ -1,5 +1,5 @@
 # Функция для создания нового чата (выносим в отдельную функцию)
-create_new_chat <- function(user_role) {
+create_new_chat <- function(user_role, conf_temp) {
   
   message("Роль пользователя: ", user_role)
 
@@ -94,7 +94,7 @@ create_new_chat <- function(user_role) {
   
   # Тут мы проверяем может ли текущий пользователь со своей ролью управлять задачами
   # если его роль не позволяет это делать то отправляем уведомление модели о том что у пользователя недостаточно прав
-  if (user_role %in% c("admin", "user")) {
+  if (user_role %in% conf_temp$access_managemet$`Запуск задач`) {
     task_management <- 'enable'
   } else {
     task_management <- 'disable'
@@ -111,6 +111,12 @@ create_new_chat <- function(user_role) {
     )
   ))
     
+  if (user_role %in% conf_temp$access_managemet$`Активация задач`) {
+    task_management <- 'enable'
+  } else {
+    task_management <- 'disable'
+  }
+  
   new_chat$register_tool(tool(
     task_state_change_ls[[task_management]],
     name = "task_state_change",

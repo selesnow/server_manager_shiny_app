@@ -209,7 +209,7 @@ mod_tab_tasks_ui <- function(id) {
 }
 
 # ─────────────────────── SERVER ────────────────────────────
-mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, session_id) {
+mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
@@ -332,7 +332,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     # ───────────── КНОПКИ и обработчики ─────────────
     output$run_button <- renderUI({
-      if (user_role() %in% c("admin", "user"))
+      if (user_role() %in% conf_rv()$access_managemet$`Запуск задач`)
         actionButton(ns("run_task"), "Запустить",
                      icon = icon("play"), class = "btn-success")
     })
@@ -377,14 +377,14 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     output$run_button <- renderUI({
       role <- user_role()
-      if (role %in% c("admin", "user")) {
+      if (role %in% conf_rv()$access_managemet$`Запуск задач`) {
         actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success")
       }
     })
     
     output$activate_task <- renderUI({
       role <- user_role()
-      if (role %in% c("admin", "user")) {
+      if (role %in% conf_rv()$access_managemet$`Активация задач`) {
         actionButton(ns("activate_task"), "Активировать",
                      icon = icon("toggle-on"), class = "btn-success")
       }
@@ -392,7 +392,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     output$deactivate_task <- renderUI({
       role <- user_role()
-      if (role %in% c("admin", "user")) {
+      if (role %in% conf_rv()$access_managemet$`Активация задач`) {
         actionButton(ns("deactivate_task"), "Деактивировать",
                      icon = icon("toggle-off"), class = "btn-danger btn-sm ml-2")
       }

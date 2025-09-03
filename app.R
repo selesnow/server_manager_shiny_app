@@ -29,8 +29,6 @@ library(promises)
 library(future)
 library(forcats)
 library(ggthemr)
-library(shinyTree)
-library(listviewer)
 
 # Чтение конфига
 conf <- yaml::read_yaml('config.yaml')
@@ -198,12 +196,17 @@ server <- function(input, output, session) {
           id = "main_tabs",
           
           # Вкладка "Задачи"
-          mod_tab_tasks_ui("tasks_tab"),
+          if (user_role() %in% conf$access_managemet$Задачи) {
+            mod_tab_tasks_ui("tasks_tab")
+          },
           
           # Вкладка "Службы"
-          mod_tab_services_ui("services_tab"),
+          if (user_role() %in% conf$access_managemet$Службы) {
+            mod_tab_services_ui("services_tab")
+          },
           
           # Модуль AI разработки
+          if (user_role() %in% conf$access_managemet$`AI Ассистент`) {
           tabPanel(
             "AI Ассистент",
             bslib::page_fluid(
@@ -250,39 +253,46 @@ server <- function(input, output, session) {
                   )
               )
             )
-          ),
+          )
+          },
           
           # Поиск по файлам — только для admin и user
-          if (user_role() %in% c("admin", "user")) {
+          if (user_role() %in% conf$access_managemet$`Поиск по файлам`) {
             mod_tab_find_in_files_ui("file_search")
           },
           
           # Процессы — только для admin и user
-          if (user_role() %in% c("admin", "user")) {
+          if (user_role() %in% conf$access_managemet$Процессы) {
             mod_tab_processes_ui("processes_tab")
           },
           
           # CMD только для admin и user
-          if (user_role() %in% c("admin", "user")) {
+          if (user_role() %in% conf$access_managemet$CMD) {
             mod_tab_cmd_ui("cmd")
           },
           
           # Доступы — только для admin
-          if (user_role() == "admin") {
+          if (user_role() %in% conf$access_managemet$Доступ) {
             tabPanel("Доступ", mod_access_ui("access"))
           },
           
           # Улучшенная вкладка "Статистика"
-          mod_tab_statistic_ui("stats_tab"),
+          if (user_role() %in% conf$access_managemet$Статистика) {
+            mod_tab_statistic_ui("stats_tab")
+          },
           
           # Вкладка логов
-          if (user_role() == "admin") {
+          if (user_role() %in% conf$access_managemet$Логи) {
             mod_tab_logs_ui("logs_tab")
           },
           
           # Помощь и обновления
-          mod_help_ui('help'),
-          mod_news_ui('news')
+          if (user_role() %in% conf$access_managemet$Readme) {
+            mod_help_ui('help')
+          },
+          if (user_role() %in% conf$access_managemet$News) {
+            mod_news_ui('news')
+          }
         ),
         
         # Добавляем CSS для кнопок действий
@@ -473,7 +483,7 @@ server <- function(input, output, session) {
       mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token)
       
       # Модуль вкладки задач ----------------------------------------------------
-      mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token)
+      mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
@@ -485,7 +495,7 @@ server <- function(input, output, session) {
       # Инициализируем чат при первом запуске
       observe({
         if (logged_in() && is.null(dev_chat())) {
-          new_chat <- create_new_chat(user_role())
+          new_chat <- create_new_chat(user_role(), conf_rv())
           dev_chat(new_chat)
         }
       })
