@@ -29,6 +29,11 @@ library(promises)
 library(future)
 library(forcats)
 library(ggthemr)
+library(shinyTree)
+library(listviewer)
+
+# Чтение конфига
+conf <- yaml::read_yaml('config.yaml')
 
 plan(multisession)
 ggthemr('flat dark')
@@ -92,7 +97,7 @@ server <- function(input, output, session) {
   app_con <- dbConnect(RSQLite::SQLite(), "app.db")
   
   observe({
-    if (logged_in() && user_role() == "admin") {
+    if (logged_in() && user_role() %in% conf$access_managemet$tab_access) {
       mod_access_server("access", conn = app_con, auth, session_id = session$token)
     }
   })
@@ -258,7 +263,7 @@ server <- function(input, output, session) {
           },
           
           # CMD только для admin и user
-          if (user_role() %in% c("admin", "user")) {
+          if (user_role() %in% conf$access_managemet$tab_access) {
             mod_tab_cmd_ui("cmd")
           },
           
@@ -273,6 +278,10 @@ server <- function(input, output, session) {
           # Вкладка логов
           if (user_role() == "admin") {
             mod_tab_logs_ui("logs_tab")
+          },
+          
+          if (user_role() == "admin") {
+            mod_config_ui("config_tab")
           },
           
           # Помощь и обновления
@@ -377,6 +386,7 @@ server <- function(input, output, session) {
   processes_store <- reactiveVal(NULL)
   session_store <- reactiveVal(NULL)
   action_store  <- reactiveVal(NULL)
+  conf_rv <- reactiveVal(conf)
   
   # фиксация изменения логов
   logs_last_update <- reactiveVal(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
@@ -471,6 +481,11 @@ server <- function(input, output, session) {
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks)
+      
+      # Модуль конфигурации
+      if (user_role() == "admin") {
+        mod_config_server("config_tab", conf_rv)
+      }
       
       # Модуль AI чата - добавлен напрямую в код (вне модулей)
       # В серверной части - создаем реактивное значение для чата

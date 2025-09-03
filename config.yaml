@@ -2,8 +2,46 @@ database_settings:
   app_data_base: app.db
   task_log_base: C:/scripts/alsey/netpeak_core/nc_analytics_team/telegram_bot/bot_db.db
 access_managemet:
-  tab_cmd:
-    - admin
-    - user
-  tab_access:
-    - admin
+  Задачи:
+  - admin
+  - user
+  - viewer
+  Службы:
+  - admin
+  - user
+  AI Ассистент:
+  - admin
+  - user
+  - viewer
+  Поиск по файлам:
+  - admin
+  - user
+  Процессы:
+  - admin
+  - user
+  CMD:
+  - admin
+  - user
+  Доступ:
+  - admin
+  Статистика:
+  - admin
+  - user
+  - viewer
+  Логи: 
+  - admin
+  Readme:
+  - admin
+  - user
+  - viewer
+  News:
+  - admin
+  - user
+  - viewer
+  Запуск задач:
+  - admin
+  - user
+  Активация задач:
+  - admin
+  - user
+
