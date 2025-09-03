@@ -479,7 +479,7 @@ server <- function(input, output, session) {
       # Инициализируем чат при первом запуске
       observe({
         if (logged_in() && is.null(dev_chat())) {
-          new_chat <- create_new_chat()
+          new_chat <- create_new_chat(user_role())
           dev_chat(new_chat)
         }
       })

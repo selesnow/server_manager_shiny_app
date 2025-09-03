@@ -1,5 +1,8 @@
 # Функция для создания нового чата (выносим в отдельную функцию)
-create_new_chat <- function() {
+create_new_chat <- function(user_role) {
+  
+  message("Роль пользователя: ", user_role)
+
   new_chat <- ellmer::chat_google_gemini(
     system_prompt = interpolate_file(path = here::here('ai_docs', 'system_prompt.md')),
     model = 'gemini-2.0-flash',  
@@ -59,37 +62,12 @@ create_new_chat <- function() {
   ))
   
   new_chat$register_tool(tool(
-    run_server_task,
-    name = "run_server_task",
-    description = "Запуск задачи в планировщике заданий Windows на сервере. Важно при передаче аргумента task_name не добавлять в назании задачь лищние слешы.",
-    arguments = list(
-      task_name = type_string(
-        "Название задачи из планировщика заданий Windows которую надо запустить на сервере."
-      )
-    )
-  ))
-  
-  new_chat$register_tool(tool(
     find_pf_task_data,
     name = "find_pf_task_data",
     description = "Получить данные о задаче из Планфикс, описание задачи хранится в поле description. Данные возвращаются в JSON формате.",
     arguments = list(
       task_link = type_string(
         "Ссылка на задачу в Планфикс."
-      )
-    )
-  ))
-  
-  new_chat$register_tool(tool(
-    task_state_change,
-    name = "task_state_change",
-    description = "Активировать (включать) и деактивировать (выключать) залачи в планировщике заданий Windows, изменяет параметр Scheduled Task State.",
-    arguments = list(
-      task_name = type_string(
-        "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
-      ),
-      action = type_string(
-        "Какое действие надо выполнить с задачей, Enable - активировать (включить) задачу, Disable - деактивировать (отключить) заадчу."
       )
     )
   ))
@@ -111,6 +89,39 @@ create_new_chat <- function() {
     arguments = list(
       date_from = type_string("Начальная дата периода расчёта в формате YYYY-MM-DD."),
       date_to = type_string("Конечная дата периода расчёта в формате YYYY-MM-DD.")
+    )
+  ))
+  
+  # Тут мы проверяем может ли текущий пользователь со своей ролью управлять задачами
+  # если его роль не позволяет это делать то отправляем уведомление модели о том что у пользователя недостаточно прав
+  if (user_role %in% c("admin", "user")) {
+    task_management <- 'enable'
+  } else {
+    task_management <- 'disable'
+  }
+    
+  new_chat$register_tool(tool(
+    run_server_task_ls[[task_management]],
+    name = "run_server_task",
+    description = "Запуск задачи в планировщике заданий Windows на сервере. Важно при передаче аргумента task_name не добавлять в назании задачь лищние слешы.",
+    arguments = list(
+      task_name = type_string(
+        "Название задачи из планировщика заданий Windows которую надо запустить на сервере."
+      )
+    )
+  ))
+    
+  new_chat$register_tool(tool(
+    task_state_change_ls[[task_management]],
+    name = "task_state_change",
+    description = "Активировать (включать) и деактивировать (выключать) залачи в планировщике заданий Windows, изменяет параметр Scheduled Task State.",
+    arguments = list(
+      task_name = type_string(
+        "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
+      ),
+      action = type_string(
+        "Какое действие надо выполнить с задачей, Enable - активировать (включить) задачу, Disable - деактивировать (отключить) заадчу."
+      )
     )
   ))
   

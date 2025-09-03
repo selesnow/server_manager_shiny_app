@@ -26,3 +26,13 @@ task_state_change <- function(task_name, action = c("Enable", "Disable")) {
     invisible(FALSE)
   }
 }
+
+# функция сообщит о том что с текущей ролью пользователя запуск задач недоступен
+task_state_change_na <- function(task_name, action = c("Enable", "Disable")) {
+  return('Роль текущего пользователя чата не позволяет ему управлять состоянием задачь в планировщике на сервере, пользователю необходимо связаться с администратором - [Alsey](https://t.me/AlexeySeleznev).')
+}
+
+task_state_change_ls <- list(
+  'enable' = task_state_change,
+  'disable' = task_state_change_na
+)
