@@ -35,8 +35,38 @@ mod_access_ui <- function(id) {
       )
     ),
     hr(),
+    
+    # --- Блок Access management ---
     h4("Управление доступом к функционалу приложения для ролей"),
-    uiOutput(ns("role_editor"))
+    uiOutput(ns("role_editor")),
+    div(
+      style = "text-align: right; margin-top: 10px;",
+      actionButton(ns("save_roles"), "💾 Сохранить роли", class = "btn-success")
+    ),
+    hr(),
+    
+    # --- Логирование и базы на одной строке ---
+    h4("Прочие настройки"),
+    fluidRow(
+      column(
+        6,
+        h5("⚡ Логирование"),
+        uiOutput(ns("logging_editor")),
+        div(
+          style = "text-align: right; margin-top: 10px;",
+          actionButton(ns("save_logging"), "💾 Сохранить логирование", class = "btn-success")
+        )
+      ),
+      column(
+        6,
+        h5("💾 Хранение данных"),
+        uiOutput(ns("database_editor")),
+        div(
+          style = "text-align: right; margin-top: 10px;",
+          actionButton(ns("save_database"), "💾 Сохранить базы", class = "btn-success")
+        )
+      )
+    )
   )
 }
 
@@ -44,7 +74,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    # === Работа с пользователями (как у тебя было) ===
+    # === Работа с пользователями ===
     users_trigger <- reactiveVal(0)
     
     load_users <- reactive({
@@ -128,21 +158,16 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     
-    # === Работа с YAML-конфигом (перенесено из mod_config) ===
+    # === Работа с YAML-конфигом ===
     conf <- conf_rv
     
+    # --- UI для ролей ---
     output$role_editor <- renderUI({
       conf_list <- conf()
       tab_nodes <- conf_list$access_managemet
-      
       role_choices <- c("admin", "user", "viewer")
-      
-      # количество колонок в ряду
       cols_per_row <- 4
-      
       nodes <- names(tab_nodes)
-      
-      # разбиваем на ряды по 4 элемента
       rows <- split(nodes, ceiling(seq_along(nodes) / cols_per_row))
       
       tagList(
@@ -161,20 +186,45 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
               )
             })
           )
-        }),
-        div(
-          style = "text-align: right; margin-top: 20px;",
-          actionButton(ns("save_config"), "💾 Сохранить изменения", class = "btn-success")
-        )
+        })
       )
     })
     
-    observeEvent(input$save_config, {
-      
+    # --- UI для логирования ---
+    output$logging_editor <- renderUI({
+      conf_list <- conf()
+      log_nodes <- conf_list$logging
+      tagList(
+        lapply(names(log_nodes), function(log_type) {
+          checkboxInput(
+            ns(paste0("log_", log_type)),
+            label = log_type,
+            value = isTRUE(log_nodes[[log_type]])
+          )
+        })
+      )
+    })
+    
+    # --- UI для баз данных ---
+    output$database_editor <- renderUI({
+      conf_list <- conf()
+      db_nodes <- conf_list$database_settings
+      tagList(
+        lapply(names(db_nodes), function(db_name) {
+          textInput(
+            ns(paste0("db_", db_name)),
+            label = db_name,
+            value = db_nodes[[db_name]]
+          )
+        })
+      )
+    })
+    
+    
+    # --- Save роли ---
+    observeEvent(input$save_roles, {
       write_action_log(user = auth$user()$login, func = 'Access config change', session_id)
-      
       new_conf <- conf()
-      
       tab_nodes <- names(new_conf$access_managemet)
       for (node in tab_nodes) {
         input_id <- paste0("roles_", node)
@@ -182,11 +232,42 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
           new_conf$access_managemet[[node]] <- input[[input_id]]
         }
       }
-      
       conf(new_conf)
       yaml::write_yaml(new_conf, "config.yaml")
-      
-      showNotification("✅ Конфигурация обновлена", type = "message")
+      showNotification("✅ Конфигурация ролей обновлена", type = "message")
+    })
+    
+    # --- Save логирование ---
+    observeEvent(input$save_logging, {
+      write_action_log(user = auth$user()$login, func = 'Logging config change', session_id)
+      new_conf <- conf()
+      log_nodes <- names(new_conf$logging)
+      for (log_type in log_nodes) {
+        input_id <- paste0("log_", log_type)
+        if (!is.null(input[[input_id]])) {
+          new_conf$logging[[log_type]] <- input[[input_id]]
+        }
+      }
+      conf(new_conf)
+      yaml::write_yaml(new_conf, "config.yaml")
+      showNotification("✅ Настройки логирования обновлены", type = "message")
+    })
+    
+    # --- Save базы ---
+    observeEvent(input$save_database, {
+      write_action_log(user = auth$user()$login, func = 'Database config change', session_id)
+      new_conf <- conf()
+      db_nodes <- names(new_conf$database_settings)
+      for (db_name in db_nodes) {
+        input_id <- paste0("db_", db_name)
+        if (!is.null(input[[input_id]])) {
+          new_conf$database_settings[[db_name]] <- input[[input_id]]
+        }
+      }
+      conf(new_conf)
+      yaml::write_yaml(new_conf, "config.yaml")
+      showNotification("✅ Пути к базам обновлены", type = "message")
     })
   })
 }
+
