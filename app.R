@@ -480,7 +480,7 @@ server <- function(input, output, session) {
       })
       
       # модуль служб ------------------------------------------------------------
-      mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token)
+      mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль вкладки задач ----------------------------------------------------
       mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token, conf_rv)
