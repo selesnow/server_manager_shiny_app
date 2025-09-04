@@ -7,6 +7,7 @@ mod_tab_logs_ui <- function(id) {
   
   tabPanel(
     title = "Логи",
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css"),
     fluidRow(
       column(
         width = 12,
