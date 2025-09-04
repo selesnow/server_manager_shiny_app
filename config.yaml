@@ -42,3 +42,6 @@ access_managemet:
   Активация задач:
   - admin
   - user
+  Управление службами:
+  - admin
+  - user

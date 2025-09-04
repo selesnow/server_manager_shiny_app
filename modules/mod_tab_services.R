@@ -40,7 +40,7 @@ mod_tab_services_ui <- function(id) {
   )
 }
 
-mod_tab_services_server <- function(id, services_data, user_role, auth, session_id) {
+mod_tab_services_server <- function(id, services_data, user_role, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -69,7 +69,7 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
     output$service_buttons <- renderUI({
       role <- user_role()
       
-      if (role %in% c("admin", "user")) {
+      if (role %in% conf_rv()$access_managemet$`Управление службами`) {
         tagList(
           actionButton(ns("start_service"), "Запустить", icon = icon("play"), class = "btn-success"),
           actionButton(ns("stop_service"), "Остановить", icon = icon("stop"), class = "btn-danger"),
