@@ -5,7 +5,7 @@ mod_access_ui <- function(id) {
     h4("Список пользователей"),
     DTOutput(ns("users_table")),
     hr(),
-    
+    h4("Управление пользователями"),
     fluidRow(
       column(3,
              h5("➕ Добавить"),
@@ -35,9 +35,8 @@ mod_access_ui <- function(id) {
       )
     ),
     hr(),
-    h3("Редактирование ролей из конфигурации"),
-    uiOutput(ns("role_editor")),
-    actionButton(ns("save_config"), "💾 Сохранить изменения", class = "btn-success")
+    h4("Управление доступом к функционалу приложения для ролей"),
+    uiOutput(ns("role_editor"))
   )
 }
 
@@ -138,15 +137,36 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
       
       role_choices <- c("admin", "user", "viewer")
       
-      lapply(names(tab_nodes), function(node) {
-        selectInput(
-          ns(paste0("roles_", node)),
-          label = node,
-          choices = role_choices,
-          selected = tab_nodes[[node]],
-          multiple = TRUE
+      # количество колонок в ряду
+      cols_per_row <- 4
+      
+      nodes <- names(tab_nodes)
+      
+      # разбиваем на ряды по 4 элемента
+      rows <- split(nodes, ceiling(seq_along(nodes) / cols_per_row))
+      
+      tagList(
+        lapply(rows, function(row_nodes) {
+          fluidRow(
+            lapply(row_nodes, function(node) {
+              column(
+                width = floor(12 / cols_per_row),
+                selectInput(
+                  ns(paste0("roles_", node)),
+                  label = node,
+                  choices = role_choices,
+                  selected = tab_nodes[[node]],
+                  multiple = TRUE
+                )
+              )
+            })
+          )
+        }),
+        div(
+          style = "text-align: right; margin-top: 20px;",
+          actionButton(ns("save_config"), "💾 Сохранить изменения", class = "btn-success")
         )
-      })
+      )
     })
     
     observeEvent(input$save_config, {
