@@ -31,7 +31,7 @@ library(forcats)
 library(ggthemr)
 
 # Чтение конфига
-conf <- yaml::read_yaml('config.yaml')
+conf <<- yaml::read_yaml('config.yaml')
 
 plan(multisession)
 ggthemr('flat dark')
@@ -555,7 +555,7 @@ server <- function(input, output, session) {
       mod_news_server("news")
       
       # Модуль логов
-      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update)
+      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update, conf_rv)
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({

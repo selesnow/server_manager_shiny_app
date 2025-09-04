@@ -85,7 +85,7 @@ mod_tab_logs_ui <- function(id) {
   )
 }
 
-mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update) {
+mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     

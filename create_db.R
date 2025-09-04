@@ -91,6 +91,8 @@ INSERT OR IGNORE INTO actions (id, key, name, tab) VALUES
 (24, 'Task activate', 'Активация задачи', 'Задачи');
 (25, 'Task NEWS', 'Просмотр NEWS', 'Задачи');
 (26, 'Access config change', 'Изменение конфига доступов', 'Доступы');
+(27, 'Logging config change', 'Изменение конфига логгирования', 'Доступы');
+(26, 'Database config change', 'Изменение конфига баз данных', 'Доступы');
 ")
 
 # Проверка
