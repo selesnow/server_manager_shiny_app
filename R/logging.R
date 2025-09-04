@@ -13,9 +13,9 @@ write_action_log <- function(
   value      = NULL
 ) {
   
-  if (Sys.getenv('SM_ACTION_LOG')=="") {
+  if (conf$logging$action_log) {
     
-      con <- dbConnect(SQLite(), "app.db")
+      con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
       
       log_row <- tibble(
         datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
@@ -38,10 +38,10 @@ session_log <- function(
     user = auth$user(),
     action = 'start'
 ) {
-  
-  if (Sys.getenv('SM_ACTION_LOG')=="") {
+  message('Состояние лога сессий ', conf$logging$session_log)
+  if (conf$logging$session_log) {
     
-    con <- dbConnect(SQLite(), "app.db")
+    con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
     
     log_row <- tibble(
       datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
@@ -64,24 +64,28 @@ error_log <- function(
       error      = ""
 ) {
   
-  con <- dbConnect(SQLite(), "app.db")
-  
-  log_row <- tibble(
-    datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
-    session_id = session_id,
-    user       = user,
-    error      = error
-  )
-  
-  dbWriteTable(con, 'error_log', log_row, append = TRUE)
-  
-  dbDisconnect(con)
+  if (conf$logging$error_log) {
+    
+    con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+    
+    log_row <- tibble(
+      datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
+      session_id = session_id,
+      user       = user,
+      error      = error
+    )
+    
+    dbWriteTable(con, 'error_log', log_row, append = TRUE)
+    
+    dbDisconnect(con)
+    
+  }
   
 } 
 
 get_session_log <- function() {
   
-  con <- dbConnect(SQLite(), "app.db")
+  con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
   
   session_log <- dbGetQuery(
     con,
@@ -120,7 +124,7 @@ get_session_log <- function() {
 
 get_action_log <- function() {
   
-  con <- dbConnect(SQLite(), "app.db")
+  con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
   
   action_log <- dbGetQuery(
     con,
@@ -148,7 +152,7 @@ get_action_log <- function() {
 
 get_error_log <- function() {
   
-  con <- dbConnect(SQLite(), "app.db")
+  con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
   
   error_log <- dbGetQuery(
     con,

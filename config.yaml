@@ -1,6 +1,10 @@
 database_settings:
   app_data_base: app.db
   task_log_base: C:/scripts/alsey/netpeak_core/nc_analytics_team/telegram_bot/bot_db.db
+logging:
+  session_log: true
+  action_log: true
+  error_log: true
 access_managemet:
   Задачи:
   - admin

@@ -2,7 +2,7 @@ library(DBI)
 library(RSQLite)
 
 # Путь к файлу базы
-db_path <- "app.db"
+db_path <- conf$database_settings$app_data_base
 
 # Подключение к базе (если файла нет — создастся)
 con <- dbConnect(RSQLite::SQLite(), db_path)

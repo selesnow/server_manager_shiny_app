@@ -72,7 +72,7 @@ mod_tab_statistic_ui <- function(id) {
 }
 
 # Серверная часть модуля статистики
-mod_tab_statistic_server <- function(id, all_tasks) {
+mod_tab_statistic_server <- function(id, all_tasks, conf_rv) {
   moduleServer(id, function(input, output, session) {
     # Реактивные значения для статистики
     overall_stats <- reactive({
@@ -177,7 +177,7 @@ mod_tab_statistic_server <- function(id, all_tasks) {
     }))
     
     # Подключение к базе данных для графиков
-    con <- dbConnect(SQLite(), r"(C:\\scripts\\alsey\\netpeak_core\\nc_analytics_team\\telegram_bot\\bot_db.db)")
+    con <- dbConnect(SQLite(), conf_rv()$database_settings$task_log_base)
     
     # График динамики сбоев
     output$task_log_plot <- renderPlot({

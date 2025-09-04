@@ -92,7 +92,7 @@ server <- function(input, output, session) {
   # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
   # Коннект к БД
-  app_con <- dbConnect(RSQLite::SQLite(), "app.db")
+  app_con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
   
   observe({
     if (logged_in() && user_role() %in% c('admin')) {
@@ -486,7 +486,7 @@ server <- function(input, output, session) {
       mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль статистики
-      mod_tab_statistic_server("stats_tab", all_tasks)
+      mod_tab_statistic_server("stats_tab", all_tasks, conf_rv)
       
       # Модуль AI чата - добавлен напрямую в код (вне модулей)
       # В серверной части - создаем реактивное значение для чата
