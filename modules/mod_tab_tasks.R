@@ -1007,19 +1007,23 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
             ),
             easyClose = TRUE,
             footer = tagList(
-              if (user_role() %in% c("admin", "user")) {
                 tagList(
+                  if (user_role() %in% conf_rv()$access_managemet$`Запуск задач`) {
                   actionButton(ns("run_task_popup"), "Запустить", 
                                icon = icon("play"), 
-                               class = "btn btn-success"),
+                               class = "btn btn-success")
+                  },
+                  if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
                   actionButton(ns("activate_task_popup"), "Активировать", 
                                icon = icon("toggle-on"), 
-                               class = "btn-success"),
+                               class = "btn-success")
+                  },
+                  if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
                   actionButton(ns("deactivate_task_popup"), "Деактивировать", 
                                icon = icon("toggle-off"), 
                                class = "btn-danger btn-sm ml-2")
-                )
-              },
+                  }
+                ),
               modalButton("Закрыть")
             ),
             div(
