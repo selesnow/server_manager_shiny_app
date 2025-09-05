@@ -58,7 +58,7 @@ mod_access_ui <- function(id) {
         )
       ),
       column(
-        3,
+        2,
         h5("💾 Хранение данных"),
         uiOutput(ns("database_editor")),
         div(
