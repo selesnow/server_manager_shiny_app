@@ -61,8 +61,7 @@ mod_tab_tasks_ui <- function(id) {
                   column(
                     width = 12,
                     div(class = "mb-3",
-                        h4("Фильтры задач"),
-                        uiOutput(ns("author_filter"))
+                        h4("Фильтры задач")
                     )
                   )
                 ),
@@ -255,35 +254,35 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # ──────────── UI‑фильтры ────────────
     output$author_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_author"), "Author:",
+      selectInput(ns("filter_author"), "Автор:",
                   choices = sort(unique(all_tasks_reactive()$Author)),
                   multiple = TRUE)
     })
     
     output$runas_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_runas"), "Run As User:",
+      selectInput(ns("filter_runas"), "Под какой учёткой запускается:",
                   choices = sort(unique(all_tasks_reactive()$`Run As User`)),
                   multiple = TRUE)
     })
     
     output$responsible_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_responsible"), "Responsible:",
+      selectInput(ns("filter_responsible"), "Ответственный:",
                   choices = sort(unique(all_tasks_reactive()$`Responsible`)),
                   multiple = TRUE)
     })
     
     output$last_result_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_last_result"), "Last Result:",
+      selectInput(ns("filter_last_result"), "Результат последнего запуска:",
                   choices = sort(unique(all_tasks_reactive()$`Last Result`)),
                   multiple = TRUE)
     })
     
     output$client_filter <- renderUI({
       req(all_tasks_reactive())
-      selectInput(ns("filter_client"), "Client:",
+      selectInput(ns("filter_client"), "Клиент:",
                   choices = sort(unique(all_tasks_reactive()$Client)),
                   multiple = TRUE)
     })
@@ -295,7 +294,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       # по умолчанию Enabled, если есть
       default_sel <- if ("Enabled" %in% states) "Enabled" else NULL
       
-      selectInput(ns("filter_task_state"), "Scheduled Task State:",
+      selectInput(ns("filter_task_state"), "Состояние задачи:",
                   choices   = states,
                   multiple  = TRUE,
                   selected  = default_sel)
@@ -403,7 +402,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     # Рендерим карточку с логами
     output$log_card <- renderUI({
-      #if (show_log_card()) {
         div(class = "card",
             div(class = "card-body",
                 #h4(textOutput(ns("log_task_name"))),
@@ -467,7 +465,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                 )
             )
         )
-      #}
     })
     
     # Добавляем реактивные значения для управления видимостью карточек
