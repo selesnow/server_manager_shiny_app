@@ -185,9 +185,6 @@ mod_tab_tasks_ui <- function(id) {
       )
     ),
     
-    # README
-    fluidRow(column(12, uiOutput(ns("readme_card")))),
-    
     # ----- Таблица задач -----
     fluidRow(
       column(
@@ -218,7 +215,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     sheet_url <- reactiveVal(NULL)
     log_content_type <- reactiveVal("text")
     show_log_card   <- reactiveVal(FALSE)
-    show_readme_card <- reactiveVal(FALSE)
     script_content_reactive <- reactiveVal(NULL)
     popup_task_name <- reactiveVal(NULL)
     
@@ -443,6 +439,15 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     )
                   ),
                   tabPanel(
+                    title = tagList(icon("book"), "README"),
+                    value = "readme",
+                    tags$div(
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      class = "light-mode-log",
+                      uiOutput(ns("task_readme_content"))
+                    )
+                  ),
+                  tabPanel(
                     title = tagList(icon("newspaper"), "NEWS"),
                     value = "news",
                     tags$div(
@@ -468,23 +473,6 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       if (input$log_tabs == "script") {
         # Запускаем JavaScript-функцию для инициализации поиска
         shinyjs::runjs("if(window.reinitScriptSearch) window.reinitScriptSearch();")
-      }
-    })
-    
-    # Рендерим карточку с README
-    output$readme_card <- renderUI({
-      if (show_readme_card()) {
-        div(class = "card",
-            div(class = "card-header", "README"),
-            div(class = "card-body",
-                h4(textOutput(ns("readme_task_name"))),
-                tags$div(
-                  style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
-                  class = "light-mode-log",
-                  uiOutput(ns("task_readme_content"))
-                )
-            )
-        )
       }
     })
     
@@ -604,7 +592,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
           output$readme_task_name <- renderText({ paste("README:", input$selected_task) })
           
           # Активируем отображение карточки
-          show_readme_card(TRUE)
+          output$log_task_name <- renderText({ paste("README задачи:", input$selected_task) })
+          show_log_card(TRUE)
+          updateTabsetPanel(session, "log_tabs", selected = "readme")
         } else {
           showNotification("Не удалось найти данные для задачи", type = "error")
         }
