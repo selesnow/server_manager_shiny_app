@@ -49,7 +49,7 @@ mod_access_ui <- function(id) {
     h4("Прочие настройки"),
     fluidRow(
       column(
-        6,
+        2,
         h5("⚡ Логирование"),
         uiOutput(ns("logging_editor")),
         div(
@@ -58,7 +58,7 @@ mod_access_ui <- function(id) {
         )
       ),
       column(
-        6,
+        3,
         h5("💾 Хранение данных"),
         uiOutput(ns("database_editor")),
         div(
