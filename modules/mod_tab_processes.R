@@ -17,7 +17,7 @@ mod_tab_processes_ui <- function(id) {
                     selectInput(ns("filter_name"), "Имя процесса", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_client"), "Клиент", choices = NULL, multiple = TRUE),
                     selectInput(ns("filter_dir"), "Рабочая директория", choices = NULL, multiple = TRUE, width = "90%"),
-                    textOutput(ns("last_update"))
+                    div(class = "card-footer", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;", textOutput(ns("last_update")))
                   ),
                   column(
                     width = 4,

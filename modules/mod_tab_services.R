@@ -20,7 +20,9 @@ mod_tab_services_ui <- function(id) {
                   )
                 )
             ),
-            textOutput(ns("last_update"))
+            div(class = "mb-3", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;",
+                textOutput(ns("last_update"))
+            )
         )
       )
     ),

@@ -21,7 +21,7 @@ mod_tab_logs_ui <- function(id) {
                   column(3, uiOutput(ns("action_filter")))
                 )
             ),
-            div(class = "card-footer", textOutput(ns("last_update")))
+            div(class = "card-footer", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;", textOutput(ns("last_update")))
         )
       )
     ),

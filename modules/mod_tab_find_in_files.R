@@ -15,7 +15,6 @@ mod_tab_find_in_files_ui <- function(id) {
             div(class = "card-body",
                 div(
                   h4("Введите текст для поиска"),
-                  uiOutput(ns("file_search_ui")),
                   
                   # --- выбор типов файлов ---
                   checkboxGroupInput(
@@ -28,9 +27,9 @@ mod_tab_find_in_files_ui <- function(id) {
                   
                   fluidRow(
                     column(10,
-                           textInput(ns("file_pattern"), NULL, placeholder = "Введите строку для поиска...")),
+                           textInput(ns("file_pattern"), NULL, placeholder = "Введите строку для поиска...", width = "100%")),
                     column(2,
-                           actionButton(ns("search_btn"), "Найти", class = "btn-primary"))
+                           actionButton(ns("search_btn"), "Найти", class = "btn-primary", width = "100%"))
                   ),
                   
                   # --- время обновления ---
@@ -108,24 +107,12 @@ mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
       search_time(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))  # сохраняем время
     })
     
-    # UI блок "вы искали"
-    output$file_search_ui <- renderUI({
-      pattern <- input$file_pattern
-      if (!is.null(pattern) && nzchar(pattern)) {
-        div(
-          style = "margin-bottom: 10px; padding: 10px; background-color: #D6EAF8; border-radius: 10px;",
-          strong("Вы искали:"), br(),
-          tags$pre(style = "white-space: pre-wrap;", pattern)
-        )
-      }
-    })
-    
     # --- вывод времени поиска ---
     output$search_time_ui <- renderUI({
       time <- search_time()
       if (!is.null(time)) {
         div(
-          style = "margin-top: 5px; font-size: 0.9em; color: #555;",
+          style = "margin-top: 5px; font-size: 0.9em; color: #bbb;",
           paste("Результаты обновлены:", format(time, "%Y-%m-%d %H:%M:%S"))
         )
       }

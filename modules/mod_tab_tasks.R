@@ -172,7 +172,7 @@ mod_tab_tasks_ui <- function(id) {
                             uiOutput(ns("selected_task_info"))
                         )
                       ),
-                      div(class = "mb-3",
+                      div(class = "mb-3", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;",
                           textOutput(ns("last_update"))
                       )
                     )
