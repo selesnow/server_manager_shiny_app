@@ -79,111 +79,111 @@ mod_tab_tasks_ui <- function(id) {
                   # --------- Управление ----------
                   column(
                     width = 5,
-                    div(class = "mb-3",
+                    div(
+                      class = "d-flex flex-column h-100",
+                      
+                      # --- Управление задачами ---
+                      div(
+                        class = "mb-3",
                         h4("Управление задачами"),
-                        selectInput(ns("selected_task"), "Выберите задачу:",
-                                    choices = NULL, width = "750px"),
-                        div(class = "action-buttons",
-                            style = "padding: 10px; background-color: #343a40; border-radius: 8px; width: 100%; margin: 0 auto;",
-                            
-                            # Добавляем стили для кнопок
-                            tags$style("
-                                .action-buttons {
-                                  text-align: center;
-                                  width: 100%;
-                                }
-                                .action-buttons .btn-row {
-                                  display: flex !important;
-                                  justify-content: center !important;
-                                  align-items: center !important;
-                                  gap: 6px;
-                                  margin-bottom: 8px;
-                                  flex-wrap: wrap;
-                                  width: 100%;
-                                }
-                                .action-buttons .btn-row:last-child {
-                                  margin-bottom: 0;
-                                }
-                                .action-buttons .btn {
-                                  font-size: 12px !important;
-                                  padding: 5px 10px !important;
-                                  height: 34px !important;
-                                  min-width: 115px !important;
-                                  max-width: 140px !important;
-                                  white-space: nowrap !important;
-                                  overflow: hidden !important;
-                                  text-overflow: ellipsis !important;
-                                }
-                                
-                                /* Мобильные устройства */
-                                @media (max-width: 768px) {
-                                  .action-buttons .btn {
-                                    min-width: 90px !important;
-                                    max-width: 100px !important;
-                                    font-size: 11px !important;
-                                    padding: 4px 8px !important;
-                                    height: 32px !important;
-                                  }
-                                  .action-buttons .btn-row {
-                                    gap: 4px;
-                                  }
-                                }
-                                
-                                /* Очень маленькие экраны */
-                                @media (max-width: 480px) {
-                                  .action-buttons .btn {
-                                    min-width: 70px !important;
-                                    max-width: 75px !important;
-                                    font-size: 10px !important;
-                                    padding: 3px 6px !important;
-                                    height: 30px !important;
-                                  }
-                                  .action-buttons .btn-row {
-                                    gap: 3px;
-                                  }
-                                }
-                              "),
-                            
-                            # --- Ряд 1: Основные действия ---
-                            div(class = "btn-row",
-                                uiOutput(ns("run_button")),
-                                uiOutput(ns("activate_task")),
-                                uiOutput(ns("deactivate_task"))
-                            ),
-                            
-                            # --- Ряд 2: Дополнительные функции ---
-                            div(class = "btn-row",
-                                actionButton(ns("view_task_logs"),   "Логи",
-                                             icon = icon("file-alt"), 
-                                             class = "btn-info"),
-                                actionButton(ns("analyze_log"),      "Анализ Rout",
-                                             icon = icon("brain"), 
-                                             class = "btn-info"),
-                                actionButton(ns("view_script"),      "Код",
-                                             icon = icon("code"), 
-                                             class = "btn-info"),
-                                actionButton(ns("analyze_script"),   "Объясни код",
-                                             icon = icon("lightbulb"), 
-                                             class = "btn-info"),
-                                actionButton(ns("view_task_readme"), "README",
-                                             icon = icon("book"), 
-                                             class = "btn-info"),
-                                actionButton(ns("view_task_news"),   "NEWS",
-                                             icon = icon("newspaper"), 
-                                             class = "btn-info")
-                            )
+                        selectInput(
+                          ns("selected_task"), "Выберите задачу:",
+                          choices = NULL, width = "750px"
                         ),
-                        div(class = "card mt-3", id = ns("task_info_card"),
-                            div(class = "card-header", "Информация о задаче"),
-                            div(class = "card-body",
-                                uiOutput(ns("selected_task_info"))
-                            )
+                        div(
+                          class = "action-buttons",
+                          style = "padding: 10px; background-color: #343a40; border-radius: 8px; width: 100%; margin: 0 auto;",
+                          
+                          # Стили для кнопок
+                          tags$style("
+            .action-buttons { text-align: center; width: 100%; }
+            .action-buttons .btn-row {
+              display: flex !important;
+              justify-content: center !important;
+              align-items: center !important;
+              gap: 6px;
+              margin-bottom: 8px;
+              flex-wrap: wrap;
+              width: 100%;
+            }
+            .action-buttons .btn-row:last-child { margin-bottom: 0; }
+            .action-buttons .btn {
+              font-size: 12px !important;
+              padding: 5px 10px !important;
+              height: 34px !important;
+              min-width: 115px !important;
+              max-width: 140px !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+            @media (max-width: 768px) {
+              .action-buttons .btn {
+                min-width: 90px !important;
+                max-width: 100px !important;
+                font-size: 11px !important;
+                padding: 4px 8px !important;
+                height: 32px !important;
+              }
+              .action-buttons .btn-row { gap: 4px; }
+            }
+            @media (max-width: 480px) {
+              .action-buttons .btn {
+                min-width: 70px !important;
+                max-width: 75px !important;
+                font-size: 10px !important;
+                padding: 3px 6px !important;
+                height: 30px !important;
+              }
+              .action-buttons .btn-row { gap: 3px; }
+            }
+          "),
+                          
+                          # --- Ряд 1: Основные действия ---
+                          div(class = "btn-row",
+                              uiOutput(ns("run_button")),
+                              uiOutput(ns("activate_task")),
+                              uiOutput(ns("deactivate_task"))
+                          ),
+                          
+                          # --- Ряд 2: Дополнительные функции ---
+                          div(class = "btn-row",
+                              actionButton(ns("view_task_logs"),   "Логи",
+                                           icon = icon("file-alt"), class = "btn-info"),
+                              actionButton(ns("analyze_log"),      "Анализ Rout",
+                                           icon = icon("brain"), class = "btn-info"),
+                              actionButton(ns("view_script"),      "Код",
+                                           icon = icon("code"), class = "btn-info"),
+                              actionButton(ns("analyze_script"),   "Объясни код",
+                                           icon = icon("lightbulb"), class = "btn-info"),
+                              actionButton(ns("view_task_readme"), "README",
+                                           icon = icon("book"), class = "btn-info"),
+                              actionButton(ns("view_task_news"),   "NEWS",
+                                           icon = icon("newspaper"), class = "btn-info")
+                          )
                         )
+                      ),
+                      
+                      # --- Информация о задаче ---
+                      div(
+                        class = "card mt-3 flex-grow-1",
+                        id = ns("task_info_card"),
+                        div(class = "card-header", "Информация о задаче"),
+                        div(class = "card-body",
+                            uiOutput(ns("selected_task_info"))
+                        )
+                      )
                     )
                   ),
+                  
                   # ---------- Логи / анализ ----------
                   column(
-                    width = 7, uiOutput(ns("log_card")))
+                    width = 7,
+                    div(
+                      class = "card h-100 d-flex flex-column",
+                      uiOutput(ns("log_card"))
+                    )
+                  )
                 ),
                 fluidRow(
                   column(
@@ -419,7 +419,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     title = tagList(icon("file-code"), "Логи"),
                     value = "logs",
                     tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       verbatimTextOutput(ns("task_log_content"))
                     )
@@ -428,7 +428,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     title = tagList(icon("chart-line"), "Анализ Rout"),
                     value = "analysis",
                     tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_log_markdown"))
                     )
@@ -437,7 +437,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     title = tagList(icon("code"), "Скрипт"),
                     value = "script",
                     tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_script_markdown"))
                     )
@@ -446,7 +446,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     title = tagList(icon("lightbulb"), "Анализ кода"),
                     value = "script_analysis",
                     tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_script_analysis"))
                     )
@@ -455,7 +455,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     title = tagList(icon("book"), "README"),
                     value = "readme",
                     tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_readme_content"))
                     )
@@ -465,7 +465,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                     value = "news",
                     tags$div(
                       style = "background-color: #2a2a2a; color: #ddd; padding: 10px; 
-                               border-radius: 5px; max-height: 400px; overflow-y: auto;",
+                               border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
                       uiOutput(ns("task_news_content"))
                     )
