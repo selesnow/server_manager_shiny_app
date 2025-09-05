@@ -406,7 +406,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       #if (show_log_card()) {
         div(class = "card",
             div(class = "card-body",
-                h4(textOutput(ns("log_task_name"))),
+                #h4(textOutput(ns("log_task_name"))),
                 tabsetPanel(
                   id = ns("log_tabs"),
                   tabPanel(
