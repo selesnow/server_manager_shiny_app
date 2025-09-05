@@ -58,20 +58,24 @@ mod_tab_tasks_ui <- function(id) {
             div(class = "card-header", "Фильтры и управление задачами"),
             div(class = "card-body",
                 fluidRow(
-                  # ----------- ФИЛЬТРЫ -----------
                   column(
-                    width = 2,
+                    width = 12,
                     div(class = "mb-3",
                         h4("Фильтры задач"),
-                        uiOutput(ns("author_filter")),
-                        uiOutput(ns("runas_filter")),
-                        uiOutput(ns("responsible_filter")),
-                        uiOutput(ns("last_result_filter")),
-                        uiOutput(ns("client_filter")),
-                        uiOutput(ns("task_state_filter")),
-                        textOutput(ns("last_update"))
+                        uiOutput(ns("author_filter"))
                     )
-                  ),
+                  )
+                ),
+                fluidRow(
+                  # ----------- ФИЛЬТРЫ -----------
+                  column(width = 2, class = "mb-3", uiOutput(ns("author_filter"))),
+                  column(width = 2, class = "mb-3", uiOutput(ns("runas_filter"))),
+                  column(width = 2, class = "mb-3", uiOutput(ns("responsible_filter"))),
+                  column(width = 2, class = "mb-3", uiOutput(ns("last_result_filter"))),
+                  column(width = 2, class = "mb-3", uiOutput(ns("client_filter"))),
+                  column(width = 2, class = "mb-3", uiOutput(ns("task_state_filter")))
+                ),
+                fluidRow(
                   # --------- Управление ----------
                   column(
                     width = 5,
@@ -178,7 +182,16 @@ mod_tab_tasks_ui <- function(id) {
                     )
                   ),
                   # ---------- Логи / анализ ----------
-                  column(width = 5, uiOutput(ns("log_card")))
+                  column(
+                    width = 7, uiOutput(ns("log_card")))
+                ),
+                fluidRow(
+                  column(
+                    width = 12,
+                    div(class = "mb-3",
+                        textOutput(ns("last_update"))
+                    )
+                  )
                 )
             )
         )
@@ -214,7 +227,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     # ────────── Реактивы ──────────
     sheet_url <- reactiveVal(NULL)
     log_content_type <- reactiveVal("text")
-    show_log_card   <- reactiveVal(FALSE)
+    show_log_card   <- reactiveVal(TRUE)
     script_content_reactive <- reactiveVal(NULL)
     popup_task_name <- reactiveVal(NULL)
     
@@ -396,7 +409,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     
     # Рендерим карточку с логами
     output$log_card <- renderUI({
-      if (show_log_card()) {
+      #if (show_log_card()) {
         div(class = "card",
             div(class = "card-body",
                 h4(textOutput(ns("log_task_name"))),
@@ -460,7 +473,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                 )
             )
         )
-      }
+      #}
     })
     
     # Добавляем реактивные значения для управления видимостью карточек
