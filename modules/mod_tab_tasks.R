@@ -96,48 +96,48 @@ mod_tab_tasks_ui <- function(id) {
                           
                           # Стили для кнопок
                           tags$style("
-            .action-buttons { text-align: center; width: 100%; }
-            .action-buttons .btn-row {
-              display: flex !important;
-              justify-content: center !important;
-              align-items: center !important;
-              gap: 6px;
-              margin-bottom: 8px;
-              flex-wrap: wrap;
-              width: 100%;
-            }
-            .action-buttons .btn-row:last-child { margin-bottom: 0; }
-            .action-buttons .btn {
-              font-size: 12px !important;
-              padding: 5px 10px !important;
-              height: 34px !important;
-              min-width: 115px !important;
-              max-width: 140px !important;
-              white-space: nowrap !important;
-              overflow: hidden !important;
-              text-overflow: ellipsis !important;
-            }
-            @media (max-width: 768px) {
-              .action-buttons .btn {
-                min-width: 90px !important;
-                max-width: 100px !important;
-                font-size: 11px !important;
-                padding: 4px 8px !important;
-                height: 32px !important;
-              }
-              .action-buttons .btn-row { gap: 4px; }
-            }
-            @media (max-width: 480px) {
-              .action-buttons .btn {
-                min-width: 70px !important;
-                max-width: 75px !important;
-                font-size: 10px !important;
-                padding: 3px 6px !important;
-                height: 30px !important;
-              }
-              .action-buttons .btn-row { gap: 3px; }
-            }
-          "),
+                            .action-buttons { text-align: center; width: 100%; }
+                            .action-buttons .btn-row {
+                              display: flex !important;
+                              justify-content: center !important;
+                              align-items: center !important;
+                              gap: 6px;
+                              margin-bottom: 8px;
+                              flex-wrap: wrap;
+                              width: 100%;
+                            }
+                            .action-buttons .btn-row:last-child { margin-bottom: 0; }
+                            .action-buttons .btn {
+                              font-size: 12px !important;
+                              padding: 5px 10px !important;
+                              height: 34px !important;
+                              min-width: 115px !important;
+                              max-width: 140px !important;
+                              white-space: nowrap !important;
+                              overflow: hidden !important;
+                              text-overflow: ellipsis !important;
+                            }
+                            @media (max-width: 768px) {
+                              .action-buttons .btn {
+                                min-width: 90px !important;
+                                max-width: 100px !important;
+                                font-size: 11px !important;
+                                padding: 4px 8px !important;
+                                height: 32px !important;
+                              }
+                              .action-buttons .btn-row { gap: 4px; }
+                            }
+                            @media (max-width: 480px) {
+                              .action-buttons .btn {
+                                min-width: 70px !important;
+                                max-width: 75px !important;
+                                font-size: 10px !important;
+                                padding: 3px 6px !important;
+                                height: 30px !important;
+                              }
+                              .action-buttons .btn-row { gap: 3px; }
+                            }
+                          "),
                           
                           # --- Ряд 1: Основные действия ---
                           div(class = "btn-row",
@@ -172,24 +172,18 @@ mod_tab_tasks_ui <- function(id) {
                         div(class = "card-body",
                             uiOutput(ns("selected_task_info"))
                         )
+                      ),
+                      div(class = "mb-3",
+                          textOutput(ns("last_update"))
                       )
                     )
                   ),
-                  
                   # ---------- Логи / анализ ----------
                   column(
                     width = 7,
                     div(
                       class = "card h-100 d-flex flex-column",
                       uiOutput(ns("log_card"))
-                    )
-                  )
-                ),
-                fluidRow(
-                  column(
-                    width = 12,
-                    div(class = "mb-3",
-                        textOutput(ns("last_update"))
                     )
                   )
                 )
