@@ -214,7 +214,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         group_by(user) %>%
         summarise(
           sessions = n_distinct(session_id),
-          actions = sum(session_id %in% filtered_actions()$session_id),
+          actions = sum(action_count, na.rm = T),
           total_duration = sum(duration_seconds, na.rm = TRUE),
           .groups = "drop"
         ) %>% 
