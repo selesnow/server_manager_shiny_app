@@ -265,7 +265,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     
     observeEvent(input$refresh_logs, {
       # Обновляем "метку обновления"
-      logs_last_update(Sys.time())
+      logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
       
       # Если у тебя есть функции обновления сессий и экшенов, дерни их тут
       # например:
