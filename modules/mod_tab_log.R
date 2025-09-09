@@ -19,6 +19,11 @@ mod_tab_logs_ui <- function(id) {
                   column(3, uiOutput(ns("user_filter"))),
                   column(3, uiOutput(ns("tab_filter"))),
                   column(3, uiOutput(ns("action_filter")))
+                ),
+                fluidRow(
+                  column(12,
+                         actionButton(ns("refresh_logs"), "Обновить логи", class = "btn btn-primary")
+                  )
                 )
             ),
             div(class = "card-footer", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;", textOutput(ns("last_update")))
@@ -257,7 +262,19 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         geom_point() +
         labs(title = "Количество событий по дням", x = "", y = "")
     })
+    
+    observeEvent(input$refresh_logs, {
+      # Обновляем "метку обновления"
+      logs_last_update(Sys.time())
+      
+      # Если у тебя есть функции обновления сессий и экшенов, дерни их тут
+      # например:
+      session_store(get_session_log())
+      action_store(get_action_log())
+      
+      showNotification("Логи обновлены", type = "message")
+    })
+    
+    
   })
 }
-
-
