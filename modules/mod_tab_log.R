@@ -22,7 +22,7 @@ mod_tab_logs_ui <- function(id) {
                 ),
                 fluidRow(
                   column(12,
-                         actionButton(ns("refresh_logs"), "Обновить логи", class = "btn btn-primary")
+                         actionButton(ns("refresh_logs"), "Обновить логи", icon = icon("refresh"), class = "btn btn-primary")
                   )
                 )
             ),
