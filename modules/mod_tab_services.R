@@ -15,7 +15,7 @@ mod_tab_services_ui <- function(id) {
                   h4("Выбор и управление службами"),
                   selectInput(ns("selected_service"), "Выберите службу:", choices = NULL),
                   textOutput(ns("service_status")),
-                  div(class = "action-buttons",
+                  div(class = "action-buttons-services",
                       uiOutput(ns("service_buttons"))
                   )
                 )

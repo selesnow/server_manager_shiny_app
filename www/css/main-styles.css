@@ -163,6 +163,14 @@ table {
     margin-top: 10px;
 }
 
+.action-buttons-services {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    justify-content: flex-start;
+}
+
 /* popup на вкладке задачи */
 .modal-content {
     background-color: #2b2b2b;   /* тёмный фон */
