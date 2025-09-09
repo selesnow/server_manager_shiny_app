@@ -96,7 +96,7 @@ mod_tab_ai_assistant_server <- function(id, auth, user_role, conf_rv, session_id
       write_action_log(user = auth$user()$login,
                        func = 'AI Assistant Reset Chat',
                        session_id = session_id)
-      new_chat <- create_new_chat()
+      new_chat <- create_new_chat(user_role(), conf_rv())
       dev_chat(new_chat)
       
       chat_append(
