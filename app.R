@@ -239,7 +239,6 @@ server <- function(input, output, session) {
           if (user_role() %in% conf$access_managemet$Логи) {
             mod_tab_logs_ui("logs_tab")
           },
-          
           # Помощь и обновления
           if (user_role() %in% conf$access_managemet$Readme) {
             mod_help_ui('help')
@@ -248,35 +247,6 @@ server <- function(input, output, session) {
             mod_news_ui('news')
           }
         ),
-        
-        # Добавляем CSS для кнопок действий
-        tags$head(
-          tags$style(HTML("
-            .action-buttons {
-              display: flex;
-              gap: 10px;
-              flex-wrap: wrap;
-              margin-top: 10px;
-            }
-          "))
-        ),
-        # CSS для popup который появляется при клике на таблицу задач
-        tags$style(HTML("
-          .modal-content {
-            background-color: #2b2b2b;   /* тёмный фон */
-            color: #f0f0f0;              /* светлый текст */
-          }
-          .modal-header, .modal-footer {
-            border: none;                /* убираем белые бордеры */
-          }
-          .modal-title {
-            color: #ffffff;              /* заголовок яркий */
-            font-weight: bold;
-          }
-          .modal-body strong {
-            color: #c9e6ff;              /* выделение для strong */
-          }
-        ")),
         
         # скрипт копирования названия файла в буфер обмена на вкладке поиска по файлам
         tags$script("
@@ -330,12 +300,12 @@ server <- function(input, output, session) {
   })
   
   # Инфо по задачам, процессам и службам
-  all_tasks <- reactiveVal(NULL)
-  services_store <- reactiveVal(NULL)
+  all_tasks       <- reactiveVal(NULL)
+  services_store  <- reactiveVal(NULL)
   processes_store <- reactiveVal(NULL)
-  session_store <- reactiveVal(NULL)
-  action_store  <- reactiveVal(NULL)
-  conf_rv <- reactiveVal(conf)
+  session_store   <- reactiveVal(NULL)
+  action_store    <- reactiveVal(NULL)
+  conf_rv         <- reactiveVal(conf)
   
   # фиксация изменения логов
   logs_last_update <- reactiveVal(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
