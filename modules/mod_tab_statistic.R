@@ -162,7 +162,7 @@ mod_tab_statistic_server <- function(id, all_tasks, conf_rv) {
                      color = "black", size = 1) +
         # подпись справа
         geom_text(aes(x = 1.05, label = scales::percent(value, accuracy = 1)),
-                  hjust = 0, size = 4) +
+                  hjust = 0, size = 4, color = "grey15") +
         scale_x_continuous(labels = scales::percent, limits = c(0, 1.1)) +
         scale_y_continuous(breaks = indicators$ypos, labels = indicators$name) +
         labs(x = NULL, y = NULL) +
