@@ -223,6 +223,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     show_log_card   <- reactiveVal(TRUE)
     script_content_reactive <- reactiveVal(NULL)
     popup_task_name <- reactiveVal(NULL)
+    current_task_start_in <- reactiveVal(NULL)
+    log_history_files <- reactiveVal(NULL)
+    current_log_content <- reactiveVal(NULL)
     
     # --- Главная реактивка с учётом всех фильтров ---
     task_data <- reactive({
@@ -400,6 +403,12 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       }
     })
     
+    # Определяем, показывать ли историю логов
+    output$show_log_history <- reactive({
+      !is.null(log_history_files())
+    })
+    outputOptions(output, "show_log_history", suspendWhenHidden = FALSE)
+    
     # Рендерим карточку с логами
     output$log_card <- renderUI({
         div(class = "card",
@@ -410,6 +419,26 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
                   tabPanel(
                     title = tagList(icon("file-code"), "Логи"),
                     value = "logs",
+                    # НОВЫЙ блок с выбором лога
+                    conditionalPanel(
+                      condition = paste0("output['", ns("show_log_history"), "']"),
+                      div(class = "mb-3",
+                          div(class = "row",
+                              div(class = "col-md-8",
+                                  selectInput(ns("selected_log_file"), 
+                                              "Выберите лог:", 
+                                              choices = NULL,
+                                              width = "100%")
+                              ),
+                              div(class = "col-md-4",
+                                  actionButton(ns("load_current_log"), 
+                                               "Текущий лог", 
+                                               class = "btn btn-primary btn-sm",
+                                               style = "margin-top: 25px;")
+                              )
+                          )
+                      )
+                    ),
                     tags$div(
                       style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
                       class = "light-mode-log",
@@ -481,33 +510,44 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
     })
     
     # Обработчик кнопки "Логи"
+    # ОБНОВЛЕННЫЙ обработчик кнопки "Логи"
     observeEvent(input$view_task_logs, {
       req(input$selected_task)
       
       write_action_log(user = auth$user()$login, func = 'Task log', session_id, value = input$selected_task)
-      # Находим выбранную задачу в таблице
+      
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
       
       if(nrow(selected_task_data) > 0) {
-        # Получаем нужные поля
         task_to_run <- selected_task_data$`Task To Run`
         start_in <- selected_task_data$`Start In`
         
-        # Если данные получены, вызываем функцию find_log
+        current_task_start_in(start_in)
+        
+        # Проверяем наличие истории логов
+        history_files <- get_log_history_files(start_in, task_to_run)
+        log_history_files(history_files)
+        
+        # Обновляем выпадающий список если есть история
+        if (!is.null(history_files)) {
+          updateSelectInput(session, "selected_log_file", 
+                            choices = c("Текущий лог" = "current", history_files))
+        }
+        
         if(!is.null(task_to_run) && !is.null(start_in)) {
+          # Загружаем текущий лог по умолчанию
           log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
           
           if(inherits(log_content, "try-error")) {
-            output$task_log_content <- renderText({ "Ошибка при чтении лога" })
+            current_log_content("Ошибка при чтении лога")
           } else {
-            output$task_log_content <- renderText({ log_content })
+            current_log_content(log_content)
           }
           
-          # Показываем имя задачи
+          output$task_log_content <- renderText({ current_log_content() })
           output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
           
-          # Активируем отображение карточки и переключаемся на вкладку логов
           show_log_card(TRUE)
           updateTabsetPanel(session, "log_tabs", selected = "logs")
         } else {
@@ -516,6 +556,79 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
       } else {
         showNotification("Задача не найдена", type = "error")
       }
+    })
+    
+    # НОВЫЙ обработчик для кнопки "Текущий лог"
+    observeEvent(input$load_current_log, {
+      req(input$selected_task, current_task_start_in())
+      
+      selected_task_data <- all_tasks_reactive() %>% 
+        filter(TaskName == input$selected_task)
+      
+      if(nrow(selected_task_data) > 0) {
+        task_to_run <- selected_task_data$`Task To Run`
+        start_in <- current_task_start_in()
+        
+        if(!is.null(task_to_run) && !is.null(start_in)) {
+          log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+          
+          if(inherits(log_content, "try-error")) {
+            current_log_content("Ошибка при чтении текущего лога")
+          } else {
+            current_log_content(log_content)
+          }
+          
+          output$task_log_content <- renderText({ current_log_content() })
+          updateSelectInput(session, "selected_log_file", selected = "current")
+        }
+      }
+    })
+    
+    # НОВЫЙ обработчик для выбора лога из истории
+    observeEvent(input$selected_log_file, {
+      
+      req(input$selected_log_file)
+      
+      if (input$selected_log_file == "current") {
+        # Если выбран текущий лог, вызываем стандартную загрузку
+        req(input$selected_task, current_task_start_in())
+        
+        selected_task_data <- all_tasks_reactive() %>% 
+          filter(TaskName == input$selected_task)
+        
+        if(nrow(selected_task_data) > 0) {
+          task_to_run <- selected_task_data$`Task To Run`
+          start_in <- current_task_start_in()
+          
+          if(!is.null(task_to_run) && !is.null(start_in)) {
+            log_content <- try(find_log(task_to_run = task_to_run, start_in = start_in), silent = TRUE)
+            
+            if(inherits(log_content, "try-error")) {
+              current_log_content("Ошибка при чтении текущего лога")
+            } else {
+              current_log_content(log_content)
+            }
+          }
+        }
+      } else {
+        # Если выбран исторический лог
+        if (file.exists(input$selected_log_file)) {
+          log_content <- try({
+            readLines(input$selected_log_file, warn = FALSE) %>% 
+              str_c(collapse = '\n')
+          }, silent = TRUE)
+          
+          if(inherits(log_content, "try-error")) {
+            current_log_content("Ошибка при чтении исторического лога")
+          } else {
+            current_log_content(log_content)
+          }
+        } else {
+          current_log_content("Файл лога не найден")
+        }
+      }
+      
+      output$task_log_content <- renderText({ current_log_content() })
     })
     
     # Обработчик кнопки "Код"
