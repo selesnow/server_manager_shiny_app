@@ -1059,6 +1059,20 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
             size = "l",
             tags$head(
               tags$style(HTML("
+              .modal-content {
+                  background-color: #2b2b2b !important;   /* тёмный фон */
+                  color: #f0f0f0 !important;              /* светлый текст */
+              }
+              .modal-header, .modal-footer {
+                  border: none;                /* убираем белые бордеры */
+              }
+              .modal-title {
+                  color: #ffffff;              /* заголовок яркий */
+                  font-weight: bold;
+              }
+                  .modal-body strong {
+                  color: #c9e6ff;              /* выделение для strong */
+              }
               @media (max-width: 768px) {
                 .modal-dialog {
                   margin: 10px !important;
@@ -1114,23 +1128,23 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
             ),
             easyClose = TRUE,
             footer = tagList(
-                tagList(
-                  if (user_role() %in% conf_rv()$access_managemet$`Запуск задач`) {
+              tagList(
+                if (user_role() %in% conf_rv()$access_managemet$`Запуск задач`) {
                   actionButton(ns("run_task_popup"), "Запустить", 
                                icon = icon("play"), 
                                class = "btn btn-success")
-                  },
-                  if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
+                },
+                if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
                   actionButton(ns("activate_task_popup"), "Активировать", 
                                icon = icon("toggle-on"), 
                                class = "btn-success")
-                  },
-                  if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
+                },
+                if (user_role() %in% conf_rv()$access_managemet$`Активация задач`) {
                   actionButton(ns("deactivate_task_popup"), "Деактивировать", 
                                icon = icon("toggle-off"), 
                                class = "btn-danger btn-sm ml-2")
-                  }
-                ),
+                }
+              ),
               modalButton("Закрыть")
             ),
             div(
@@ -1171,6 +1185,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
         }
       }
     }, ignoreInit = TRUE)
+    
     
   })
 }
