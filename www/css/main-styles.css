@@ -173,8 +173,8 @@ table {
 
 /* popup на вкладке задачи */
 .modal-content {
-    background-color: #2b2b2b;   /* тёмный фон */
-    color: #f0f0f0;              /* светлый текст */
+    background-color: #2b2b2b !important;   /* тёмный фон */
+    color: #f0f0f0 !important;              /* светлый текст */
 }
 .modal-header, .modal-footer {
     border: none;                /* убираем белые бордеры */
