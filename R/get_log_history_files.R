@@ -27,7 +27,17 @@ get_log_history_files <- function(start_in, task_to_run) {
   log_files <- log_files[order(file_info$mtime, decreasing = TRUE)]
   
   # Создаем красивые названия для выпадающего списка
-  choices <- setNames(log_files, basename(log_files))
+  choices <- setNames(
+    log_files, 
+    str_replace(
+      basename(log_files),
+      # 6 групп: YYYY MM DD HH MM SS + всё остальное
+      "(\\d{4})_(\\d{2})_(\\d{2})_(\\d{2})_(\\d{2})_(\\d{2})_(.+)",
+      "\\1-\\2-\\3 \\4:\\5:\\6 | \\7"
+    )
+    )
+  
+  new_files <- 
   
   return(choices)
 }
