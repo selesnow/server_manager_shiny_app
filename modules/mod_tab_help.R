@@ -39,7 +39,7 @@ mod_help_ui <- function(id) {
                   class = "video-container",
                   style = "position:relative; width:100%; padding-bottom:56.25%; height:0; overflow:hidden;",
                   tags$iframe(
-                    src = "https://www.youtube.com/embed/Io25a8W6Gz8?si=tOFC7-ykzkldtPzW",
+                    src = "https://www.youtube.com/embed/mSZyOuTRR2U?si=dZc5zLqqbLKRsi73",
                     style = "position:absolute; top:0; left:0; width:100%; height:100%; border:0;",
                     allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
                     allowfullscreen = NA
