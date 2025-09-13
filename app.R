@@ -181,14 +181,27 @@ server <- function(input, output, session) {
         ),
         
         # Добавляем элементы управления отдельно, после заголовка
-        div(class = "header-container", 
-            div(class = "controls-wrapper", 
-                div(class = "controls-container", 
-                    actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-warning"),
-                    actionButton("logout_btn", "Выйти",  icon = icon("power-off"), class = "btn-danger btn-sm ml-2"),
-                    actionButton("toggle_theme", label = "Светлая тема", icon = icon("moon"), class = "btn-secondary btn-sm")
-                )
+        div(
+          class = "header-container",
+          style = "display: flex; flex-direction: column; align-items: flex-start;",
+          
+          # Инфо о пользователе
+          div(
+            class = "text-primary",
+            style = "font-size: 0.9em; margin-bottom: 5px;",
+            glue::glue("Пользователь: {user_login} ({user_role()})")
+          ),
+          
+          # общие кнопки управления
+          div(
+            class = "controls-wrapper", 
+            div(
+              class = "controls-container", 
+              actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-warning"),
+              actionButton("logout_btn", "Выйти",  icon = icon("power-off"), class = "btn-danger btn-sm ml-2"),
+              actionButton("toggle_theme", label = "Светлая тема", icon = icon("moon"), class = "btn-secondary btn-sm")
             )
+          )
         ),
         
         # Начало вкладок
