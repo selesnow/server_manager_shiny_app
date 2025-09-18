@@ -1,4 +1,4 @@
 name: Server Manager
-version: '1.32.3'
+version: '1.32.2'
 description: Shiny приложение для управление планировщиком заданий, и службами на
   сервере
