@@ -86,6 +86,23 @@ mod_tab_logs_ui <- function(id) {
     fluidRow(
       column(6, plotOutput(ns("sessions_plot"))),
       column(6, plotOutput(ns("actions_plot")))
+    ),
+    # Rout
+    fluidRow(
+      column(
+        width = 12,
+        div(class = "card",
+            div(class = "card-header", "Содержимое app.Rout"),
+            div(
+              class = "card-body",
+              tags$div(
+                style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; 
+                         max-height: 600px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;",
+                verbatimTextOutput(ns("task_log_content"))
+              )
+            )
+        )
+      )
     )
   )
 }
@@ -97,6 +114,27 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     # --- Данные ---
     all_sessions <- reactive({ session_store() })
     actions      <- reactive({ action_store() })
+    
+    # --- РЕАКТИВКА для app.Rout ---
+    rout_content <- reactiveVal("")
+    
+    read_rout <- function() {
+      rout_path <- file.path(getwd(), "app.Rout")
+      if (!file.exists(rout_path)) {
+        return("Файл app.Rout не найден.")
+      }
+      paste(readLines(rout_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    }
+    
+    # читаем один раз при загрузке
+    observe({
+      rout_content(read_rout())
+    })
+    
+    output$task_log_content <- renderText({
+      rout_content()
+    })
+    
     
     # --- Лог ошибок (читаем один раз при старте) ---
     error_data <- get_error_log()
@@ -264,13 +302,12 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     })
     
     observeEvent(input$refresh_logs, {
-      # Обновляем "метку обновления"
       logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
-      
-      # Если у тебя есть функции обновления сессий и экшенов, дерни их тут
-      # например:
       session_store(get_session_log())
       action_store(get_action_log())
+      
+      # читаем заново файл app.Rout
+      rout_content(read_rout())
       
       showNotification("Логи обновлены", type = "message")
     })
