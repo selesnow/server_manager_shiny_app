@@ -30,8 +30,14 @@ library(future)
 library(forcats)
 library(ggthemr)
 
+# проверка создан ли конфиг
+if (!file.exists('config.yaml')) source('create_config.R')
+
 # Чтение конфига
 conf <<- yaml::read_yaml('config.yaml')
+
+# проверка развёрнута ли база данных
+if (!file.exists(conf$database_settings$app_data_base)) source('create_db.R')
 
 plan(multisession)
 ggthemr('flat dark')
@@ -436,7 +442,7 @@ server <- function(input, output, session) {
       mod_news_server("news")
       
       # Модуль логов
-      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update, conf_rv)
+      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update, conf_rv, auth, session_id = session$token)
       
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({

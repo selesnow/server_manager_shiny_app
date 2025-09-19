@@ -1,6 +1,8 @@
 library(DBI)
 library(RSQLite)
 
+cat('Создание базы данных.')
+
 # Путь к файлу базы
 db_path <- conf$database_settings$app_data_base
 
@@ -14,7 +16,8 @@ CREATE TABLE IF NOT EXISTS action_log (
   datetime   DATETIME,
   func_name  TEXT,
   user       TEXT,
-  session_id TEXT
+  session_id TEXT,
+  value      TEXT
 );
 ")
 
@@ -92,7 +95,8 @@ INSERT OR IGNORE INTO actions (id, key, name, tab) VALUES
 (25, 'Task NEWS', 'Просмотр NEWS', 'Задачи');
 (26, 'Access config change', 'Изменение конфига доступов', 'Доступы');
 (27, 'Logging config change', 'Изменение конфига логгирования', 'Доступы');
-(26, 'Database config change', 'Изменение конфига баз данных', 'Доступы');
+(28, 'Database config change', 'Изменение конфига баз данных', 'Доступы');
+(29, 'Cleare app.Rout', 'Очистка app.Rout', 'Логи');
 ")
 
 # Проверка

@@ -87,13 +87,15 @@ mod_tab_logs_ui <- function(id) {
       column(6, plotOutput(ns("sessions_plot"))),
       column(6, plotOutput(ns("actions_plot")))
     ),
-    # Rout
     # --- Логи из app.Rout ---
     fluidRow(
       column(
         width = 12,
         div(class = "card",
-            div(class = "card-header", "Содержимое app.Rout"),
+            div(class = "card-header d-flex justify-content-between align-items-center",
+                "Содержимое app.Rout",
+                actionButton(ns("clear_rout"), "Очистить", class = "btn btn-danger btn-sm")
+            ),
             div(
               class = "card-body",
               tags$div(
@@ -105,10 +107,11 @@ mod_tab_logs_ui <- function(id) {
         )
       )
     )
+    
   )
 }
 
-mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update, conf_rv) {
+mod_tab_logs_server <- function(id, session_store, action_store, logs_last_update, conf_rv, auth, session_id) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -302,6 +305,23 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         labs(title = "Количество событий по дням", x = "", y = "")
     })
     
+    # очистка app.Rout
+    observeEvent(input$clear_rout, {
+      
+      write_action_log(user = auth$user()$login, func = 'Cleare app.Rout', session_id)
+      rout_path <- file.path(getwd(), "app.Rout")
+      if (file.exists(rout_path)) {
+        # очищаем файл
+        write("", file = rout_path)
+      }
+      
+      # обновляем reactiveVal, чтобы сразу отобразилось пустое поле
+      rout_content("")
+      
+      showNotification("Файл app.Rout очищен", type = "message")
+    })
+    
+    # обновление логов
     observeEvent(input$refresh_logs, {
       # Обновляем "метку обновления"
       logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
