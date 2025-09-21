@@ -10,7 +10,7 @@ parse_time <- function(s) {
   s2 <- trimws(s)
   if (grepl("Z$|[+-]\\d{2}:?\\d{2}$", s2)) {
     t <- tryCatch(ymd_hms(s2, tz = "UTC"), error = function(e) NA)
-    if (!is.na(t)) return(with_tz(t, Sys.timezone()))
+    if (!is.na(t)) return(with_tz(t, "Europe/Kyiv"))
   }
   tryCatch(ymd_hms(s2, tz = Sys.timezone()), error = function(e) NA)
 }
@@ -103,7 +103,7 @@ get_task_triggers <- function(folder = "C:/Windows/System32/Tasks") {
             details <- c(details, paste0("Интервал дней: ", schedule_struct$days_interval))
           if (!is.na(repetition_interval) && nzchar(repetition_interval))
             details <- c(details, paste0("Повтор: ", repetition_interval))
-          paste(details, collapse = "\n")
+          paste(details, collapse = "<br>")
         },
         "weekly" = {
           details <- c()
@@ -113,7 +113,7 @@ get_task_triggers <- function(folder = "C:/Windows/System32/Tasks") {
             details <- c(details, paste0("Дни недели: ", paste(schedule_struct$days_of_week, collapse = ", ")))
           if (!is.na(repetition_interval) && nzchar(repetition_interval))
             details <- c(details, paste0("Повтор: ", repetition_interval))
-          paste(details, collapse = "\n")
+          paste(details, collapse = "<br>")
         },
         "monthly" = {
           details <- c()
@@ -123,7 +123,7 @@ get_task_triggers <- function(folder = "C:/Windows/System32/Tasks") {
             details <- c(details, paste0("Месяцы: ", paste(schedule_struct$months, collapse = ", ")))
           if (!is.na(repetition_interval) && nzchar(repetition_interval))
             details <- c(details, paste0("Повтор: ", repetition_interval))
-          paste(details, collapse = "\n")
+          paste(details, collapse = "<br>")
         },
         "once" = {
           if (!is.na(start_parsed)) format(start_parsed, "%Y-%m-%d %H:%M:%S") else NA_character_
@@ -132,17 +132,18 @@ get_task_triggers <- function(folder = "C:/Windows/System32/Tasks") {
       )
       
       tibble(
-        task_name        = stringr::str_remove(str_glue('{task_path}\\{task_name}'), '^\\\\'),
-        trigger_type_raw = trigger_type_raw,
-        schedule_type    = schedule_type,
-        start_raw        = ifelse(nzchar(start_raw), start_raw, NA_character_),
-        start_boundary   = start_parsed,
-        end_raw          = ifelse(nzchar(end_raw), end_raw, NA_character_),
-        end_boundary     = end_parsed,
+        task_name           = stringr::str_remove(str_glue('{task_path}\\{task_name}'), '^\\\\'),
+        trigger_type_raw    = trigger_type_raw,
+        schedule_type       = schedule_type,
+        start_raw           = ifelse(nzchar(start_raw), start_raw, NA_character_),
+        start_boundary      = start_parsed %>% with_tz("Europe/Kyiv"),
+        time                = format(start_boundary, '%H:%M:%S'),
+        end_raw             = ifelse(nzchar(end_raw), end_raw, NA_character_),
+        end_boundary        = end_parsed,
         repetition_interval = repetition_interval,
         repetition_duration = repetition_duration,
-        schedule_details = schedule_details,
-        schedule         = list(schedule_struct)
+        schedule_details    = schedule_details,
+        schedule            = list(schedule_struct)
       ) %>% 
         select(
           -c(

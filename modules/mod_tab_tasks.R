@@ -791,6 +791,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
       } else {
         triggers |>
           select(-task_name) |>
+          mutate(schedule_details = purrr::map(schedule_details, gt::html)) |>
           gt::gt() |>
           gt::tab_style(
             style = gt::cell_text(color = "#e0e0e0"),
@@ -1201,6 +1202,38 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
               div(class = "mb-2", strong("Клиент: "),             span(row$Client)),
               div(class = "mb-2", strong("Краткое описание: "),   span(row$Comment)),
               tags$hr(),
+              div(
+                class = "mb-3",
+                strong("Триггеры:"),
+                {
+                  triggers <- task_triggers_data() |> 
+                    dplyr::filter(task_name == row$TaskName)
+                  
+                  if (nrow(triggers) == 0) {
+                    div("Триггеры не найдены")
+                  } else {
+                    triggers |>
+                      select(-task_name) |>
+                      mutate(schedule_details = purrr::map(schedule_details, gt::html)) |>
+                      gt::gt() |>
+                      gt::tab_style(
+                        style = gt::cell_text(color = "#e0e0e0"),
+                        locations = gt::cells_body()
+                      ) |>
+                      gt::tab_style(
+                        style = gt::cell_text(color = "#e0e0e0"),
+                        locations = gt::cells_column_labels()
+                      ) |>
+                      gt::tab_options(
+                        table.font.size = "small",
+                        data_row.padding = gt::px(2),
+                        table.background.color = "transparent"
+                      ) |> 
+                      gt::as_raw_html() |> 
+                      HTML() # Важно для вставки внутрь modalDialog
+                  }
+                }
+              ),
               div(class = "mb-2",
                   strong("Наличие элементов проекта:"),
                   br(),
