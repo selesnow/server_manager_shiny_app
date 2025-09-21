@@ -531,11 +531,11 @@ server <- function(input, output, session) {
   
 }
 
-if (!interactive()) {
-  runApp('C:/scripts/alsey/netpeak_core/nc_analytics_team/shiny_task_service_manager', port = 8080, host = '0.0.0.0')
-}
+# if (!interactive()) {
+#   runApp('C:/scripts/alsey/netpeak_core/nc_analytics_team/shiny_task_service_manager', port = 8080, host = '0.0.0.0')
+# }
 
-if (interactive() && system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
+if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
   shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
 } else {
   shinyApp(ui, server, options = list(port = 81))
