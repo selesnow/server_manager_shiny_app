@@ -4,6 +4,19 @@ options(
   ellmer_timeout_s = 600
 )
 
+# Rout
+# --- путь к приложению Shiny ---
+app_dir <- "C:/scripts/alsey/netpeak_core/nc_analytics_team/shiny_task_service_manager"
+
+# --- путь к лог-файлу в стиле R CMD BATCH ---
+log_file <- file.path(app_dir, "app.Rout")
+
+# перенаправляем stdout и stderr в app.Rout
+if (!interactive()) {
+  sink(log_file, append = TRUE)
+  sink(log_file, type = "message", append = TRUE)
+}
+
 # library
 library(shiny)
 library(shinyjs)
