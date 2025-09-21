@@ -319,12 +319,13 @@ server <- function(input, output, session) {
   })
   
   # Инфо по задачам, процессам и службам
-  all_tasks       <- reactiveVal(NULL)
-  services_store  <- reactiveVal(NULL)
-  processes_store <- reactiveVal(NULL)
-  session_store   <- reactiveVal(NULL)
-  action_store    <- reactiveVal(NULL)
-  conf_rv         <- reactiveVal(conf)
+  all_tasks           <- reactiveVal(NULL)
+  services_store      <- reactiveVal(NULL)
+  processes_store     <- reactiveVal(NULL)
+  session_store       <- reactiveVal(NULL)
+  action_store        <- reactiveVal(NULL)
+  task_triggers_store <- reactiveVal(NULL)
+  conf_rv             <- reactiveVal(conf)
   
   # фиксация изменения логов
   logs_last_update <- reactiveVal(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
@@ -355,6 +356,7 @@ server <- function(input, output, session) {
         p_process  <- future_promise({ get_processes() })
         p_sessions <- future_promise({ get_session_log() })
         p_actions  <- future_promise({ get_action_log() })
+        p_triggers <- future_promise({ get_task_triggers() })
         
         # обновляем хранилища по мере готовности (UI не блокируется)
         p_tasks %...>% (function(x) {
@@ -382,18 +384,27 @@ server <- function(input, output, session) {
           session_store(x)
           showNotification("Логи сессий загружены", type = "message", duration = 2)
         })
+        
         p_actions  %...>% (function(x) {
           action_store(x)
           showNotification("Логи действий загружены", type = "message", duration = 2)
         })
         
+        p_triggers %...>% (function(x) {
+          task_triggers_store(x)
+          showNotification("Триггеры задач загружены", type = "message", duration = 2)
+        }) %...!% (function(e) {
+          showNotification(paste("Ошибка загрузки триггеров задач:", conditionMessage(e)), type = "error", duration = 6)
+        })
+        
         # как только всё трое завершатся — прячем общий лоадер
         promise_all(
-          tasks = p_tasks,
-          services = p_services,
+          tasks     = p_tasks,
+          services  = p_services,
           processes = p_process,
-          sessions = p_sessions,
-          actions  = p_actions
+          sessions  = p_sessions,
+          actions   = p_actions,
+          triggers  = p_triggers
         ) %...>% with({
           # Этот блок выполняется когда всё завершено
           all_tasks(tasks)
@@ -401,6 +412,7 @@ server <- function(input, output, session) {
           processes_store(processes)
           session_store(sessions)
           action_store(actions)
+          task_triggers_store(triggers) 
           waiter_hide()
           showNotification("Все данные загружены", type = "message", duration = 3)
         }) %...!% (function(e) {
@@ -415,7 +427,7 @@ server <- function(input, output, session) {
       mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль вкладки задач ----------------------------------------------------
-      mod_tab_tasks_server("tasks_tab", all_tasks, user_role, auth, session_id = session$token, conf_rv)
+      mod_tab_tasks_server("tasks_tab", all_tasks, task_triggers_store, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль статистики
       mod_tab_statistic_server("stats_tab", all_tasks, conf_rv)
@@ -483,25 +495,29 @@ server <- function(input, output, session) {
     p_process  <- future_promise({ get_processes() })
     p_sessions <- future_promise({ get_session_log() })
     p_actions  <- future_promise({ get_action_log() })
+    p_triggers <- future_promise({ get_task_triggers() })
     
     p_tasks    %...>% (function(x) all_tasks(x))
     p_services %...>% (function(x) services_store(x))
     p_process  %...>% (function(x) processes_store(x))
     p_sessions %...>% (function(x) session_store(x))
     p_actions  %...>% (function(x) action_store(x))
+    p_triggers %...>% (function(x) task_triggers_store(x))
     
     promise_all(
       tasks    = p_tasks,
       services = p_services,
       process  = p_process,
       sessions = p_sessions,
-      actions  = p_actions
+      actions  = p_actions,
+      triggers = p_triggers
     ) %...>% with({
       all_tasks(tasks)
       services_store(services)
       processes_store(process)
       session_store(sessions)
       action_store(actions)
+      task_triggers_store(triggers)
       
       logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
       

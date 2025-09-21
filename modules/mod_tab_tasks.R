@@ -212,7 +212,7 @@ mod_tab_tasks_ui <- function(id) {
 }
 
 # ─────────────────────── SERVER ────────────────────────────
-mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, session_id, conf_rv) {
+mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, user_role, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     
     ns <- session$ns
@@ -777,6 +777,37 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
           )
     })
     
+    # Рендинг триггеров
+    output$task_triggers_table <- gt::render_gt({
+      req(task_triggers_data(), input$selected_task)
+      
+      triggers <- task_triggers_data() |>
+        dplyr::filter(task_name == input$selected_task)
+      
+      if (nrow(triggers) == 0) {
+        gt::gt(data.frame(Сообщение = "Триггеры не найдены")) |> 
+          gt::tab_options(table.align = "center",
+                          table.background.color = "transparent")
+      } else {
+        triggers |>
+          select(-task_name) |>
+          gt::gt() |>
+          gt::tab_style(
+            style = gt::cell_text(color = "#e0e0e0"),
+            locations = gt::cells_body()
+          ) |>
+          gt::tab_style(
+            style = gt::cell_text(color = "#e0e0e0"),
+            locations = gt::cells_column_labels()
+          ) |>
+          gt::tab_options(
+            table.font.size = "small",
+            data_row.padding = gt::px(2),
+            table.background.color = "transparent"
+          )
+      }
+    })
+    
     # Рендерим информацию о выбранной задаче
     output$selected_task_info <- renderUI({
       req(selected_task_details())
@@ -801,6 +832,11 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, user_role, auth, sessio
           div(class = "mb-2", strong("Клиент: "), span(task$Client)),
           div(class = "mb-2", strong("Краткое описание: "), span(task$Comment)),
           br(),
+          # Триггеры
+          div(class = "mb-3",
+              strong("Триггеры:"),
+              gt::gt_output(ns("task_triggers_table"))
+          ),
           # Новая строка с индикаторами
           div(class = "mb-2", 
               strong("Наличие элементов проекта: "),
