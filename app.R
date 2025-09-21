@@ -13,8 +13,15 @@ log_file <- file.path(app_dir, "app.Rout")
 
 # перенаправляем stdout и stderr в app.Rout
 if (!interactive()) {
-  sink(log_file, append = TRUE)
-  sink(log_file, type = "message", append = TRUE)
+  
+  # создаём соединение для stdout
+  out_con <- file(log_file, open = "a")  # append = TRUE
+  sink(out_con, type = "output")         # для обычного вывода
+  
+  # создаём отдельное соединение для сообщений / ошибок
+  msg_con <- file(log_file, open = "a")
+  sink(msg_con, type = "message")
+  
 }
 
 # library
