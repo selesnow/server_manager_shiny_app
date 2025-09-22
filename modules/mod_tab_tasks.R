@@ -778,6 +778,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
           Comment, 
           `Last Run Time`, 
           `Last Result`, 
+          `Next Run Time`,
           `Scheduled Task State`,
           Responsible,
           readme, news, git, rproj, has_log
@@ -837,6 +838,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
           div(class = "mb-2", strong("Команда запуска: "), span(task$`Task To Run`)),
           div(class = "mb-2", strong("Время прошлого запуска: "), span(task$`Last Run Time`)),
           div(class = "mb-2", strong("Результат прошлого запуска: "), span(task$`Last Result`)),
+          div(class = "mb-2", strong("Время следующего запуска: "), span(task$`Next Run Time`)),
           div(class = "mb-2", strong("Клиент: "), span(task$Client)),
           div(class = "mb-2", strong("Краткое описание: "), span(task$Comment)),
           br(),
@@ -1206,6 +1208,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
               div(class = "mb-2", strong("Команда запуска: "),    span(row$`Task To Run`)),
               div(class = "mb-2", strong("Время прошлого запуска: "), span(row$`Last Run Time`)),
               div(class = "mb-2", strong("Результат прошлого запуска: "), span(row$`Last Result`)),
+              div(class = "mb-2", strong("Время следующего запуска: "), span(row$`Next Run Time`)),
               div(class = "mb-2", strong("Клиент: "),             span(row$Client)),
               div(class = "mb-2", strong("Краткое описание: "),   span(row$Comment)),
               tags$hr(),

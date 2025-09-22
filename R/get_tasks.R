@@ -8,13 +8,19 @@ get_tasks <- function() {
   analysts_team <- dept::dp_get_team()
   analysts <- names(analysts_team)
   analyst_filter <- str_c(analysts, collapse = '|') %>% str_to_lower()
+  
+  # ответвенные по задачам
   responsibles <- configr::read.config(here::here(r"(C:\scripts\alsey\netpeak_core\nc_analytics_team\task_scheduler_checker\config.cfg)"), rcmd.parse = TRUE)$responsibles
   
-  taskscheduler_ls(fill = TRUE) %>%
+  # отключенные от мониторинга задачи
+  con <- dbConnect(SQLite(), conf$database_settings$task_log_base)
+  quiet_tasks <- dbGetQuery(con, "SELECT task_name FROM forget_queue WHERE quiet_till > datetime('now', 'localtime')")
+  
+  tsk <- taskscheduler_ls(fill = TRUE) %>%
     mutate(
       `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
       Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
-      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p")
+      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p") %>% force_tz(tzone = Sys.timezone()) %>% with_tz("Europe/Kyiv")
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
     mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
@@ -66,13 +72,18 @@ get_tasks <- function() {
         .default = str_glue("Ошибка (код {`Last Result`})")
       )
     ) %>%
-    group_by(across(-c(`Start Time`, `Start Date`))) %>%
-    summarise(
-      `Start Times` = str_c(unique(`Start Time`), collapse = ", "),
-      `Start Dates` = str_c(unique(`Start Date`), collapse = ", "),
-      .groups = "drop"
-    ) %>% 
-    ungroup() %>% 
+    select(-c(
+      'Days', 
+      'Months', 
+      `Repeat: Every`, 
+      `Repeat: Until: Time`, 
+      `Repeat: Until: Duration`, 
+      `Repeat: Stop If Still Running`, 
+      `Start Time`, 
+      `Start Date`,
+      `Schedule Type`
+    )) %>% 
+    unique() %>% 
     mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]])) %>% 
     # проверка наличия readme, news, git и проекта RStudio
     mutate(
@@ -88,7 +99,14 @@ get_tasks <- function() {
       }),
       has_log = suppressWarnings(purrr::map2_lgl(`Task To Run`, `Start In`, purrr::possibly(task_has_log, FALSE)))
     ) %>% 
+    # отключена ли задача от мониторинга
+    mutate(
+      is_quite = if_else(TaskName %in% quiet_tasks$task_name, TRUE, FALSE)
+    ) %>% 
     # дата обновления данных в таблице
-    mutate(update_time = lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
+    mutate(
+      update_time     = lubridate::with_tz(Sys.time(), "Europe/Kyiv"),
+      `Next Run Time` = `Next Run Time` %>% lubridate::mdy_hms() %>% force_tz(tzone = Sys.timezone()) %>% with_tz("Europe/Kyiv")
+      )
 
 }
