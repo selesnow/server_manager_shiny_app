@@ -448,15 +448,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
                       verbatimTextOutput(ns("task_log_content"))
                     )
                   ),
-                  tabPanel(
-                    title = tagList(icon("chart-line"), "Анализ Rout"),
-                    value = "analysis",
-                    tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
-                      class = "light-mode-log",
-                      uiOutput(ns("task_log_markdown"))
-                    )
-                  ),
+                  if (user_role() %in% conf_rv()$access_managemet$`AI анализ`) {
+                    tabPanel(
+                      title = tagList(icon("chart-line"), "Анализ Rout"),
+                      value = "analysis",
+                      tags$div(
+                        style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
+                        class = "light-mode-log",
+                        uiOutput(ns("task_log_markdown"))
+                      )
+                     )
+                    },
                   tabPanel(
                     title = tagList(icon("code"), "Скрипт"),
                     value = "script",
@@ -466,15 +468,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
                       uiOutput(ns("task_script_markdown"))
                     )
                   ),
-                  tabPanel(
-                    title = tagList(icon("lightbulb"), "Анализ кода"),
-                    value = "script_analysis",
-                    tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
-                      class = "light-mode-log",
-                      uiOutput(ns("task_script_analysis"))
+                  if (user_role() %in% conf_rv()$access_managemet$`AI анализ`) {
+                    tabPanel(
+                      title = tagList(icon("lightbulb"), "Анализ кода"),
+                      value = "script_analysis",
+                      tags$div(
+                        style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
+                        class = "light-mode-log",
+                        uiOutput(ns("task_script_analysis"))
+                      )
                     )
-                  ),
+                  },
                   tabPanel(
                     title = tagList(icon("book"), "README"),
                     value = "readme",
