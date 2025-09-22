@@ -147,18 +147,12 @@ mod_tab_tasks_ui <- function(id) {
                           
                           # --- Ряд 2: Дополнительные функции ---
                           div(class = "btn-row",
-                              actionButton(ns("view_task_logs"),   "Логи",
-                                           icon = icon("file-alt"), class = "btn-info"),
-                              actionButton(ns("analyze_log"),      "Анализ Rout",
-                                           icon = icon("brain"), class = "btn-info"),
-                              actionButton(ns("view_script"),      "Код",
-                                           icon = icon("code"), class = "btn-info"),
-                              actionButton(ns("analyze_script"),   "Объясни код",
-                                           icon = icon("lightbulb"), class = "btn-info"),
-                              actionButton(ns("view_task_readme"), "README",
-                                           icon = icon("book"), class = "btn-info"),
-                              actionButton(ns("view_task_news"),   "NEWS",
-                                           icon = icon("newspaper"), class = "btn-info")
+                              actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
+                              uiOutput(ns('analyze_log_button')),
+                              actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
+                              uiOutput(ns('analyze_script_button')),
+                              actionButton(ns("view_task_readme"), "README", icon = icon("book"), class = "btn-info"),
+                              actionButton(ns("view_task_news"), "NEWS", icon = icon("newspaper"), class = "btn-info")
                           )
                         )
                       ),
@@ -338,8 +332,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # ───────────── КНОПКИ и обработчики ─────────────
     output$run_button <- renderUI({
       if (user_role() %in% conf_rv()$access_managemet$`Запуск задач`)
-        actionButton(ns("run_task"), "Запустить",
-                     icon = icon("play"), class = "btn-success")
+        actionButton(ns("run_task"), "Запустить", icon = icon("play"), class = "btn-success")
+    })
+    
+    output$analyze_log_button <- renderUI({
+      if (user_role() %in% conf_rv()$access_managemet$`AI анализ`)
+        actionButton(ns("analyze_log"), "Анализ Rout", icon = icon("brain"), class = "btn-info")
+    })
+    
+    output$analyze_script_button <- renderUI({
+      if (user_role() %in% conf_rv()$access_managemet$`AI анализ`)
+        actionButton(ns("analyze_script"), "Объясни код", icon = icon("lightbulb"), class = "btn-info")
     })
     
     observeEvent(input$run_task, {

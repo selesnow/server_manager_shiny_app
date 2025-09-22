@@ -49,3 +49,6 @@ access_managemet:
   Управление службами:
   - admin
   - user
+  AI анализ:
+  - admin
+  - user
