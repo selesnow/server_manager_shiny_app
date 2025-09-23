@@ -81,6 +81,27 @@ mod_tab_statistic_ui <- function(id) {
     fluidRow(
       column(6, plotOutput(ns("task_log_plot"))),
       column(6, plotOutput(ns("task_info_plot")))
+    ),
+    # >>> НОВЫЙ БЛОК: таблица + график по годам запуска задач <<<
+    fluidRow(
+      column(
+        width = 4,
+        div(class = "card",
+            div(class = "card-header", "Активные задачи по годам"),
+            div(class = "card-body",
+                DTOutput(ns("tasks_by_year_table"))
+            )
+        )
+      ),
+      column(
+        width = 8,
+        div(class = "card",
+            div(class = "card-header", "График активных задач по годам"),
+            div(class = "card-body",
+                plotOutput(ns("tasks_by_year_plot"), height = "400px")
+            )
+        )
+      )
     )
   )
 }
@@ -219,5 +240,39 @@ mod_tab_statistic_server <- function(id, all_tasks, conf_rv) {
         geom_line() + geom_point() + 
         labs(title = 'Динамика количества настроенных заданий в планировщике', x = '', y = '')
     })
+    
+    # ---- Новый реактив: количество задач по годам ----
+    tasks_by_year <- reactive({
+      req(all_tasks())
+      
+      all_tasks() %>% 
+        filter(`Scheduled Task State` == "Enabled") %>% 
+        mutate(`Start Year` = lubridate::year(`Start Date`)) %>% 
+        filter(!is.na(`Start Year`)) %>% 
+        summarise(
+          tasks = dplyr::n_distinct(TaskName), .by = `Start Year`
+        ) %>% 
+        arrange(`Start Year`) %>% 
+        mutate(rate = round(tasks / sum(tasks) * 100, 2))
+    })
+    
+    # ---- Таблица ----
+    output$tasks_by_year_table <- renderDT({
+      datatable(tasks_by_year(),
+                options = list(pageLength = 10, scrollX = TRUE),
+                selection = "none")
+    })
+    
+    # ---- График ----
+    output$tasks_by_year_plot <- renderPlot({
+      tasks_by_year() %>% 
+        ggplot(aes(x = `Start Year`, y = tasks)) +
+        geom_col(fill = "steelblue") +
+        labs(
+          title = "Количество активных задач по годам",
+          x = "Год", y = "Количество задач"
+        )
+    })
+    
   })
 }
