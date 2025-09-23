@@ -16,11 +16,12 @@ get_tasks <- function() {
   con <- dbConnect(SQLite(), conf$database_settings$task_log_base)
   quiet_tasks <- dbGetQuery(con, "SELECT task_name FROM forget_queue WHERE quiet_till > datetime('now', 'localtime')")
   
-  tsk <- taskscheduler_ls(fill = TRUE) %>%
+  taskscheduler_ls(fill = TRUE) %>%
     mutate(
       `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
       Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
-      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p") %>% force_tz(tzone = Sys.timezone()) %>% with_tz("Europe/Kyiv")
+      `Last Run Time` = parse_datetime(`Last Run Time`, format = "%m/%d/%Y %I:%M:%S %p") %>% force_tz(tzone = Sys.timezone()) %>% with_tz("Europe/Kyiv"),
+      `Start Date` = lubridate::mdy(`Start Date`)
     ) %>%
     filter(str_detect(tolower(`Run As User`), analyst_filter)) %>%
     mutate(`New Structure` = str_detect(`Start In`, '^C:(\\\\|/)scripts.*')) %>% 
@@ -34,6 +35,7 @@ get_tasks <- function() {
     ) %>% 
     ungroup() %>% 
     filter(Author != "Microsoft Visual Studio") %>% 
+    mutate(`Start Date` = min(`Start Date`, na.rm = T), .by = TaskName) %>% 
     # расшифровка статуса ошибки
     mutate(
       `Last Result` = case_when(
@@ -80,7 +82,6 @@ get_tasks <- function() {
       `Repeat: Until: Duration`, 
       `Repeat: Stop If Still Running`, 
       `Start Time`, 
-      `Start Date`,
       `Schedule Type`
     )) %>% 
     unique() %>% 
