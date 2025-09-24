@@ -18,6 +18,7 @@ get_processes <- function() {
       pid     = list(ps_pid(ps_handle)),
       created
     ) %>%
+    mutate(created = lubridate::with_tz(created, "Europe/Kyiv")) %>% 
     unnest_longer(cmdline) %>% 
     unnest_longer(dir) %>% 
     unnest_longer(files) %>% 
