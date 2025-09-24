@@ -84,8 +84,26 @@ mod_tab_logs_ui <- function(id) {
     ),
     # Графики
     fluidRow(
-      column(6, plotOutput(ns("sessions_plot"))),
-      column(6, plotOutput(ns("actions_plot")))
+      column(6, 
+             div(class = "card",
+                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-body", plotOutput(ns("sessions_plot")))
+                 )
+             ),
+      column(6, 
+             div(class = "card",
+                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-body", plotOutput(ns("actions_plot")))
+             )
+      )
+    ),
+    fluidRow(
+      column(12, 
+             div(class = "card",
+                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-body", plotOutput(ns("users_plot")))
+             )
+      )
     ),
     # --- Логи из app.Rout ---
     fluidRow(
@@ -303,6 +321,25 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         geom_line() +
         geom_point() +
         labs(title = "Количество событий по дням", x = "", y = "")
+    })
+    
+    output$users_plot <- renderPlot({
+      req(filtered_sessions_base())
+      
+      # полный диапазон дат
+      date_seq <- seq(min(input$date_range), max(input$date_range), by = "day")
+      
+      filtered_sessions_base() %>%
+        mutate(date = as.Date(date)) %>%        # <-- приводим к Date
+        group_by(date) %>%
+        summarise(users = n_distinct(user), .groups = "drop") %>%
+        right_join(tibble(date = date_seq), by = "date") %>%
+        mutate(users = replace_na(users, 0)) %>%
+        ggplot(aes(x = date, y = users, group = 1)) +
+        geom_line(color = "steelblue") +
+        geom_point(color = "steelblue") +
+        scale_x_date(date_breaks = "1 week", date_labels = "%d.%m") +
+        labs(title = "Уникальные пользователи по дням", x = "", y = "")
     })
     
     # очистка app.Rout
