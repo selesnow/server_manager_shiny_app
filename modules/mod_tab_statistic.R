@@ -64,7 +64,6 @@ mod_tab_statistic_ui <- function(id) {
         )
       )
     ),
-    # >>> НОВЫЙ БЛОК С ФИЛЬТРОМ И ТАБЛИЦЕЙ <<<
     fluidRow(
       column(
         width = 12,
