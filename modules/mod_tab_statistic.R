@@ -79,10 +79,21 @@ mod_tab_statistic_ui <- function(id) {
       )
     ),
     fluidRow(
-      column(6, plotOutput(ns("task_log_plot"))),
-      column(6, plotOutput(ns("task_info_plot")))
+      column(6, 
+             div(class = "card",
+                 div(class = "card-header", "Активные задачи по годам"),
+                 div(class = "card-body",
+                     plotOutput(ns("task_log_plot")))
+                 )
+             ),
+      column(6, 
+             div(class = "card",
+                 div(class = "card-header", "Активные задачи по годам"),
+                 div(class = "card-body",
+                     plotOutput(ns("task_info_plot")))
+             )
+             )
     ),
-    # >>> НОВЫЙ БЛОК: таблица + график по годам запуска задач <<<
     fluidRow(
       column(
         width = 4,
@@ -102,12 +113,33 @@ mod_tab_statistic_ui <- function(id) {
             )
         )
       )
+    ),
+    fluidRow(
+      column(
+        width = 4,
+        div(class = "card",
+            div(class = "card-header", "Запуски задач по часам"),
+            div(class = "card-body",
+                DTOutput(ns("tasks_by_hour_table"))
+            )
+        )
+      ),
+      column(
+        width = 8,
+        div(class = "card",
+            div(class = "card-header", "График запусков задач по часам"),
+            div(class = "card-body",
+                plotOutput(ns("tasks_by_hour_plot"), height = "400px")
+            )
+        )
+      )
     )
+    
   )
 }
 
 # SERVER
-mod_tab_statistic_server <- function(id, all_tasks, conf_rv) {
+mod_tab_statistic_server <- function(id, all_tasks, triggers, conf_rv) {
   moduleServer(id, function(input, output, session) {
     con <- dbConnect(SQLite(), conf_rv()$database_settings$task_log_base)
     
@@ -272,6 +304,79 @@ mod_tab_statistic_server <- function(id, all_tasks, conf_rv) {
           title = "Количество активных задач по годам",
           x = "Год", y = "Количество задач"
         )
+    })
+    
+    # ---- Новый реактив: количество запусков по часам (абс. + % от всех запусков) ----
+    tasks_by_hour <- reactive({
+      req(triggers(), all_tasks())
+      
+      df <- triggers() %>%
+        # только активные таски
+        filter(task_name %in% filter(all_tasks(), `Scheduled Task State` == "Enabled")$TaskName) %>%
+        mutate(hour = format(start_boundary, "%H")) %>%
+        summarise(task = dplyr::n(), .by = hour) %>%
+        # дополняем отсутствующие часы 00-23
+        right_join(tibble::tibble(hour = sprintf("%02d", 0:23)), by = "hour") %>%
+        tidyr::replace_na(list(task = 0)) %>%
+        arrange(hour)
+      
+      total <- sum(df$task)
+      if (total == 0) {
+        df <- df %>%
+          mutate(
+            pct = 0,
+            pct_label = "0%"
+          )
+      } else {
+        df <- df %>%
+          mutate(
+            pct = round(task / total * 100, 2),
+            pct_label = scales::percent(task / total, accuracy = 0.1)
+          )
+      }
+      
+      df
+    })
+    
+    # ---- Таблица по часам ----
+    output$tasks_by_hour_table <- renderDT({
+      datatable(
+        tasks_by_hour() %>% select(hour, task, pct),
+        colnames = c("Час", "Запуски (абс.)", "Доля (%)"),
+        options = list(pageLength = 24, scrollX = TRUE),
+        selection = "none"
+      ) %>%
+        DT::formatRound(columns = "pct", digits = 2)
+    })
+    
+    # ---- График по часам (доля от всех запусков, градиент fill по доле) ----
+    output$tasks_by_hour_plot <- renderPlot({
+      df <- tasks_by_hour()
+      
+      # безопасная нормировка в 0..1
+      total <- sum(df$task)
+      df <- df %>% mutate(task_rel = if (total == 0) 0 else task / total)
+      
+      ggplot(df, aes(x = as.numeric(hour), y = task_rel, fill = task_rel)) +
+        geom_col() +
+        # подписи по оси X 0..23
+        scale_x_continuous(breaks = 0:23) +
+        # градиент: низ = синий, верх = красный
+        scale_fill_gradient(
+          low  = hcl(195, 100, 75),
+          high = hcl(15, 100, 75),
+          na.value = "grey90",
+          labels = scales::percent_format(accuracy = 1)
+        ) +
+        # ось Y в процентах от общего числа запусков
+        scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+        labs(
+          title = "Количество запусков задач по часам",
+          x = "Час суток",
+          y = "Доля от всех запусков",
+          fill = "Доля"
+        ) + 
+        theme(legend.position = "none")
     })
     
   })

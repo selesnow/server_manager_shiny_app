@@ -450,7 +450,7 @@ server <- function(input, output, session) {
       mod_tab_tasks_server("tasks_tab", all_tasks, task_triggers_store, user_role, auth, session_id = session$token, conf_rv)
       
       # Модуль статистики
-      mod_tab_statistic_server("stats_tab", all_tasks, conf_rv)
+      mod_tab_statistic_server("stats_tab", all_tasks, task_triggers_store, conf_rv)
       
       # Модуль AI ассистент
       mod_tab_ai_assistant_server(
