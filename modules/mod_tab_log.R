@@ -86,24 +86,31 @@ mod_tab_logs_ui <- function(id) {
     fluidRow(
       column(6, 
              div(class = "card",
-                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-header", "К-во сессий по дням"),
                  div(class = "card-body", plotOutput(ns("sessions_plot")))
                  )
              ),
       column(6, 
              div(class = "card",
-                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-header", "К-во событий по дням"),
                  div(class = "card-body", plotOutput(ns("actions_plot")))
              )
       )
     ),
     fluidRow(
-      column(12, 
+      column(6, 
              div(class = "card",
-                 div(class = "card-header", "Используемый функционал"),
+                 div(class = "card-header", "К-во пользователей по дням"),
                  div(class = "card-body", plotOutput(ns("users_plot")))
              )
-      )
+      ),
+      fluidRow(
+        column(6, 
+               div(class = "card",
+                   div(class = "card-header", "События по дням недели и времени суток"),
+                   div(class = "card-body", plotOutput(ns("actions_heatmap"), height = "400px")))
+        )
+      ),
     ),
     # --- Логи из app.Rout ---
     fluidRow(
@@ -341,6 +348,43 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         scale_x_date(date_breaks = "1 week", date_labels = "%d.%m") +
         labs(title = "Уникальные пользователи по дням", x = "", y = "")
     })
+    
+    output$actions_heatmap <- renderPlot({
+      req(filtered_actions())
+      
+      filtered_actions() %>%
+        mutate(
+          wday = lubridate::wday(datetime, week_start = 1),   # Пн=1 … Вс=7
+          wday = factor(
+            wday,
+            levels = 1:7,
+            labels = c("Пн","Вт","Ср","Чт","Пт","Сб","Вс"),
+            ordered = TRUE
+          ),
+          hour = lubridate::hour(datetime)
+        ) %>%
+        count(wday, hour) %>%
+        ggplot(aes(x = hour, y = fct_rev(wday), fill = n)) +
+        geom_tile(color = "white") +
+        scale_fill_gradient(
+          low = hcl(195, 100, 75),   # синий
+          high = hcl(15, 100, 75),   # красный
+          na.value = "grey90"
+        ) +
+        scale_x_continuous(breaks = 0:23) +
+        labs(
+          title = "Количество действий по дням недели и часам суток",
+          x = "Час суток",
+          y = "День недели",
+          fill = "Кол-во"
+        ) +
+        theme(
+          panel.grid = element_blank(),
+          axis.text.x = element_text(angle = 0, hjust = 0.5),
+          legend.position = "none"
+        )
+    })
+    
     
     # очистка app.Rout
     observeEvent(input$clear_rout, {
