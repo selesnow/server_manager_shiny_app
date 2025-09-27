@@ -66,7 +66,7 @@ ggthemr('flat dark')
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
 
 # Загрузка модулей
-for(mod in dir(here::here("modules"))) source(here::here("modules", mod))
+for(mod in dir(here::here("modules"))) if (mod == "desktop.ini") next else source(here::here("modules", mod))
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(

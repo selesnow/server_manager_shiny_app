@@ -10,16 +10,10 @@
 #'
 get_task_log <- function(task_name) {
   
-  tasks <- get_tasks() %>% 
-    filter(TaskName == task_name) %>% 
-    select(TaskName, `Start In`, `Task To Run`) %>% 
-    unique()
-  
-  if (nrow(tasks) == 0) {
-    return('Задача не найдена')
-  } 
-  
-  task_log <- find_log(tasks$`Task To Run`, start_in = tasks$`Start In`)
+  start_in    <- get_task_working_directory(task_name)
+  task_to_tun <- get_task_command(task_name)
+
+  task_log <- find_log(task_to_tun, start_in = start_in)
   
   return(task_log)
   
