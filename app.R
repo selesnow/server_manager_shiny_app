@@ -49,6 +49,7 @@ library(promises)
 library(future)
 library(forcats)
 library(ggthemr)
+library(lubridate)
 
 # проверка создан ли конфиг
 if (!file.exists('config.yaml')) source('create_config.R')

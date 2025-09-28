@@ -17,6 +17,7 @@ get_tasks <- function() {
   quiet_tasks <- dbGetQuery(con, "SELECT task_name FROM forget_queue WHERE quiet_till > datetime('now', 'localtime')")
   
   taskscheduler_ls(fill = TRUE) %>%
+    filter(TaskName != 'ngrok_shiny') %>% 
     mutate(
       `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
       Author = str_remove_all(Author, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
