@@ -16,9 +16,9 @@ mod_tab_cmd_ui <- function(id) {
                   uiOutput(ns("chat_ui")),  # <-- добавлен ns
                   fluidRow(
                     column(10,
-                           textInput(ns("user_input"), NULL, placeholder = "Введите команду...")),  # <-- добавлен ns
+                           textInput(ns("user_input"), NULL, placeholder = "Введите команду...", width = "100%")),  # <-- добавлен ns
                     column(2,
-                           actionButton(ns("send_btn"), "Выполнить", class = "btn-primary"))  # <-- добавлен ns
+                           actionButton(ns("send_btn"), "Выполнить", class = "btn-primary", width = "100%"))  # <-- добавлен ns
                   )
                 )
             )
