@@ -15,10 +15,14 @@ mod_tab_logs_ui <- function(id) {
             div(class = "card-header", "Фильтры"),
             div(class = "card-body",
                 fluidRow(
-                  column(3, dateRangeInput(ns("date_range"), "Дата", start = Sys.Date() - 30, end = Sys.Date())),
-                  column(3, uiOutput(ns("user_filter"))),
-                  column(3, uiOutput(ns("tab_filter"))),
-                  column(3, uiOutput(ns("action_filter")))
+                  column(2, dateRangeInput(ns("date_range"), "Дата", start = Sys.Date() - 30, end = Sys.Date())),
+                  column(2, uiOutput(ns("user_filter"))),
+                  column(2, uiOutput(ns("tab_filter"))),
+                  column(2, uiOutput(ns("action_filter"))),
+                  column(2, 
+                         selectInput(ns("group_by"), "Группировка", 
+                                     choices = c("День" = "day", "Неделя" = "week", "Месяц" = "month"), 
+                                     selected = "day"))
                 ),
                 fluidRow(
                   column(12,
@@ -111,6 +115,14 @@ mod_tab_logs_ui <- function(id) {
                    div(class = "card-body", plotOutput(ns("actions_heatmap"), height = "400px")))
         )
       ),
+    ),
+    fluidRow(
+      column(12,
+             div(class = "card",
+                 div(class = "card-header", "Статистика"),
+                 div(class = "card-body", DTOutput(ns("stats_table")))
+             )
+      )
     ),
     # --- Логи из app.Rout ---
     fluidRow(
@@ -266,6 +278,63 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       df
     })
     
+    # --- Функция агрегации по выбранной группировке ---
+    aggregate_logs <- reactive({
+      req(input$group_by, filtered_sessions_base(), filtered_actions())
+      
+      # полный диапазон дат
+      min_date <- min(input$date_range)
+      max_date <- max(input$date_range)
+      
+      period_seq <- switch(
+        input$group_by,
+        day   = seq(min_date, max_date, by = "day"),
+        week  = seq(lubridate::floor_date(min_date, "week", week_start = 1),
+                    lubridate::floor_date(max_date, "week", week_start = 1),
+                    by = "week"),
+        month = seq(lubridate::floor_date(min_date, "month"),
+                    lubridate::floor_date(max_date, "month"),
+                    by = "month")
+      )
+      
+      # агрегируем сессии
+      sessions_df <- filtered_sessions_base() %>%
+        mutate(date = as.Date(date),
+               period = case_when(
+                 input$group_by == "day"   ~ date,
+                 input$group_by == "week"  ~ lubridate::floor_date(date, "week", week_start = 1),
+                 input$group_by == "month" ~ lubridate::floor_date(date, "month")
+               )) %>%
+        group_by(period) %>%
+        summarise(
+          sessions = n_distinct(session_id),
+          users = n_distinct(user),
+          .groups = "drop"
+        ) %>%
+        right_join(tibble(period = period_seq), by = "period") %>%
+        mutate(
+          sessions = replace_na(sessions, 0),
+          users = replace_na(users, 0)
+        )
+      
+      # агрегируем события
+      actions_df <- filtered_actions() %>%
+        mutate(date = as.Date(datetime),
+               period = case_when(
+                 input$group_by == "day"   ~ date,
+                 input$group_by == "week"  ~ lubridate::floor_date(date, "week", week_start = 1),
+                 input$group_by == "month" ~ lubridate::floor_date(date, "month")
+               )) %>%
+        group_by(period) %>%
+        summarise(events = n(), .groups = "drop") %>%
+        right_join(tibble(period = period_seq), by = "period") %>%
+        mutate(events = replace_na(events, 0))
+      
+      # объединяем
+      full_join(sessions_df, actions_df, by = "period")
+    })
+    
+    
     # --- Таблицы ---
     output$sessions_table <- renderDT({
       datatable(
@@ -310,43 +379,25 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     
     # --- Графики ---
     output$sessions_plot <- renderPlot({
-      req(filtered_sessions_final())
-      filtered_sessions_final() %>%
-        count(date) %>%
-        ggplot(aes(x = date, y = n, group = 1)) +
-        geom_line() + 
-        geom_point() +
-        labs(title = "Количество сессий по дням", x = "", y = "")
+      df <- aggregate_logs()
+      ggplot(df, aes(x = period, y = sessions, group = 1)) +
+        geom_line() + geom_point() +
+        labs(title = "Количество сессий", x = "", y = "")
     })
     
     output$actions_plot <- renderPlot({
-      req(filtered_actions())
-      filtered_actions() %>%
-        mutate(date = as.Date(datetime)) %>%
-        count(date) %>%
-        ggplot(aes(x = date, y = n, group = 1)) +
-        geom_line() +
-        geom_point() +
-        labs(title = "Количество событий по дням", x = "", y = "")
+      df <- aggregate_logs()
+      ggplot(df, aes(x = period, y = events, group = 1)) +
+        geom_line() + geom_point() +
+        labs(title = "Количество событий", x = "", y = "")
     })
     
     output$users_plot <- renderPlot({
-      req(filtered_sessions_base())
-      
-      # полный диапазон дат
-      date_seq <- seq(min(input$date_range), max(input$date_range), by = "day")
-      
-      filtered_sessions_base() %>%
-        mutate(date = as.Date(date)) %>%        # <-- приводим к Date
-        group_by(date) %>%
-        summarise(users = n_distinct(user), .groups = "drop") %>%
-        right_join(tibble(date = date_seq), by = "date") %>%
-        mutate(users = replace_na(users, 0)) %>%
-        ggplot(aes(x = date, y = users, group = 1)) +
+      df <- aggregate_logs()
+      ggplot(df, aes(x = period, y = users, group = 1)) +
         geom_line(color = "steelblue") +
         geom_point(color = "steelblue") +
-        scale_x_date(date_breaks = "1 week", date_labels = "%d.%m") +
-        labs(title = "Уникальные пользователи по дням", x = "", y = "")
+        labs(title = "Уникальные пользователи", x = "", y = "")
     })
     
     output$actions_heatmap <- renderPlot({
@@ -383,6 +434,11 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
           axis.text.x = element_text(angle = 0, hjust = 0.5),
           legend.position = "none"
         )
+    })
+    
+    output$stats_table <- renderDT({
+      df <- aggregate_logs()
+      datatable(df, options = list(pageLength = 15, scrollX = TRUE))
     })
     
     
