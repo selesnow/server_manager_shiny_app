@@ -52,3 +52,6 @@ access_managemet:
   AI анализ:
   - admin
   - user
+  Управление мониторингом задач:
+  - admin
+  - user
