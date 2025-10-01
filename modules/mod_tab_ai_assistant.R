@@ -36,13 +36,13 @@ mod_tab_ai_assistant_ui <- function(id) {
           ))
       ),
       
-      # Модульный UI shinychat (v0.2.x)
+      # UI чата (initial messages можно оставить)
       chat_mod_ui(
-        ns("simple_chat"), 
+        ns("simple_chat"),
         messages = "👋 Привет!<br>Я умею писать код для работы со всеми внутренними источниками данных...<br>Чем могу помочь?"
       ),
       
-      # Кнопка сброса
+      # кнопка сброса
       div(class = "chat-controls", style = "margin-top: 15px; text-align: center;",
           actionButton(ns("reset_chat"), "Сбросить чат",
                        icon = icon("refresh"), class = "btn-warning btn-sm"))
@@ -60,47 +60,102 @@ mod_tab_ai_assistant_server <- function(id,
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    client_rv <- reactiveVal(NULL)
-    simple_chat <- NULL
+    # хранилища
+    client_rv <- reactiveVal(NULL)        # ellmer::Chat
+    simple_chat_rv <- reactiveVal(NULL)   # объект, возвращаемый chat_mod_server()
     
-    # --- Инициализация клиента и модуля ---
-    new_client <- create_new_chat(user_role(), conf_rv())
-    client_rv(new_client)
+    # ----- Инициализация клиента и chat_mod_server -----
+    # делаем создание клиента внутри реактивного обработчика (чтобы не дергать user_role() вне реактивного контекста)
+    observeEvent(list(user_role(), conf_rv()), {
+      new_client <- create_new_chat(user_role(), conf_rv())  # должен вернуть ellmer::Chat
+      client_rv(new_client)
+      
+      # call chat_mod_server and keep the returned object
+      sc <- chat_mod_server("simple_chat", client = new_client)
+      simple_chat_rv(sc)
+      
+      message("[AI module] chat_mod_server initialized")
+    }, ignoreInit = FALSE, once = TRUE)
     
-    # сохраняем объект shinychat
-    simple_chat <- chat_mod_server("simple_chat", client = new_client)
     
-    # --- Сброс чата ---
+    # ----- Подписки на last_input / last_turn (выполняются когда simple_chat готов) -----
+    # Создаём подписки один раз после того как simple_chat_rv() не NULL
+    observeEvent(simple_chat_rv(), {
+      
+      sc <- simple_chat_rv()
+      if (is.null(sc)) return()
+      
+      # Обработка ввода пользователя — логируем ввод
+      observeEvent(sc$last_input(), {
+        
+        # Получаем текст, который ввёл пользователь
+        user_text <- sc$last_input()
+        
+        # Безопасно взятие логина
+        usr_login <- NULL
+        try({
+          u <- auth$user()
+          if (!is.null(u) && nzchar(u$login)) usr_login <- u$login
+        }, silent = TRUE)
+        
+        # Логируем ввод (теперь срабатывает)
+        tryCatch({
+          write_action_log(
+            user = usr_login %||% "unknown",
+            func = 'AI Assistant',
+            session_id = session_id,
+            value = user_text
+          )
+          message("[AI module] logged user input: ", substr(user_text, 1, 200))
+        }, error = function(e) {
+          message("[AI module] write_action_log error: ", conditionMessage(e))
+        })
+      }, ignoreNULL = TRUE)
+      
+      
+      # Optionally: наблюдать ответ ассистента (последний turn)
+      observeEvent(sc$last_turn(), {
+        # last_turn() обычно содержит текст ответа ассистента
+        assistant_turn <- sc$last_turn()
+        # можно логировать или триггерить дополнительные действия
+        message("[AI module] assistant last_turn length: ", nchar(as.character(sc$last_turn()@text)))
+      }, ignoreNULL = TRUE)
+      
+    }, once = TRUE) # настройка подписок один раз
+    
+    # ----- Сброс чата -----
     observeEvent(input$reset_chat, {
-      write_action_log(user = auth$user()$login,
+      # логируем действие
+      usr_login <- tryCatch({ auth$user()$login }, error = function(e) NULL)
+      write_action_log(user = usr_login %||% "unknown",
                        func = 'AI Assistant Reset Chat',
                        session_id = session_id)
       
+      # 1) очистить историю внутри ellmer::Chat (если API поддерживает)
       if (!is.null(client_rv())) {
-        client_rv()$set_turns(list())
+        tryCatch({
+          client_rv()$set_turns(list())   # очищаем internal history
+          message("[AI module] client_rv() turns cleared")
+        }, error = function(e) {
+          message("[AI module] client_rv()$set_turns error: ", conditionMessage(e))
+        })
       }
       
-      if (!is.null(simple_chat)) {
-        simple_chat$clear(clear_history = TRUE)
-        showNotification("Контекст чата сброшен. Бот забыл всю предыдущую историю.",
-                         type = "message", duration = 5)
+      # 2) очистить UI виджета
+      sc <- simple_chat_rv()
+      if (!is.null(sc)) {
+        tryCatch({
+          sc$clear(clear_history = TRUE)
+          message("[AI module] simple_chat$clear called")
+        }, error = function(e) {
+          message("[AI module] simple_chat$clear error: ", conditionMessage(e))
+        })
       }
-    })
-    
-    
-    # --- Пользовательский ввод ---
-    observeEvent(input$simple_chat_user_input, {
-      req(client_rv())
-      write_action_log(user = auth$user()$login,
-                       func = 'AI Assistant',
-                       session_id = session_id,
-                       value = input$simple_chat_user_input)
       
-      # асинхронный стриминг
-      stream <- client_rv()$stream_async(input$simple_chat_user_input)
-      if (!is.null(simple_chat)) {
-        simple_chat$update_user_input(value = stream, submit = FALSE)
-      }
+      # 3) показать уведомление
+      showNotification("Контекст чата сброшен. Бот забыл всю предыдущую историю.", type = "message", duration = 4)
+      
     })
+
   })
 }
