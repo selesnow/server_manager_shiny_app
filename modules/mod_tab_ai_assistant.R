@@ -36,87 +36,71 @@ mod_tab_ai_assistant_ui <- function(id) {
           ))
       ),
       
-      # Сам чат
-      chat_ui(ns("simple_chat")),
+      # Модульный UI shinychat (v0.2.x)
+      chat_mod_ui(
+        ns("simple_chat"), 
+        messages = "👋 Привет!<br>Я умею писать код для работы со всеми внутренними источниками данных...<br>Чем могу помочь?"
+      ),
       
       # Кнопка сброса
       div(class = "chat-controls", style = "margin-top: 15px; text-align: center;",
           actionButton(ns("reset_chat"), "Сбросить чат",
                        icon = icon("refresh"), class = "btn-warning btn-sm"))
-    ),
-    
-    # JS-«маячок»: оповестить сервер, что чат отрендерился (namespaced!)
-    tags$script(HTML(
-      glue::glue(
-        "(function waitForChat(){{
-            var el = document.getElementById('{ns('simple_chat')}');
-            if (el) {{
-              Shiny.setInputValue('{ns('simple_chat_ready')}', true, {{priority:'event'}});
-            }} else {{
-              setTimeout(waitForChat, 150);
-            }}
-        }})();"
-      )
-    ))
+    )
   )
 }
 
 
-mod_tab_ai_assistant_server <- function(id, auth, user_role, conf_rv, session_id) {
+mod_tab_ai_assistant_server <- function(id,
+                                        auth,
+                                        user_role,
+                                        conf_rv,
+                                        session_id,
+                                        active = reactive(TRUE)) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
-    dev_chat <- reactiveVal()
+    client_rv <- reactiveVal(NULL)
+    simple_chat <- NULL
     
-    # Инициализация чата при первом запуске
-    observe({
-      if (!is.null(user_role()) && is.null(dev_chat())) {
-        new_chat <- create_new_chat(user_role(), conf_rv())
-        dev_chat(new_chat)
-      }
-    })
+    # --- Инициализация клиента и модуля ---
+    new_client <- create_new_chat(user_role(), conf_rv())
+    client_rv(new_client)
     
-    # Приветствие при готовности UI
-    observeEvent(input$simple_chat_ready, {
-      req(input$simple_chat_ready)
-      usr <- auth$user()
-      if (!is.null(usr) && !is.null(usr$login) && nzchar(usr$login)) {
-        chat_append(
-          ns("simple_chat"),
-          paste0(
-            "👋 Привет, <b>", snakecase::to_title_case(usr$login),
-            "</b>!<Br><Br>Я умею писать код для работы со всеми внутренними источниками данных, такими как ПУП, N1, Планфикс, умею работать со скриптами на сервере аналитики, а так же запрашивать информацию о задачах из Планфикс.<Br><Br>Чем могу тебе помочь?"
-          )
-        )
-      }
-    }, once = TRUE)
+    # сохраняем объект shinychat
+    simple_chat <- chat_mod_server("simple_chat", client = new_client)
     
-    # Сброс чата
+    # --- Сброс чата ---
     observeEvent(input$reset_chat, {
       write_action_log(user = auth$user()$login,
                        func = 'AI Assistant Reset Chat',
                        session_id = session_id)
-      new_chat <- create_new_chat(user_role(), conf_rv())
-      dev_chat(new_chat)
       
-      chat_append(
-        ns("simple_chat"),
-        "🔄 <b>Контекст чата сброшен.</b> Я забыл всю предыдущую историю и готов к новому диалогу!"
-      )
+      if (!is.null(client_rv())) {
+        client_rv()$set_turns(list())
+      }
       
-      showNotification("Контекст чата сброшен. Бот забыл всю предыдущую историю.",
-                       type = "message", duration = 5)
+      if (!is.null(simple_chat)) {
+        simple_chat$clear(clear_history = TRUE)
+        showNotification("Контекст чата сброшен. Бот забыл всю предыдущую историю.",
+                         type = "message", duration = 5)
+      }
     })
     
-    # Пользовательский ввод
+    
+    # --- Пользовательский ввод ---
     observeEvent(input$simple_chat_user_input, {
-      req(dev_chat())
+      req(client_rv())
       write_action_log(user = auth$user()$login,
                        func = 'AI Assistant',
                        session_id = session_id,
                        value = input$simple_chat_user_input)
-      stream <- dev_chat()$stream_async(input$simple_chat_user_input)
-      chat_append(ns("simple_chat"), stream)
+      
+      # асинхронный стриминг
+      stream <- client_rv()$stream_async(input$simple_chat_user_input)
+      if (!is.null(simple_chat)) {
+        simple_chat$update_user_input(value = stream, submit = FALSE)
+      }
     })
   })
 }
