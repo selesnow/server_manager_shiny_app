@@ -24,6 +24,9 @@ create_new_chat <- function(user_role, conf_temp) {
       task_name = type_string(
         "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
       )
+    ),
+    annotations = tool_annotations(
+      title = "Запрос лога задачи"
     )
   ))
   
@@ -35,6 +38,9 @@ create_new_chat <- function(user_role, conf_temp) {
       task_name = type_string(
         "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
       )
+    ),
+    annotations = tool_annotations(
+      title = "Запрос скрипта задачи"
     )
   ))
   
@@ -46,19 +52,28 @@ create_new_chat <- function(user_role, conf_temp) {
       task_name = type_string(
         "Название задачи из планировщика заданий Windows по которой надо получить лог выполнения (Rout файл) запускаемого скрипта"
       )
+    ),
+    annotations = tool_annotations(
+      title = "Запрос информации о задаче"
     )
   ))
   
   new_chat$register_tool(tool(
     get_failed_tasks,
     name = "get_failed_tasks",
-    description = "Получить информацию о задачах из планировщика Windows, работа которых при прошлом запуске завершилась ошибкой. Функция вернёт название задач и код ошибки из планировщика."
+    description = "Получить информацию о задачах из планировщика Windows, работа которых при прошлом запуске завершилась ошибкой. Функция вернёт название задач и код ошибки из планировщика.",
+    annotations = tool_annotations(
+      title = "Запрос списка задач, завершившихся ошибкой"
+    )
   ))
   
   new_chat$register_tool(tool(
     get_tasks_csv,
     name = "get_tasks_csv",
-    description = "Получить CSV таблицу с данными по задачам из панировщика заданий Windows. С их описанием и всеми параметрами. Эту функцию удобно использовать для поиска нужных задач по запросу пользователя."
+    description = "Получить CSV таблицу с данными по задачам из панировщика заданий Windows. С их описанием и всеми параметрами. Эту функцию удобно использовать для поиска нужных задач по запросу пользователя.",
+    annotations = tool_annotations(
+      title = "Запрос скрипта задач"
+    )
   ))
   
   new_chat$register_tool(tool(
@@ -69,6 +84,9 @@ create_new_chat <- function(user_role, conf_temp) {
       task_link = type_string(
         "Ссылка на задачу в Планфикс."
       )
+    ),
+    annotations = tool_annotations(
+      title = "Запрос данных о задаче из Планфикс"
     )
   ))
   
@@ -79,6 +97,9 @@ create_new_chat <- function(user_role, conf_temp) {
     arguments = list(
       year = type_string("Год в формате двухзначного числа (format(Sys.Date(), '%y')) если 2025 год то 25, если 2024 то 24, и так далее, по умолчанию берётся текущий год."),
       month = type_string("Месяц в формате двухзначного числа (format(Sys.Date(), '%m')) если январь то 01, если май то 05, и так далее, по умолчанию берётся текущий месяц.")
+    ),
+    annotations = tool_annotations(
+      title = "Запрос данных для анализа спринта"
     )
   ))
   
@@ -89,6 +110,9 @@ create_new_chat <- function(user_role, conf_temp) {
     arguments = list(
       date_from = type_string("Начальная дата периода расчёта в формате YYYY-MM-DD."),
       date_to = type_string("Конечная дата периода расчёта в формате YYYY-MM-DD.")
+    ),
+    annotations = tool_annotations(
+      title = "Запрос данных по юнит экономике"
     )
   ))
   
@@ -108,6 +132,9 @@ create_new_chat <- function(user_role, conf_temp) {
       task_name = type_string(
         "Название задачи из планировщика заданий Windows которую надо запустить на сервере."
       )
+    ),
+    annotations = tool_annotations(
+      title = "Запуск задачи на сервере"
     )
   ))
     
@@ -128,6 +155,34 @@ create_new_chat <- function(user_role, conf_temp) {
       action = type_string(
         "Какое действие надо выполнить с задачей, Enable - активировать (включить) задачу, Disable - деактивировать (отключить) заадчу."
       )
+    ),
+    annotations = tool_annotations(
+      title = "Изменение состояния задачи в планировщике"
+    )
+  ))
+  
+  # Тут мы проверяем может ли текущий пользователь со своей ролью управлять задачами
+  # если его роль не позволяет это делать то отправляем уведомление модели о том что у пользователя недостаточно прав
+  if (user_role %in% conf_temp$access_managemet$`Запуск задач`) {
+    task_management <- 'enable'
+  } else {
+    task_management <- 'disable'
+  }
+  
+  new_chat$register_tool(tool(
+    forget_task_ls[[task_management]],
+    name = "forget_task",
+    description = "Отключение задач от мониторинга на сервере, т.е. забыть задачу значит отключить её от мониторинга до указанного времени.",
+    arguments = list(
+      task_name = type_string(
+        "Название задачи из планировщика заданий Windows которую надо отключить от мониторинга."
+      ),
+      until = type_string(
+        "Дата и время до которого необходимо отключить задачу от мониторинга в формате YYYY-MM-DD HH:MM:SS."
+      )
+    ),
+    annotations = tool_annotations(
+      title = "Отключение задачи от мониторинга"
     )
   ))
   
