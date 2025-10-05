@@ -83,6 +83,33 @@ error_log <- function(
   
 } 
 
+write_ai_chat_log <- function(
+    user       = auth$user(),
+    session_id = session_id,
+    role       = c('user', 'ai'), 
+    message
+) {
+  
+  if (conf$logging$ai_chat_log) {
+    
+    con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+    
+    log_row <- tibble(
+      datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
+      session_id = session_id,
+      user       = user,
+      role       = role,
+      message    = message
+    )
+    
+    dbWriteTable(con, 'ai_chat_log', log_row, append = TRUE)
+    
+    dbDisconnect(con)
+    
+  }
+  
+}
+
 get_session_log <- function() {
   
   con <- dbConnect(SQLite(), conf$database_settings$app_data_base)

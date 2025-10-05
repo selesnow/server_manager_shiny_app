@@ -11,7 +11,8 @@ config <- list(
   logging = list(
     session_log = TRUE,
     action_log  = TRUE,
-    error_log   = TRUE
+    error_log   = TRUE,
+    ai_chat_log = TRUE
   ),
   access_managemet = list(
     "Задачи" = c("admin", "user", "viewer"),
@@ -27,7 +28,9 @@ config <- list(
     "News" = c("admin", "user", "viewer"),
     "Запуск задач" = c("admin", "user"),
     "Активация задач" = c("admin", "user"),
-    "Управление службами" = c("admin", "user")
+    "Управление службами" = c("admin", "user"),
+    "AI анализ" = c("admin", "user"),
+    "Управление мониторингом задач" = c("admin", "user")
   )
 )
 

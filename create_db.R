@@ -42,6 +42,17 @@ CREATE TABLE IF NOT EXISTS error_log (
 ")
 
 dbExecute(con, "
+CREATE TABLE IF NOT EXISTS ai_chat_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  datetime   DATETIME,
+  session_id TEXT,
+  user       TEXT,
+  role       TEXT,
+  message    TEXT
+);
+")
+
+dbExecute(con, "
 CREATE TABLE IF NOT EXISTS users (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   login    TEXT UNIQUE NOT NULL,

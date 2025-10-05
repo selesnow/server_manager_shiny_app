@@ -106,6 +106,14 @@ mod_tab_ai_assistant_server <- function(id,
             session_id = session_id,
             value = user_text
           )
+          
+          write_ai_chat_log(
+            user       = usr_login %||% "unknown",
+            session_id = session_id,
+            role       = 'user', 
+            message    = user_text
+          )
+          
           message("[AI module] logged user input: ", substr(user_text, 1, 200))
         }, error = function(e) {
           message("[AI module] write_action_log error: ", conditionMessage(e))
@@ -118,6 +126,12 @@ mod_tab_ai_assistant_server <- function(id,
         # last_turn() обычно содержит текст ответа ассистента
         assistant_turn <- sc$last_turn()
         # можно логировать или триггерить дополнительные действия
+        write_ai_chat_log(
+          user       = auth$user()$login,
+          session_id = session_id,
+          role       = 'ai', 
+          message    = as.character(sc$last_turn()@text)
+        )
         message("[AI module] assistant last_turn length: ", nchar(as.character(sc$last_turn()@text)))
       }, ignoreNULL = TRUE)
       
