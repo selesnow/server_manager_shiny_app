@@ -110,6 +110,37 @@ write_ai_chat_log <- function(
   
 }
 
+write_find_in_files_log <- function(
+    results,
+    query,
+    user_login,
+    session_id
+) {
+  if (conf$logging$find_in_files_log) {
+    con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+    
+    # Определяем новый ID поиска
+    last_id <- dbGetQuery(con, "SELECT MAX(search_id) AS max_id FROM find_in_files_log")$max_id
+    if (is.na(last_id)) last_id <- 0
+    new_id <- last_id + 1
+    
+    # Готовим данные к записи
+    log_tbl <- results %>%
+      mutate(
+        search_id  = new_id,
+        session_id = session_id,
+        user       = user_login,
+        query      = query,
+        datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
+      ) %>%
+      select(search_id, session_id, user, query, file, line, match, extensions, datetime)
+    
+    # Записываем
+    dbWriteTable(con, 'find_in_files_log', log_tbl, append = TRUE)
+    dbDisconnect(con)
+  }
+}
+
 get_session_log <- function() {
   
   con <- dbConnect(SQLite(), conf$database_settings$app_data_base)

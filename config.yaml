@@ -6,6 +6,7 @@ logging:
   action_log: yes
   error_log: yes
   ai_chat_log: yes
+  find_in_files_log: yes
 access_managemet:
   Задачи:
   - admin
