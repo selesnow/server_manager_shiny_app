@@ -1,150 +1,194 @@
-# ========================
-# Модуль логов
-# ========================
-
 mod_tab_logs_ui <- function(id) {
   ns <- NS(id)
   
   tabPanel(
     title = "Логи",
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css"),
-    fluidRow(
-      column(
-        width = 12,
-        div(class = "card",
-            div(class = "card-header", "Фильтры"),
-            div(class = "card-body",
-                fluidRow(
-                  column(2, dateRangeInput(ns("date_range"), "Дата", start = Sys.Date() - 30, end = Sys.Date())),
-                  column(2, uiOutput(ns("user_filter"))),
-                  column(2, uiOutput(ns("tab_filter"))),
-                  column(2, uiOutput(ns("action_filter"))),
-                  column(2, 
-                         selectInput(ns("group_by"), "Группировка", 
-                                     choices = c("День" = "day", "Неделя" = "week", "Месяц" = "month"), 
-                                     selected = "day"))
+    tabsetPanel(
+      id = ns("logs_tabs"),
+      
+      # -----------------------
+      # 1. Основные логи (текущий функционал)
+      # -----------------------
+      tabPanel(
+        title = "Основные",
+        tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css"),
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Фильтры"),
+                div(class = "card-body",
+                    fluidRow(
+                      column(2, dateRangeInput(ns("date_range"), "Дата", start = Sys.Date() - 30, end = Sys.Date())),
+                      column(2, uiOutput(ns("user_filter"))),
+                      column(2, uiOutput(ns("tab_filter"))),
+                      column(2, uiOutput(ns("action_filter"))),
+                      column(2, 
+                             selectInput(ns("group_by"), "Группировка", 
+                                         choices = c("День" = "day", "Неделя" = "week", "Месяц" = "month"), 
+                                         selected = "day"))
+                    ),
+                    fluidRow(
+                      column(12,
+                             actionButton(ns("refresh_logs"), "Обновить логи", icon = icon("refresh"), class = "btn btn-primary")
+                      )
+                    )
                 ),
-                fluidRow(
-                  column(12,
-                         actionButton(ns("refresh_logs"), "Обновить логи", icon = icon("refresh"), class = "btn btn-primary")
+                div(class = "card-footer", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;", textOutput(ns("last_update")))
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Общая статистика"),
+                div(class = "card-body",
+                    uiOutput(ns("stats_summary"))
+                )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            6,
+            div(class = "card",
+                div(class = "card-header", "Сессии"),
+                div(class = "card-body", DTOutput(ns("sessions_table")))
+            )
+          ),
+          column(
+            6,
+            div(class = "card",
+                div(class = "card-header", "События"),
+                div(class = "card-body", DTOutput(ns("actions_table")))
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Лог ошибок приложения"),
+                div(class = "card-body", DTOutput(ns("error_log_table")))
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            6,
+            div(class = "card",
+                div(class = "card-header", "Активность пользователей"),
+                div(class = "card-body", DTOutput(ns("user_activity_table")))
+            )
+          ),
+          column(
+            6,
+            div(class = "card",
+                div(class = "card-header", "Используемый функционал"),
+                div(class = "card-body", DTOutput(ns("function_usage_table")))
+            )
+          )
+        ),
+        # Графики
+        fluidRow(
+          column(6, 
+                 div(class = "card",
+                     div(class = "card-header", "К-во сессий по дням"),
+                     div(class = "card-body", plotOutput(ns("sessions_plot")))
+                 )
+          ),
+          column(6, 
+                 div(class = "card",
+                     div(class = "card-header", "К-во событий по дням"),
+                     div(class = "card-body", plotOutput(ns("actions_plot")))
+                 )
+          )
+        ),
+        fluidRow(
+          column(6, 
+                 div(class = "card",
+                     div(class = "card-header", "К-во пользователей по дням"),
+                     div(class = "card-body", plotOutput(ns("users_plot")))
+                 )
+          ),
+          fluidRow(
+            column(6, 
+                   div(class = "card",
+                       div(class = "card-header", "События по дням недели и времени суток"),
+                       div(class = "card-body", plotOutput(ns("actions_heatmap"), height = "400px")))
+            )
+          ),
+        ),
+        fluidRow(
+          column(12,
+                 div(class = "card",
+                     div(class = "card-header", "Статистика"),
+                     div(class = "card-body", DTOutput(ns("stats_table")))
+                 )
+          )
+        ),
+        # --- Логи из app.Rout ---
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header d-flex justify-content-between align-items-center",
+                    "Содержимое app.Rout",
+                    actionButton(ns("clear_rout"), "Очистить", class = "btn btn-danger btn-sm")
+                ),
+                div(
+                  class = "card-body",
+                  tags$div(
+                    style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; 
+                         max-height: 600px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;",
+                    verbatimTextOutput(ns("task_log_content"))
                   )
                 )
-            ),
-            div(class = "card-footer", style = "margin-top: 5px; font-size: 0.9em; color: #bbb;", textOutput(ns("last_update")))
-        )
-      )
-    ),
-    fluidRow(
-      column(
-        width = 12,
-        div(class = "card",
-            div(class = "card-header", "Общая статистика"),
-            div(class = "card-body",
-                uiOutput(ns("stats_summary"))
             )
+          )
         )
-      )
-    ),
-    fluidRow(
-      column(
-        6,
-        div(class = "card",
-            div(class = "card-header", "Сессии"),
-            div(class = "card-body", DTOutput(ns("sessions_table")))
-        )
+        
       ),
-      column(
-        6,
-        div(class = "card",
-            div(class = "card-header", "События"),
-            div(class = "card-body", DTOutput(ns("actions_table")))
-        )
-      )
-    ),
-    fluidRow(
-      column(
-        width = 12,
-        div(class = "card",
-            div(class = "card-header", "Лог ошибок приложения"),
-            div(class = "card-body", DTOutput(ns("error_log_table")))
-        )
-      )
-    ),
-    fluidRow(
-      column(
-        6,
-        div(class = "card",
-            div(class = "card-header", "Активность пользователей"),
-            div(class = "card-body", DTOutput(ns("user_activity_table")))
-        )
-      ),
-      column(
-        6,
-        div(class = "card",
-            div(class = "card-header", "Используемый функционал"),
-            div(class = "card-body", DTOutput(ns("function_usage_table")))
-        )
-      )
-    ),
-    # Графики
-    fluidRow(
-      column(6, 
-             div(class = "card",
-                 div(class = "card-header", "К-во сессий по дням"),
-                 div(class = "card-body", plotOutput(ns("sessions_plot")))
-                 )
-             ),
-      column(6, 
-             div(class = "card",
-                 div(class = "card-header", "К-во событий по дням"),
-                 div(class = "card-body", plotOutput(ns("actions_plot")))
-             )
-      )
-    ),
-    fluidRow(
-      column(6, 
-             div(class = "card",
-                 div(class = "card-header", "К-во пользователей по дням"),
-                 div(class = "card-body", plotOutput(ns("users_plot")))
-             )
-      ),
-      fluidRow(
-        column(6, 
-               div(class = "card",
-                   div(class = "card-header", "События по дням недели и времени суток"),
-                   div(class = "card-body", plotOutput(ns("actions_heatmap"), height = "400px")))
-        )
-      ),
-    ),
-    fluidRow(
-      column(12,
-             div(class = "card",
-                 div(class = "card-header", "Статистика"),
-                 div(class = "card-body", DTOutput(ns("stats_table")))
-             )
-      )
-    ),
-    # --- Логи из app.Rout ---
-    fluidRow(
-      column(
-        width = 12,
-        div(class = "card",
-            div(class = "card-header d-flex justify-content-between align-items-center",
-                "Содержимое app.Rout",
-                actionButton(ns("clear_rout"), "Очистить", class = "btn btn-danger btn-sm")
-            ),
-            div(
-              class = "card-body",
-              tags$div(
-                style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; 
-                         max-height: 600px; overflow-y: auto; font-family: monospace; white-space: pre-wrap;",
-                verbatimTextOutput(ns("task_log_content"))
-              )
+      
+      # -----------------------
+      # 2. Логи AI чата
+      # -----------------------
+      tabPanel(
+        title = "AI чат",
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Фильтры"),
+                div(class = "card-body",
+                    fluidRow(
+                      column(3, dateRangeInput(ns("ai_date_range"), "Период", 
+                                               start = Sys.Date() - 7, end = Sys.Date())),
+                      column(3, uiOutput(ns("ai_user_filter"))),
+                      column(2, 
+                             actionButton(ns("ai_show_logs"), "Показать логи", 
+                                          icon = icon("comments"), class = "btn btn-primary", width = "100%"))
+                    )
+                )
             )
+          )
+        ),
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Диалоги с AI"),
+                div(class = "card-body",
+                    DTOutput(ns("ai_chat_log_table"))
+                )
+            )
+          )
         )
       )
     )
-    
   )
 }
 
@@ -472,6 +516,80 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       showNotification("Логи обновлены", type = "message")
     })
     
+    # =========================================================
+    # Вкладка AI чат — исправленная версия (использует app_con)
+    # =========================================================
+    
+    # UI: остаётся как у тебя — только серверная логика ниже
+    
+    # --- UI фильтр пользователей ---
+    output$ai_user_filter <- renderUI({
+      users <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        df <- DBI::dbGetQuery(con, "SELECT DISTINCT user FROM ai_chat_log ORDER BY user")
+        dbDisconnect(con)
+        if (nrow(df) == 0) character(0) else df$user
+      }, error = function(e) {
+        warning("Не удалось получить список пользователей из ai_chat_log: ", conditionMessage(e))
+        character(0)
+      })
+      
+      selectInput(ns("ai_user"), "Пользователь", choices = c("Все", users), selected = "Все")
+    })
+    
+    # --- Реактивка для логов: загружаем только по нажатию ---
+    ai_chat_data <- eventReactive(input$ai_show_logs, {
+      req(input$ai_date_range)
+      req(input$ai_user)
+      start <- as.character(input$ai_date_range[1])
+      end   <- as.character(input$ai_date_range[2])
+      
+      # безопасно формируем SQL: датами напрямую, user — через dbQuoteString
+      base_sql <- sprintf(
+        "SELECT id, datetime, session_id, user, role, message FROM ai_chat_log
+     WHERE date(datetime) BETWEEN '%s' AND '%s'",
+        start, end
+      )
+      
+      if (!is.null(input$ai_user) && input$ai_user != "Все") {
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        user_q <- DBI::dbQuoteString(con, as.character(input$ai_user))
+        dbDisconnect(con)
+        base_sql <- paste0(base_sql, " AND user = ", user_q)
+      }
+      
+      df <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        ai_logs <- DBI::dbGetQuery(con, base_sql)
+        dbDisconnect(con)
+        ai_logs
+      }, error = function(e) {
+        showNotification(paste("Ошибка при чтении ai_chat_log:", conditionMessage(e)), type = "error")
+        tibble::tibble()
+      })
+      
+      # форматируем datetime и конвертим markdown→HTML (если хочешь)
+      if (nrow(df) > 0) {
+        df$datetime <- format(as.POSIXct(df$datetime), "%Y-%m-%d %H:%M:%S")
+        # если хочешь рендерить markdown в HTML — раскомментируй и подключи пакет commonmark
+        df$message <- vapply(df$message, function(x) commonmark::markdown_html(as.character(x)), character(1))
+      }
+      
+      df
+    })
+    
+    # --- Таблица для отображения ---
+    output$ai_chat_log_table <- renderDT({
+      df <- ai_chat_data()
+      req(df)
+      
+      datatable(
+        df,
+        escape = FALSE,           # нужно, если ты конвертируешь markdown → HTML выше
+        options = list(pageLength = 20, scrollX = TRUE),
+        rownames = FALSE
+      )
+    })
     
   })
 }
