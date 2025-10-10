@@ -9,10 +9,11 @@ config <- list(
     task_log_base = "C:/scripts/alsey/netpeak_core/nc_analytics_team/telegram_bot/bot_db.db"
   ),
   logging = list(
-    session_log = TRUE,
-    action_log  = TRUE,
-    error_log   = TRUE,
-    ai_chat_log = TRUE
+    session_log       = TRUE,
+    action_log        = TRUE,
+    error_log         = TRUE,
+    ai_chat_log       = TRUE,
+    find_in_files_log = TRUE
   ),
   access_managemet = list(
     "Задачи" = c("admin", "user", "viewer"),
