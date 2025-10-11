@@ -20,8 +20,8 @@ mod_tab_find_in_files_ui <- function(id) {
                   checkboxGroupInput(
                     ns("file_types"),
                     "Типы файлов:",
-                    choices = c("R", "py", "cfg", "ini", "yaml", "yml", "json", "bat"),
-                    selected = c("R", "py"),
+                    choices = c("R", "Rmd", "py", "cfg", "ini", "yaml", "yml", "json", "bat"),
+                    selected = c("R", "Rmd", "py"),
                     inline = TRUE
                   ),
                   
@@ -108,7 +108,7 @@ mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
       
       if (nrow(results) > 0) {
         write_find_in_files_log(
-          results    = results %>% select(file, line, match) %>% mutate(extensions = str_c(extensions, collapse = ', ')),
+          results    = results %>% select(file, line, match, `task name`, `task state`) %>% mutate(extensions = str_c(extensions, collapse = ', ')),
           query      = input$file_pattern,
           user_login = auth$user()$login,
           session_id = session_id

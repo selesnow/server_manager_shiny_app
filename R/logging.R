@@ -133,7 +133,7 @@ write_find_in_files_log <- function(
         query      = query,
         datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
       ) %>%
-      select(search_id, session_id, user, query, file, line, match, extensions, datetime)
+      select(search_id, session_id, user, query, file, line, match, , `task name`, `task state`, extensions, datetime)
     
     # Записываем
     dbWriteTable(con, 'find_in_files_log', log_tbl, append = TRUE)

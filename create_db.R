@@ -53,17 +53,21 @@ CREATE TABLE IF NOT EXISTS ai_chat_log (
 ")
 
 dbExecute(con, "
+-- find_in_files_log definition
+
 CREATE TABLE find_in_files_log (
-  search_id   INTEGER,
-  session_id  TEXT,
-  user        TEXT,
-  query       TEXT,
-  file        TEXT,
-  line        TEXT,
-  match       TEXT,
-  datetime    TEXT, 
-  extensions  TEXT
-);
+    search_id   INTEGER,
+    session_id  TEXT,
+    user        TEXT,
+    query       TEXT,
+    file        TEXT,
+    line        TEXT,
+    match       TEXT,
+    datetime    TEXT, 
+    extensions TEXT, 
+    \"task name\" TEXT, 
+    \"task state\" TEXT
+    );
 ")
 
 dbExecute(con, "

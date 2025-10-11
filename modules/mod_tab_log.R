@@ -187,6 +187,42 @@ mod_tab_logs_ui <- function(id) {
             )
           )
         )
+      ),
+      # -----------------------
+      # 3. Логи поиска по файлам
+      # -----------------------
+      tabPanel(
+        title = "Поиск по файлам",
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Фильтры"),
+                div(class = "card-body",
+                    fluidRow(
+                      column(3, dateRangeInput(ns("files_date_range"), "Период", 
+                                               start = Sys.Date() - 7, end = Sys.Date())),
+                      column(3, uiOutput(ns("files_user_filter"))),
+                      column(2, 
+                             actionButton(ns("files_show_logs"), "Показать логи", 
+                                          icon = icon("search"), class = "btn btn-primary", width = "100%"))
+                    )
+                )
+            )
+          )
+        ),
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Результаты поиска по файлам"),
+                div(class = "card-body",
+                    DTOutput(ns("files_log_table"))
+                )
+            )
+          )
+        )
       )
     )
   )
@@ -591,5 +627,74 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       )
     })
     
+    # =========================================================
+    # Вкладка Поиск по файлам
+    # =========================================================
+    
+    # --- UI фильтр пользователей ---
+    output$files_user_filter <- renderUI({
+      users <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        df <- DBI::dbGetQuery(con, "SELECT DISTINCT user FROM find_in_files_log ORDER BY user")
+        dbDisconnect(con)
+        if (nrow(df) == 0) character(0) else df$user
+      }, error = function(e) {
+        warning("Не удалось получить список пользователей из find_in_files_log: ", conditionMessage(e))
+        character(0)
+      })
+      
+      selectInput(ns("files_user"), "Пользователь", choices = c("Все", users), selected = "Все")
+    })
+    
+    # --- Реактивка: загружаем логи только по нажатию кнопки ---
+    files_log_data <- eventReactive(input$files_show_logs, {
+      req(input$files_date_range)
+      req(input$files_user)
+      
+      start <- as.character(input$files_date_range[1])
+      end   <- as.character(input$files_date_range[2])
+      
+      base_sql <- sprintf(
+        "SELECT * 
+     FROM find_in_files_log
+     WHERE date(datetime) BETWEEN '%s' AND '%s'",
+        start, end
+      )
+      
+      if (!is.null(input$files_user) && input$files_user != "Все") {
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        user_q <- DBI::dbQuoteString(con, as.character(input$files_user))
+        dbDisconnect(con)
+        base_sql <- paste0(base_sql, " AND user = ", user_q)
+      }
+      
+      df <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        files_logs <- DBI::dbGetQuery(con, base_sql)
+        dbDisconnect(con)
+        files_logs
+      }, error = function(e) {
+        showNotification(paste("Ошибка при чтении find_in_files_log:", conditionMessage(e)), type = "error")
+        tibble::tibble()
+      })
+      
+      if (nrow(df) > 0) {
+        df$datetime <- format(as.POSIXct(df$datetime), "%Y-%m-%d %H:%M:%S")
+      }
+      
+      df
+    })
+    
+    # --- Таблица с результатами поиска ---
+    output$files_log_table <- renderDT({
+      df <- files_log_data()
+      req(df)
+      
+      datatable(
+        df,
+        options = list(pageLength = 20, scrollX = TRUE),
+        rownames = FALSE
+      )
+    })
   })
 }
