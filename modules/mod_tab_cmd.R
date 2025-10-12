@@ -50,6 +50,9 @@ mod_tab_cmd_server <- function(id, auth, session_id) {
           paste("Ошибка:", e$message)
         })
         
+        # логируем результат
+        write_cmd_log(user = auth$user()$login, session_id = session_id, cmd = cmd, result = result)
+        
         # Добавим ответ сервера
         response_entry <- list(sender = "Сервер", text = paste(result, collapse = "\n"))
         history <- append(history, list(response_entry))

@@ -110,6 +110,33 @@ write_ai_chat_log <- function(
   
 }
 
+write_cmd_log <- function(
+    user       = auth$user(),
+    session_id = session_id,
+    cmd, 
+    result
+) {
+  
+  if (conf$logging$cmd_log) {
+    
+    con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+    
+    log_row <- tibble(
+      datetime   = as.character(lubridate::with_tz(Sys.time(), "Europe/Kyiv")),
+      session_id = session_id,
+      user       = user,
+      cmd        = cmd,
+      result     = result
+    )
+    
+    dbWriteTable(con, 'cmd_log', log_row, append = TRUE)
+    
+    dbDisconnect(con)
+    
+  }
+  
+}
+
 write_find_in_files_log <- function(
     results,
     query,

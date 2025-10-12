@@ -71,6 +71,19 @@ CREATE TABLE find_in_files_log (
 ")
 
 dbExecute(con, "
+-- cmd_log definition
+
+CREATE TABLE cmd_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    datetime   TEXT, 
+    session_id TEXT,
+    user       TEXT,
+    cmd        TEXT,
+    result     TEXT
+);
+")
+
+dbExecute(con, "
 CREATE TABLE IF NOT EXISTS users (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   login    TEXT UNIQUE NOT NULL,

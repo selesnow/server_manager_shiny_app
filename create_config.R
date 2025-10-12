@@ -13,7 +13,8 @@ config <- list(
     action_log        = TRUE,
     error_log         = TRUE,
     ai_chat_log       = TRUE,
-    find_in_files_log = TRUE
+    find_in_files_log = TRUE,
+    cmd_log           = TRUE
   ),
   access_managemet = list(
     "Задачи" = c("admin", "user", "viewer"),
