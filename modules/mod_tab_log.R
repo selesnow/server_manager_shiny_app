@@ -223,6 +223,42 @@ mod_tab_logs_ui <- function(id) {
             )
           )
         )
+      ),
+      # -----------------------
+      # 4. Логи CMD команд
+      # -----------------------
+      tabPanel(
+        title = "CMD",
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Фильтры"),
+                div(class = "card-body",
+                    fluidRow(
+                      column(3, dateRangeInput(ns("cmd_date_range"), "Период", 
+                                               start = Sys.Date() - 7, end = Sys.Date())),
+                      column(3, uiOutput(ns("cmd_user_filter"))),
+                      column(2, 
+                             actionButton(ns("cmd_show_logs"), "Показать логи", 
+                                          icon = icon("terminal"), class = "btn btn-primary", width = "100%"))
+                    )
+                )
+            )
+          )
+        ),
+        
+        fluidRow(
+          column(
+            width = 12,
+            div(class = "card",
+                div(class = "card-header", "Логи выполнения CMD команд"),
+                div(class = "card-body",
+                    DTOutput(ns("cmd_log_table"))
+                )
+            )
+          )
+        )
       )
     )
   )
@@ -696,5 +732,76 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
         rownames = FALSE
       )
     })
+    
+    # =========================================================
+    # Вкладка CMD — просмотр логов выполнения команд
+    # =========================================================
+    
+    # --- UI фильтр пользователей ---
+    output$cmd_user_filter <- renderUI({
+      users <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        df <- DBI::dbGetQuery(con, "SELECT DISTINCT user FROM cmd_log ORDER BY user")
+        dbDisconnect(con)
+        if (nrow(df) == 0) character(0) else df$user
+      }, error = function(e) {
+        warning("Не удалось получить список пользователей из cmd_log: ", conditionMessage(e))
+        character(0)
+      })
+      
+      selectInput(ns("cmd_user"), "Пользователь", choices = c("Все", users), selected = "Все")
+    })
+    
+    # --- Реактивка: загружаем логи только по нажатию кнопки ---
+    cmd_log_data <- eventReactive(input$cmd_show_logs, {
+      req(input$cmd_date_range)
+      req(input$cmd_user)
+      
+      start <- as.character(input$cmd_date_range[1])
+      end   <- as.character(input$cmd_date_range[2])
+      
+      base_sql <- sprintf(
+        "SELECT id, datetime, session_id, user, cmd, result
+     FROM cmd_log
+     WHERE date(datetime) BETWEEN '%s' AND '%s'",
+        start, end
+      )
+      
+      if (!is.null(input$cmd_user) && input$cmd_user != "Все") {
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        user_q <- DBI::dbQuoteString(con, as.character(input$cmd_user))
+        dbDisconnect(con)
+        base_sql <- paste0(base_sql, " AND user = ", user_q)
+      }
+      
+      df <- tryCatch({
+        con <- dbConnect(SQLite(), conf_rv()$database_settings$app_data_base)
+        logs <- DBI::dbGetQuery(con, base_sql)
+        dbDisconnect(con)
+        logs
+      }, error = function(e) {
+        showNotification(paste("Ошибка при чтении cmd_log:", conditionMessage(e)), type = "error")
+        tibble::tibble()
+      })
+      
+      if (nrow(df) > 0) {
+        df$datetime <- format(as.POSIXct(df$datetime), "%Y-%m-%d %H:%M:%S")
+      }
+      
+      df
+    })
+    
+    # --- Таблица вывода ---
+    output$cmd_log_table <- renderDT({
+      df <- cmd_log_data()
+      req(df)
+      
+      datatable(
+        df,
+        options = list(pageLength = 15, scrollX = TRUE),
+        rownames = FALSE
+      )
+    })
+    
   })
 }
