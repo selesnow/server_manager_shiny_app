@@ -556,6 +556,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
           output$log_task_name <- renderText({ paste("Лог задачи:", input$selected_task) })
           
           show_log_card(TRUE)
+          
           updateTabsetPanel(session, "log_tabs", selected = "logs")
         } else {
           showNotification("Не удалось найти данные для задачи", type = "error")

@@ -1,3 +1,4 @@
+source("renv/activate.R")
 
 delete_desktop_ini <- function(path = ".") {
   ps_command <- glue::glue(
