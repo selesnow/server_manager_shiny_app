@@ -72,7 +72,7 @@ notify:
   tags:
     - rpup_pak_updater
   script:
-    - Rscript ci_command/success.R
+    - Rscript --vanilla ci_command/success.R
   only:
     - master
   dependencies:
@@ -81,7 +81,7 @@ notify:
 notify_fail:
   stage: notify_fail
   script:
-    - Rscript ci_command/fail.R
+    - Rscript --vanilla ci_command/fail.R
   when: on_failure
   only:
     - master
