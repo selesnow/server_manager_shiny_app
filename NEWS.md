@@ -1,6 +1,6 @@
 # Changelog
 
-## Development version
+## v1.35.0 - 2025-11-19
 
 ### Added
 
