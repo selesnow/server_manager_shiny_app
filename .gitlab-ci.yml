@@ -22,7 +22,7 @@ deploy_packages:
   tags:
     - rpup_pak_updater
   script:
-    - Rscript -e "if (!requireNamespace('renv', quietly = TRUE)) install.packages('renv', repos='https://cran.r-project.org')"
+    - Rscript -e "install.packages(c('renv','glue','R6','rlang','jsonlite'), repos='https://cran.r-project.org')"
   only:
     - master
   dependencies:
