@@ -22,8 +22,8 @@ deploy_packages:
   tags:
     - rpup_pak_updater
   script:
-    - Rscript -e "install.packages(c('ps', 'purrr', 'telegram.bot', 'dplyr', 'httr2'), repos='https://cran.r-project.org')"
-    - Rscript -e "install.packages(c('glue', 'renv','R6','rlang','jsonlite'), repos='https://cran.r-project.org')"
+    - Rscript --vanilla -e "install.packages(c('ps', 'purrr', 'telegram.bot', 'dplyr', 'httr2'), repos='https://cran.r-project.org')"
+    - Rscript --vanilla -e "install.packages(c('glue', 'renv','R6','rlang','jsonlite'), repos='https://cran.r-project.org')"
   only:
     - master
   dependencies:
