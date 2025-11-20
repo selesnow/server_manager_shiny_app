@@ -16,7 +16,7 @@ get_tasks <- function() {
   con <- dbConnect(SQLite(), conf$database_settings$task_log_base)
   quiet_tasks <- dbGetQuery(con, "SELECT task_name FROM forget_queue WHERE quiet_till > datetime('now', 'localtime')")
   
-  taskscheduler_ls(fill = TRUE) %>%
+  temp <- taskscheduler_ls(fill = TRUE) %>%
     filter(TaskName != 'ngrok_shiny') %>% 
     mutate(
       `Run As User` = str_remove_all(`Run As User`, "ANALYTICS\\\\|WIN-BTJ7HOEDRIG\\\\|OWNEROR-N0CRC7H\\\\"),
@@ -37,6 +37,7 @@ get_tasks <- function() {
     ungroup() %>% 
     filter(Author != "Microsoft Visual Studio") %>% 
     mutate(`Start Date` = min(`Start Date`, na.rm = T), .by = TaskName) %>% 
+    mutate(`Start Date` = if_else(is.infinite(`Start Date`), NA, `Start Date`)) %>%
     # расшифровка статуса ошибки
     mutate(
       `Last Result` = case_when(
