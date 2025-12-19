@@ -1874,6 +1874,90 @@ options(pfw_token = "ваш токен")
     * Аргументы:
       * report_id - Идентификатор отчёта
       * save_id - Идинтефикатор сохранённых результатов отчёта
+* `pfw_get_task_by_general()` - Получить данные по задаче по её general
+    * Аргументы:
+      * general general id задачи
+    * Получаемые данные:
+      * Поля
+      * id - идентификатор задачи
+      * title - название задачи
+      * description - описание задачи
+      * importance - срочность
+      * status - статус задачи
+      * checkResult - является ли задача задачей с обязательной проверкой результата
+      * type - тип задачи: task / template / checklist item
+      * owner_id - идентификатор пользователя создавшего задачу
+      * owner_name - создатель задачи
+      * template_id - идентификатор шаблона по которому создана задача
+      * parent - надзадача
+      * project_id - идентификатор проекта
+      * project - в рамках какого проекта поставлена задача
+      * client_id - идентификатор контрагента
+      * client_name - имя контрагента
+      * beginDateTime - 	время создания задачи
+      * duration - 	длительность задачи
+      * durationUnit - (0 - минуты, 1 - часы, 2 - дни)
+      * general - сквозной номер задачи
+      * isOverdued - задача не выполнена в срок
+      * isCloseToDeadline - задача близка к дедлайну
+      * isNotAcceptedInTime - 	задача не принята вовремя
+      * starred - помещена в избранные
+      * workers_ids - список идентификаторов исполнителей задачи
+      * workers_names - список исполнителей задачи
+      * members_ids - список идентификаторов участников задачи
+      * members_names - участники задачи
+      * auditors_ids - список идентификаторов аудиторов задачи
+      * auditors_names - аудиторы задачи
+* pfw_get_task_actions() - запрос действий по задачам, в том числе и данных по всем комментариям
+  * Аргументы:
+    * task_id - planfix id задачи
+  * Поля:
+    *  id - идентификатор действия
+    *  description - описание задачи
+    *  type - тип действия: 
+      * ACTION	Действие	
+      * COMMENT -	Комментарий	
+      * FILE -	Файл	
+      * TASKCREATED -	Задача создана	
+      * STATUSCHANGED -	Статус изменен	
+      * TASKOVERDUED -	Задача просрочена	
+      * TASKNOTACCEPTEDINTIME -	Задача не принята вовремя	
+      * TASKREJECTED -	Задача отклонена	
+      * TASKACCEPTED -	Задача принята	
+      * WORKEREMPLOYED -	К работе подключен сотрудник	
+      * TASKCLOSETODEADLINE -	Задача близка к завершению	
+      * REMINDER -	Напоминание	
+      * WORKERUNEMPLOYED -	Сотрудник отстранен от работы	
+      * TASKEXPECTDATECHANGED -	Изменена дата завершения задачи	
+      * CHANGEDATEREQUEST -	Запрос на изменение даты завершения задачи, ожидающий реакции постановщика	
+      * CHANGEDATEREQUESTINACTIVE -	Запрос на изменение даты завершения задачи, с которым уже согласился (или не согласился) постановщик	
+      * CHANGEDATEREQUESTRESULT -	Результат запроса на изменение даты завершения задачи	
+      * TASKCHANGED -	Данные задачи изменены	
+      * TASKCHECKCHANGED -	Изменен чек-лист задачи
+    *  additionalDescriptionData - Добавленные данные к описанию задачи
+    *  isNotRead 
+    *  dateTime - Дата и время события
+    *  fromEmail - поста
+    *  task_id - planfix id задачи
+    *  task_title - заголовок задачи
+    *  project_id - идентификатор проекта задачи
+    *  project_title - название проекта задачи
+    *  owner_id - идентификатор постановщика задачи
+    *  owner_name - имя постановщика задачи
+    *  notifiedList 
+    *  statusChange - изменился ли статус
+    *  files - файлы
+* pfw_get_files_description_from_task() - Получить файлы из задачи
+  * Аргументы: 
+    * general - general id задачи
+    * only_from_description получить файлы только из описания задачи
+  * Поля:
+    * id - идентификатор файла
+    * size - размер файла
+    * name - название файла
+* pfw_download_file() - скачать файл
+  * Аргументы:
+    * file_id - идентификатор файла
 
 ### Постоновка задач через пакет pfworker
 Для постановки задач используйте функцию `pfw_get_tasks()`, и её аргументы.
