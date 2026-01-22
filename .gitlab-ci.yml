@@ -49,7 +49,7 @@ restore_renv:
     - rpup_pak_updater
   script:
     - cd C:\scripts\alsey\netpeak_core\nc_analytics_team\shiny_task_service_manager
-    - Rscript --vanilla -e "renv::restore(prompt = FALSE)"
+    - Rscript --vanilla -e "source('renv/activate.R'); renv::restore(prompt = FALSE)"
   only:
     - master
   dependencies:
