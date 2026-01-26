@@ -1,5 +1,10 @@
 # Changelog
 
+## Development version
+
+### Changed
+В связи с прекращением поддержки модели `gemini-2.0-flash` весь AI функционал приложения переведён на более новую модель на `gemini-2.5-flash`.
+
 ## v1.35.2 - 2026-01-21
 
 ### Changed
