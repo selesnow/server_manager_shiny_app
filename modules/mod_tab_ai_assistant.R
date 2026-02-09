@@ -159,7 +159,7 @@ mod_tab_ai_assistant_server <- function(id,
       sc <- simple_chat_rv()
       if (!is.null(sc)) {
         tryCatch({
-          sc$clear(clear_history = TRUE)
+          sc$clear()
           message("[AI module] simple_chat$clear called")
         }, error = function(e) {
           message("[AI module] simple_chat$clear error: ", conditionMessage(e))
