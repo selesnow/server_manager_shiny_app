@@ -71,20 +71,50 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
     })
     
     observeEvent(input$login_btn, {
+      
       res <- check_user_fun(input$login, input$password)
+      
       if (!is.null(res)) {
+        
+        # 1. фиксируем логин пользователя
+        user_login <- input$login
+        
+        # 2. сохраняем пользователя в reactiveVal
+        user(list(
+          login = user_login,
+          role  = res$role[1]
+        ))
+        
+        # 3. поднимаем флаги авторизации
         logged_in(TRUE)
         user_role(res$role[1])
         
-        # Сохраняем только login (и raw row если нужно)
-        user(list(
-          login = input$login
-        ))
+        # 4. генерим persistent token
+        raw_token  <- openssl::rand_bytes(32) |> openssl::base64_encode()
+        token_hash <- openssl::sha256(raw_token)
+        
+        # 5. пишем в БД
+        app_con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+        
+        DBI::dbExecute(
+          app_con,
+          "
+      INSERT INTO auth_sessions (user_login, token_hash, expires_at)
+      VALUES (?, ?, datetime('now', '+30 days'))
+      ",
+          params = list(user_login, token_hash)
+        )
+        
+        dbDisconnect(app_con)
+        
+        # 6. кладём cookie в браузер
+        session$sendCustomMessage("setAuthCookie", raw_token)
         
       } else {
         output$login_message <- renderText("Неверный логин или пароль")
       }
     })
+    
     
     return(list(user = user))
     

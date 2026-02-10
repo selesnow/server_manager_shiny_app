@@ -71,6 +71,25 @@ for(mod in dir(here::here("modules"))) if (mod == "desktop.ini") next else sourc
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
+  # JS для авто логина
+  tags$script(HTML("
+      Shiny.addCustomMessageHandler('setAuthCookie', function(token) {
+        document.cookie = 'auth_token=' + token + '; path=/; max-age=2592000';
+      });
+    
+      Shiny.addCustomMessageHandler('clearAuthCookie', function(_) {
+        document.cookie = 'auth_token=; path=/; max-age=0';
+      });
+    
+      Shiny.addCustomMessageHandler('readAuthCookie', function(_) {
+        const match = document.cookie.match(/auth_token=([^;]+)/);
+        Shiny.setInputValue(
+          'auth_cookie',
+          match ? match[1] : null,
+          { priority: 'event' }
+        );
+      });
+    ")),
   useWaiter(),             # Помощник в загрузке приложения
   mod_auth_ui("auth"),     # Модуль авторизации
   uiOutput("app_ui")       # Основной контент
@@ -116,6 +135,43 @@ server <- function(input, output, session) {
     })
   })
   
+  # чтение куки для авто авторизации
+  observe({
+    session$sendCustomMessage("readAuthCookie", TRUE)
+  })
+  
+  observeEvent(input$auth_cookie, {
+    req(input$auth_cookie)
+    
+    token_hash <- openssl::sha256(input$auth_cookie)
+    
+    res <- DBI::dbGetQuery(
+      app_con,
+      "
+    SELECT u.login, u.role
+    FROM auth_sessions s
+    JOIN users u ON u.login = s.user_login
+    WHERE s.token_hash = ?
+      AND s.revoked = 0
+      AND s.expires_at > datetime('now')
+    ",
+      params = list(token_hash)
+    )
+    
+    if (nrow(res) == 1) {
+      
+      user_obj <- list(
+        login = res$login[1],
+        role  = res$role[1]
+      )
+      
+      auth$user(user_obj)
+      logged_in(TRUE)
+      user_role(user_obj$role)
+    }
+  })
+  
+  
   # Проверка авторизации ----------------------------------------------------
   # Подключение к базе данных SQLite
   # Коннект к БД
@@ -151,7 +207,10 @@ server <- function(input, output, session) {
     if (logged_in()) {
       
       # фиксируем старт сессии
-      user_login <- auth$user()$login
+      usr <- auth$user()
+      req(usr, usr$login)
+      
+      user_login <- usr$login
       session$userData$login <- user_login
       session$userData$logged_in <- TRUE
       
@@ -345,6 +404,21 @@ server <- function(input, output, session) {
   
   # Обработчик кнопки "Выйти"
   observeEvent(input$logout_btn, {
+    # чистим куки при вылогинываение
+    if (!is.null(input$auth_cookie)) {
+      DBI::dbExecute(
+        app_con,
+        "
+    UPDATE auth_sessions
+    SET revoked = 1
+    WHERE token_hash = ?
+    ",
+        params = list(openssl::sha256(input$auth_cookie))
+      )
+    }
+    
+    session$sendCustomMessage("clearAuthCookie", TRUE)
+    
     logged_in(FALSE)
     user_role(NULL)
   })
@@ -563,7 +637,7 @@ server <- function(input, output, session) {
 }
 
 if (system("git rev-parse --abbrev-ref HEAD", intern = TRUE) == 'master') {
-  shinyApp(ui, server, options = list(host = "0.0.0.0", port = 3838))
+  shinyApp(ui, server, options = list(host = "0.0.0.0", port = 81))
 } else {
   shinyApp(ui, server, options = list(port = 81))
 }
