@@ -67,12 +67,18 @@ mod_tab_tasks_ui <- function(id) {
                 ),
                 fluidRow(
                   # ----------- ФИЛЬТРЫ -----------
-                  column(width = 2, class = "mb-3", uiOutput(ns("author_filter"))),
-                  column(width = 2, class = "mb-3", uiOutput(ns("runas_filter"))),
-                  column(width = 2, class = "mb-3", uiOutput(ns("responsible_filter"))),
-                  column(width = 2, class = "mb-3", uiOutput(ns("last_result_filter"))),
-                  column(width = 2, class = "mb-3", uiOutput(ns("client_filter"))),
-                  column(width = 2, class = "mb-3", uiOutput(ns("task_state_filter")))
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_author"), "Автор:", choices = NULL, multiple = TRUE)),
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_runas"), "Под учёткой:", choices = NULL, multiple = TRUE)),
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_responsible"), "Ответственный:", choices = NULL, multiple = TRUE)),
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_last_result"), "Результат:", choices = NULL, multiple = TRUE)),
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_client"), "Клиент:", choices = NULL, multiple = TRUE)),
+                  column(width = 2, class = "mb-3", 
+                         selectInput(ns("filter_task_state"), "Состояние:", choices = NULL, multiple = TRUE))
                 ),
                 fluidRow(
                   # --------- Управление ----------
@@ -220,6 +226,10 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     current_task_start_in <- reactiveVal(NULL)
     log_history_files <- reactiveVal(NULL)
     current_log_content <- reactiveVal(NULL)
+    # Хранилище для предыдущих состояний списков, чтобы не обновлять их зря
+    stored_choices <- reactiveValues()
+    # Флаг для блокировки обновления при массовых изменениях (если понадобится кнопка Reset)
+    is_resetting <- reactiveVal(FALSE)
     
     # --- Цепочка реактивов для каскадной фильтрации ---
     # 1. Единый реактив для фильтрации данных
@@ -257,65 +267,69 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     
     # ──────────── UI‑фильтры ────────────
     # Состояние задачи (делаем Enabled по умолчанию)
-    output$task_state_filter <- renderUI({
-      req(all_tasks_reactive())
-      choices <- sort(unique(all_tasks_reactive()$`Scheduled Task State`))
-      sel <- if ("Enabled" %in% choices) "Enabled" else NULL
-      selectInput(ns("filter_task_state"), "Состояние:", choices = choices, selected = sel, multiple = TRUE)
-    })
-    
-    # Для остальных просто берем уникальные значения из всей базы при инициализации
-    output$author_filter <- renderUI({
-      selectInput(ns("filter_author"), "Автор:", 
-                  choices = sort(unique(all_tasks_reactive()$Author)), multiple = TRUE)
-    })
-    
-    output$runas_filter <- renderUI({
-      selectInput(ns("filter_runas"), "Под учёткой:", 
-                  choices = sort(unique(all_tasks_reactive()$`Run As User`)), multiple = TRUE)
-    })
-    
-    output$responsible_filter <- renderUI({
-      selectInput(ns("filter_responsible"), "Ответственный:", 
-                  choices = sort(unique(all_tasks_reactive()$Responsible)), multiple = TRUE)
-    })
-    
-    output$last_result_filter <- renderUI({
-      selectInput(ns("filter_last_result"), "Результат:", 
-                  choices = sort(unique(all_tasks_reactive()$`Last Result`)), multiple = TRUE)
-    })
-    
-    output$client_filter <- renderUI({
-      selectInput(ns("filter_client"), "Клиент:", 
-                  choices = sort(unique(all_tasks_reactive()$Client)), multiple = TRUE)
-    })
     
     # 2. Обновление списков Faceted Search
+    # 2. Обновление списков Faceted Search
     observe({
+      req(!is_resetting())
       df_raw <- all_tasks_reactive()
-      req(df_raw)
+      req(df_raw, nrow(df_raw) > 0)
       
-      # Карта соответствия: ID инпута -> Название колонки в данных
       filter_map <- list(
         filter_task_state = "Scheduled Task State",
         filter_author     = "Author",
         filter_runas      = "Run As User",
         filter_responsible = "Responsible",
         filter_last_result = "Last Result",
-        filter_client     = "Client"
+        filter_client      = "Client"
       )
       
-      # Получаем текущие отфильтрованные данные
-      current_df <- task_data()
-      
       for (id in names(filter_map)) {
-        # Если в фильтре НИЧЕГО не выбрано — обновляем его варианты на основе других фильтров
-        if (is.null(input[[id]]) || length(input[[id]]) == 0) {
-          col_name <- filter_map[[id]]
-          new_choices <- sort(unique(na.omit(current_df[[col_name]])))
+        col_name <- filter_map[[id]]
+        tmp_df <- df_raw
+        
+        # --- ЛОГИКА N-1 ---
+        for (other_id in names(filter_map)) {
+          if (id == other_id) next
+          selected_vals <- input[[other_id]]
           
-          updateSelectInput(session, id, choices = new_choices)
+          # Учитываем начальное состояние Enabled для фильтра статуса, 
+          # если пользователь еще ничего не выбрал сам
+          if (other_id == "filter_task_state" && is.null(selected_vals) && !id %in% names(stored_choices)) {
+            selected_vals <- "Enabled"
+          }
+          
+          if (!is.null(selected_vals) && length(selected_vals) > 0) {
+            if ("(Empty)" %in% selected_vals) {
+              tmp_df <- tmp_df %>% filter(!!sym(filter_map[[other_id]]) %in% selected_vals | is.na(!!sym(filter_map[[other_id]])) | !!sym(filter_map[[other_id]]) == "")
+            } else {
+              tmp_df <- tmp_df %>% filter(!!sym(filter_map[[other_id]]) %in% selected_vals)
+            }
+          }
         }
+        
+        current_available <- sort(unique(na.omit(tmp_df[[col_name]])))
+        if (any(is.na(tmp_df[[col_name]])) || any(tmp_df[[col_name]] == "", na.rm = TRUE)) {
+          current_available <- c("(Empty)", current_available)
+        }
+        
+        # ОПРЕДЕЛЯЕМ ТЕКУЩИЙ ВЫБОР:
+        # Если это первая загрузка (нет в stored_choices) и это фильтр состояния — ставим Enabled
+        user_selected <- input[[id]]
+        if (id == "filter_task_state" && is.null(user_selected) && !id %in% names(stored_choices)) {
+          user_selected <- "Enabled"
+        }
+        
+        combined_choices <- sort(unique(c(user_selected, current_available)))
+        
+        if (identical(stored_choices[[id]], combined_choices)) next
+        stored_choices[[id]] <- combined_choices
+        
+        updateSelectInput(
+          session, id, 
+          choices = combined_choices, 
+          selected = user_selected
+        )
       }
     })
     
