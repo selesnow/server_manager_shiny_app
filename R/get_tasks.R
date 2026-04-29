@@ -87,7 +87,7 @@ get_tasks <- function() {
       `Schedule Type`
     )) %>% 
     unique() %>% 
-    mutate(Responsible = purrr::map_chr(Author, ~ responsibles[[.x]])) %>% 
+    mutate(Responsible = purrr::map_chr(Author, ~ purrr::pluck(responsibles, .x, .default = NA_character_))) %>% 
     # проверка наличия readme, news, git и проекта RStudio
     mutate(
       readme = purrr::map_lgl(str_remove(`Start In`, '\\\\R$|/R$|/R/$'), ~ file.exists(file.path(.x, "README.md"))),
