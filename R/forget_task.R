@@ -27,7 +27,7 @@ forget_task <- function(
 }
 
 # функция сообщит о том что с текущей ролью пользователя запуск задач недоступен
-forget_task_na <- function(task_name) {
+forget_task_na <- function(task_name, until) {
   return('Роль текущего пользователя чата не позволяет ему отключать задачи от мониторинга на сервере, пользователю необходимо связаться с администратором - [Alsey](https://t.me/AlexeySeleznev).')
 }
 

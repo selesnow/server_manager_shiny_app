@@ -1,11 +1,11 @@
-#' Функция чтения README
+#' Функция чтения NEWS
 #'
-#' @param start_in Папка в которой будем искать README
+#' @param start_in Папка в которой будем искать NEWS
 #'
-#' @returns HTML код отрендереного README файла
+#' @returns HTML код отрендереного NEWS файла
 #' @export
 #'
-find_readme <- function(start_in = ".") {  
+find_news <- function(start_in = ".") {  
 
   files <- c("NEWS.md")
   start_in <- str_remove(start_in, '\\\\R$|/R$|/R/$')
