@@ -155,7 +155,7 @@ mod_tab_tasks_ui <- function(id) {
                           div(class = "btn-row",
                               actionButton(ns("view_task_logs"), "Логи", icon = icon("file-alt"), class = "btn-info"),
                               uiOutput(ns('analyze_log_button')),
-                              actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info"),
+                              uiOutput(ns("view_script_button")),
                               uiOutput(ns('analyze_script_button')),
                               actionButton(ns("view_task_readme"), "README", icon = icon("book"), class = "btn-info"),
                               actionButton(ns("view_task_news"), "NEWS", icon = icon("newspaper"), class = "btn-info")
@@ -381,6 +381,11 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
         actionButton(ns("analyze_script"), "Объясни код", icon = icon("lightbulb"), class = "btn-info")
     })
     
+    output$view_script_button <- renderUI({
+      if (user_role() %in% conf_rv()$access_managemet$`Просмотр кода`)
+        actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info")
+    })
+    
     observeEvent(input$run_task, {
       req(input$selected_task)
       write_action_log(user = auth$user()$login, func = 'Task run', session_id, value = input$selected_task)
@@ -495,15 +500,17 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
                       )
                      )
                     },
-                  tabPanel(
-                    title = tagList(icon("code"), "Скрипт"),
-                    value = "script",
-                    tags$div(
-                      style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
-                      class = "light-mode-log",
-                      uiOutput(ns("task_script_markdown"))
+                  if (user_role() %in% conf_rv()$access_managemet$`Просмотр кода`) {
+                    tabPanel(
+                      title = tagList(icon("code"), "Скрипт"),
+                      value = "script",
+                      tags$div(
+                        style = "background-color: #2a2a2a; color: #ddd; padding: 10px; border-radius: 5px; max-height: 600px; overflow-y: auto;",
+                        class = "light-mode-log",
+                        uiOutput(ns("task_script_markdown"))
+                      )
                     )
-                  ),
+                  },
                   if (user_role() %in% conf_rv()$access_managemet$`AI анализ`) {
                     tabPanel(
                       title = tagList(icon("lightbulb"), "Анализ кода"),
