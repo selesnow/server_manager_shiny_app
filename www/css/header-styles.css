@@ -86,3 +86,35 @@
     border-color: var(--danger) !important;
     transform: translateY(-1px);
 }
+
+/* ===== Мобильная адаптация шапки ===== */
+@media (max-width: 768px) {
+    .header-container {
+        padding: 12px 16px !important;
+        margin-bottom: 16px !important;
+        align-items: stretch !important; /* Растягиваем элементы на мобильном */
+    }
+
+    .controls-wrapper {
+        width: 100% !important;
+    }
+
+    .controls-container {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+
+    /* На мобильных кнопкам даем возможность распределяться равномерно */
+    .controls-container .btn,
+    .controls-container #toggle_theme,
+    .controls-container #logout_btn {
+        flex: 1 1 calc(50% - 8px) !important; /* Сетка из двух колонок или авто-перенос */
+        min-width: 110px !important;
+        justify-content: center !important;
+        padding: 8px 12px !important;
+        font-size: 0.8em !important;
+    }
+}
+

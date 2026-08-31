@@ -532,3 +532,102 @@ body.light-mode .waiter-overlay {
 body.light-mode .waiter-overlay-content h4 {
     color: #0f172a !important; /* Текст на светлом фоне оверлея */
 }
+
+/* ===== Стили для мобильной адаптации (Mobile Responsiveness) ===== */
+@media (max-width: 768px) {
+    body {
+        padding: 10px !important;
+    }
+
+    /* Адаптация карточек */
+    .card {
+        border-radius: 10px !important;
+        margin-bottom: 16px !important;
+    }
+
+    .card-header {
+        padding: 10px 14px !important;
+        font-size: 0.95em !important;
+    }
+
+    .card-body {
+        padding: 14px !important;
+    }
+
+    /* Адаптация навигационных вкладок (горизонтальный скролл без переносов) */
+    .nav-tabs {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch; /* Плавный свайп на iOS */
+        gap: 6px !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding-bottom: 4px !important;
+        margin-bottom: 16px !important;
+        width: 100% !important;
+    }
+
+    .nav-tabs::-webkit-scrollbar {
+        display: none !important; /* Скрываем скроллбар для эстетики */
+    }
+
+    .nav-tabs .nav-link,
+    .nav-tabs > li > a {
+        flex: 0 0 auto !important; /* Запрещаем сжатие элементов */
+        padding: 8px 14px !important;
+        font-size: 0.85em !important;
+        border-radius: 6px 6px 0 0 !important;
+    }
+
+    /* Кнопки и общие элементы */
+    .btn {
+        padding: 6px 12px !important;
+        font-size: 0.85em !important;
+    }
+
+    /* Адаптация таблиц Datatables */
+    .dataTables_wrapper {
+        overflow-x: auto !important; /* Включаем горизонтальный скролл */
+        width: 100% !important;
+    }
+
+    .dataTables_filter {
+        text-align: left !important;
+        margin-bottom: 10px !important;
+        width: 100% !important;
+    }
+
+    .dataTables_filter input {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-top: 5px !important;
+        box-sizing: border-box !important;
+    }
+
+    .dataTables_length {
+        width: 100% !important;
+        text-align: left !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* Чат AI-Ассистента */
+    shiny-chat-message {
+        padding: 12px 14px !important;
+    }
+
+    /* Контейнеры с кнопками управления */
+    .action-buttons, .action-buttons-services {
+        gap: 8px !important;
+        justify-content: flex-start !important;
+    }
+
+    .action-buttons .btn, .action-buttons-services .btn {
+        flex: 1 1 auto !important;
+    }
+
+    /* Формы и инпуты */
+    select, input, .form-control {
+        padding: 6px 10px !important;
+        font-size: 0.9em !important;
+    }
+}

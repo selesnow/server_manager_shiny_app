@@ -143,3 +143,33 @@
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px var(--primary-glow) !important;
 }
+
+/* ===== Стили для мобильной адаптации календарей ===== */
+@media (max-width: 768px) {
+    /* На мобильных полях выбора диапазона дат ставим вертикальное выстраивание */
+    .shiny-date-range-input {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    .shiny-date-range-input .input-daterange {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+
+    .shiny-date-range-input input {
+        width: 100% !important;
+        text-align: left !important;
+        border-radius: 8px !important; /* Обеспечиваем скругление каждому инпуту отдельно */
+    }
+
+    /* Убираем элемент-разделитель (обычно "to" или "по") */
+    .shiny-date-range-input .input-group-addon {
+        display: none !important;
+    }
+}
+
