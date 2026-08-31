@@ -1,188 +1,534 @@
-body {
-    background-color: #333;
-    color: #f5f5f5;
+/* www/css/main-styles.css */
+
+/* Глобальные CSS переменные */
+:root {
+    /* Тёмная тема (по умолчанию) */
+    --bg-app: #0f172a;
+    --bg-card: #1e293b;
+    --border-color: #334155;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-glow: rgba(99, 102, 241, 0.25);
+    --success: #10b981;
+    --success-hover: #059669;
+    --warning: #f59e0b;
+    --warning-hover: #d97706;
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --info: #06b6d4;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+    --input-bg: #1e293b;
+    --input-border: #334155;
 }
 
+body.light-mode {
+    /* Светлая тема */
+    --bg-app: #f8fafc;
+    --bg-card: #ffffff;
+    --border-color: #e2e8f0;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-glow: rgba(79, 70, 229, 0.2);
+    --success: #059669;
+    --success-hover: #047857;
+    --warning: #d97706;
+    --warning-hover: #b45309;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --info: #0891b2;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --card-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --card-shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.1), 0 4px 6px -4px rgba(15, 23, 42, 0.1);
+    --input-bg: #ffffff;
+    --input-border: #cbd5e1;
+}
+
+/* Глобальные стили */
+body {
+    background-color: var(--bg-app) !important;
+    color: var(--text-primary) !important;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    padding: 20px;
+}
+
+/* Заголовок страницы */
+.titlePanel h2, #title-panel {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text-primary);
+}
+
+/* Карточки */
 .card {
-    background-color: #444;
-    border-color: #555;
-    margin-bottom: 20px;
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--card-shadow) !important;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: var(--card-shadow-hover) !important;
+    border-color: var(--primary) !important;
 }
 
 .card-header {
-    background-color: #555;
-    border-color: #666;
-}
-
-.btn-primary {
-    background-color: #007bff;
-}
-
-.btn-success {
-    background-color: #28a745;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    color: #333;
-}
-
-.btn-info {
-    background-color: #17a2b8;
-}
-
-select, input {
-    background-color: #555;
-    color: #f5f5f5;
-    border-color: #666;
-}
-
-table {
-    color: #f5f5f5;
-}
-
-.dataTables_wrapper {
-    color: #f5f5f5;
-}
-
-.dataTables_info, 
-.dataTables_paginate,
-.dataTables_filter,
-.dataTables_length {
-    color: #f5f5f5 !important;
-}
-
-.light-mode {
-    background-color: #ffffff;
-    color: #333;
-}
-
-.light-mode .card {
-    background-color: #f9f9f9;
-    border-color: #ddd;
+    background-color: rgba(99, 102, 241, 0.03) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 14px 20px !important;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1.05em;
+    letter-spacing: -0.2px;
 }
 
 .light-mode .card-header {
-    background-color: #f1f1f1;
-    border-color: #ddd;
+    background-color: rgba(79, 70, 229, 0.02) !important;
 }
 
-.light-mode select, .light-mode input {
-    background-color: #ffffff;
-    color: #333;
-    border-color: #ccc;
+.card-body {
+    padding: 20px !important;
+    color: var(--text-primary);
 }
 
-.light-mode table {
-    color: #333;
+/* Кнопки */
+.btn {
+    border-radius: 8px !important;
+    font-weight: 500;
+    padding: 8px 16px;
+    transition: all 0.2s ease-in-out !important;
+    border: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
-.light-mode .dataTables_wrapper {
-    color: #333;
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
 }
 
-.light-mode .dataTables_info, 
-.light-mode .dataTables_paginate,
-.light-mode .dataTables_filter,
-.light-mode .dataTables_length {
-    color: #333 !important;
+.btn:active {
+    transform: translateY(0);
 }
 
+.btn-primary {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+}
+
+.btn-success {
+    background-color: var(--success) !important;
+    color: #ffffff !important;
+}
+
+.btn-success:hover {
+    background-color: var(--success-hover) !important;
+}
+
+.btn-danger {
+    background-color: var(--danger) !important;
+    color: #ffffff !important;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-hover) !important;
+}
+
+.btn-warning {
+    background-color: var(--warning) !important;
+    color: #0f172a !important;
+}
+
+.btn-warning:hover {
+    background-color: var(--warning-hover) !important;
+}
+
+.btn-info {
+    background-color: var(--info) !important;
+    color: #ffffff !important;
+}
+
+/* Стили для форм и инпутов */
+select, input, .form-control {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    height: auto !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
+}
+
+select:focus, input:focus, .form-control:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+    outline: none !important;
+}
+
+/* Навигация по вкладкам (Tabs) */
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color) !important;
+    gap: 6px;
+    margin-bottom: 25px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.nav-tabs .nav-link,
+.nav-tabs > li > a {
+    color: var(--text-secondary) !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 8px 8px 0 0 !important;
+    padding: 10px 20px !important;
+    font-weight: 500;
+    transition: all 0.2s ease !important;
+    margin-bottom: -2px;
+    position: relative;
+    display: block;
+    text-decoration: none !important;
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs > li > a:hover {
+    color: var(--text-primary) !important;
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    border: none !important;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+    color: var(--primary) !important;
+    background-color: transparent !important;
+    font-weight: 600;
+    border: none !important;
+}
+
+.nav-tabs .nav-link.active::after,
+.nav-tabs > li.active > a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--primary);
+    border-radius: 3px 3px 0 0;
+}
+
+/* Блоки со статистикой и описанием */
+.stats-summary {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 16px 20px !important;
+    margin-bottom: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.stats-item {
+    margin-bottom: 10px;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stats-item strong {
+    color: var(--primary);
+}
+
+.stats-description {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 10px !important;
+    padding: 18px 22px !important;
+    margin-bottom: 24px;
+    line-height: 1.6;
+    transition: background-color 0.3s ease;
+}
+
+.stats-description h4 {
+    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--primary);
+    letter-spacing: -0.2px;
+}
+
+/* Стили для таблиц DT (Datatables) */
+table.dataTable {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100% !important;
+    margin: 15px 0 !important;
+}
+
+table.dataTable thead th {
+    background-color: rgba(99, 102, 241, 0.04) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid var(--border-color) !important;
+    padding: 12px 16px !important;
+    letter-spacing: -0.1px;
+}
+
+table.dataTable tbody td {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    vertical-align: middle;
+    transition: background-color 0.15s ease;
+}
+
+table.dataTable tbody tr {
+    background-color: transparent !important;
+}
+
+table.dataTable tbody tr:hover td {
+    background-color: rgba(99, 102, 241, 0.03) !important;
+}
+
+/* Обёртка Datatables */
+.dataTables_wrapper {
+    color: var(--text-primary) !important;
+}
+
+.dataTables_info {
+    color: var(--text-secondary) !important;
+    font-size: 0.9em;
+    padding-top: 15px !important;
+}
+
+.dataTables_length, .dataTables_filter {
+    color: var(--text-primary) !important;
+    margin-bottom: 15px;
+}
+
+.dataTables_filter input {
+    margin-left: 10px !important;
+    border-radius: 20px !important; /* Круглый поиск */
+    padding: 6px 16px !important;
+}
+
+.dataTables_paginate {
+    padding-top: 15px !important;
+}
+
+.dataTables_paginate .paginate_button {
+    background: transparent !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    border-radius: 8px !important;
+    padding: 6px 12px !important;
+    margin: 0 3px !important;
+    transition: all 0.2s ease !important;
+}
+
+.dataTables_paginate .paginate_button:hover {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.dataTables_paginate .paginate_button.current, 
+.dataTables_paginate .paginate_button.current:hover {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+.dataTables_paginate .paginate_button.disabled, 
+.dataTables_paginate .paginate_button.disabled:hover {
+    border-color: var(--border-color) !important;
+    background: transparent !important;
+    color: var(--text-secondary) !important;
+    opacity: 0.5;
+}
+
+/* Всплывающие окна (Modal Popups) */
+.modal-content {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+    padding: 10px;
+}
+
+.modal-header, .modal-footer {
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 15px 20px !important;
+    border: none !important;
+}
+
+.modal-title {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+    font-size: 1.25em;
+    letter-spacing: -0.3px;
+}
+
+.modal-body strong {
+    color: var(--primary) !important;
+}
+
+/* Кнопки управления */
+.action-buttons, .action-buttons-services {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+/* Custom styles from original app */
 .light-mode .light-mode-log {
     background-color: #f0f0f0 !important;
     color: #333 !important;
 }
 
-.nav-tabs {
-    border-bottom: 1px solid #555;
+/* ===== Стили для ЧАТА (AI Assistant) ===== */
+.shiny-chat-container {
+    border: 1px solid var(--border-color) !important;
+    border-radius: 12px !important;
+    background-color: var(--bg-card) !important;
+    overflow: hidden;
+    margin-top: 20px;
 }
 
-.nav-tabs .nav-link {
-    color: #f5f5f5;
-    background-color: #444;
-    border-color: #555;
+shiny-chat-message {
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 16px 20px !important;
+    transition: background-color 0.2s ease;
 }
 
-.nav-tabs .nav-link.active {
-    color: #f5f5f5;
-    background-color: #555;
-    border-color: #666;
+/* Стилизация сообщений пользователя и ассистента */
+shiny-chat-message[role="user"] {
+    background-color: rgba(99, 102, 241, 0.05) !important;
 }
 
-.light-mode .nav-tabs .nav-link {
-    color: #333;
-    background-color: #f1f1f1;
-    border-color: #ddd;
+shiny-chat-message[role="assistant"] {
+    background-color: transparent !important;
 }
 
-.light-mode .nav-tabs .nav-link.active {
-    color: #333;
-    background-color: #ffffff;
-    border-color: #ddd;
+.light-mode shiny-chat-message[role="user"] {
+    background-color: rgba(79, 70, 229, 0.03) !important;
 }
 
-.stats-summary {
-    margin-bottom: 20px;
-    padding: 15px;
-    border-radius: 5px;
-    background-color: #555;
+/* Исправление отрисовки таблиц в чате */
+shiny-chat-message table {
+    width: 100% !important;
+    margin: 15px 0 !important;
+    border-collapse: collapse !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    overflow: hidden;
 }
 
-.light-mode .stats-summary {
-    background-color: #f1f1f1;
+shiny-chat-message table thead th {
+    background-color: rgba(99, 102, 241, 0.08) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--border-color) !important;
 }
 
-.stats-item {
-    margin-bottom: 8px;
+shiny-chat-message table tbody tr {
+    background-color: transparent !important;
 }
 
-.stats-description {
-    margin-top: 15px;
-    padding: 15px;
-    border-radius: 5px;
-    background-color: #555;
+shiny-chat-message table tbody tr td {
+    color: var(--text-primary) !important;
+    padding: 10px 14px !important;
+    border: 1px solid var(--border-color) !important;
 }
 
-.light-mode .stats-description {
-    background-color: #f1f1f1;
+shiny-chat-message table.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
-.stats-description h4 {
-    margin-bottom: 10px;
+shiny-chat-message table.table-striped tbody tr:nth-of-type(even) {
+    background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
-/* Кнопки управления задачами на вкладке Задачи */
-.action-buttons {
+.light-mode shiny-chat-message table.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0, 0, 0, 0.01) !important;
+}
+
+.light-mode shiny-chat-message table.table-striped tbody tr:nth-of-type(even) {
+    background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Кастомный скроллбар для всего приложения */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-app);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ===== Стилизация загрузочных экранов Waiter ===== */
+.waiter-overlay {
+    background: rgba(15, 23, 42, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+    transition: background 0.4s ease, backdrop-filter 0.4s ease !important;
+}
+
+body.light-mode .waiter-overlay {
+    background: rgba(248, 250, 252, 0.85) !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+/* Настройка цвета стандартного спиннера SpinKit */
+.sk-fading-circle .sk-circle:before {
+    background-color: var(--primary) !important;
+}
+
+/* Центрирование контента и стилизация подписей загрузки */
+.waiter-overlay-content {
     display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 10px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
-.action-buttons-services {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    justify-content: flex-start;
+.waiter-overlay-content h4 {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 600 !important;
+    color: #f8fafc !important; /* Текст на темном фоне оверлея */
+    font-size: 1.15rem !important;
+    margin-top: 20px !important;
+    letter-spacing: -0.01em;
 }
 
-/* popup на вкладке задачи */
-.modal-content {
-    background-color: #2b2b2b !important;   /* тёмный фон */
-    color: #f0f0f0 !important;              /* светлый текст */
-}
-.modal-header, .modal-footer {
-    border: none;                /* убираем белые бордеры */
-}
-.modal-title {
-    color: #ffffff;              /* заголовок яркий */
-    font-weight: bold;
-}
-    .modal-body strong {
-    color: #c9e6ff;              /* выделение для strong */
+body.light-mode .waiter-overlay-content h4 {
+    color: #0f172a !important; /* Текст на светлом фоне оверлея */
 }

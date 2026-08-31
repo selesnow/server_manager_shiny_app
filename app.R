@@ -71,6 +71,21 @@ for(mod in dir(here::here("modules"))) if (mod == "desktop.ini") next else sourc
 
 # Генерация интерфейса ----------------------------------------------------
 ui <- fluidPage(
+  tags$head(
+    # Подключаем шрифты Google Fonts напрямую в HTML для надежности
+    tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
+    tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = NA),
+    tags$link(rel = "stylesheet", href = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"),
+    
+    # Добавляем иконку для вкладки браузера
+    tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
+    
+    # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=3"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=3"),
+    # стиль календаря
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=3")
+  ),
   # JS для авто логина
   tags$script(HTML("
       Shiny.addCustomMessageHandler('setAuthCookie', function(token) {
@@ -246,16 +261,7 @@ server <- function(input, output, session) {
       fluidPage(
         useShinyjs(),  # Добавляем использование shinyjs
         
-        # Добавляем возможность переключения темной темы
-        tags$head(
-          tags$head(
-            # Добавляем иконку для вкладки браузера
-            tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
-            # Подключаем внешние CSS файлы
-            tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css"),
-            tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css")
-          )
-        ),
+        # Стили загружаются глобально в статическом UI, предотвращая конфликты при перерисовке renderUI
         
         # Используем правильную структуру заголовка без встроенных стилей
         titlePanel(
@@ -275,6 +281,7 @@ server <- function(input, output, session) {
           div(
             class = "text-primary",
             style = "font-size: 0.9em; margin-bottom: 5px;",
+            icon("user"),
             glue::glue("Пользователь: {user_login} ({user_role()})")
           ),
           

@@ -1,127 +1,145 @@
-/* Файл: www/css/calendar.css */
-  /* Стили для тёмной темы календаря dateRangeInput */
-  
-  /* Основной контейнер календаря */
-  .datepicker {
-    background-color: #2c3e50 !important;
-      border: 1px solid #34495e !important;
-    color: #ecf0f1 !important;
-  }
+/* www/css/calendar.css */
+/* Стили для календаря dateRangeInput с поддержкой темной и светлой темы через переменные */
+
+/* Основной контейнер календаря */
+.datepicker {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-primary) !important;
+    border-radius: 12px !important;
+    box-shadow: var(--card-shadow-hover) !important;
+    padding: 8px !important;
+}
 
 /* Заголовок календаря */
-  .datepicker th {
-    background-color: #34495e !important;
-      color: #ecf0f1 !important;
-      border-bottom: 1px solid #4a5f7a !important;
-  }
+.datepicker th {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    font-weight: 600;
+    padding: 8px !important;
+}
 
 /* Ячейки дат */
-  .datepicker td {
-    color: #ecf0f1 !important;
-      background-color: #2c3e50 !important;
-  }
+.datepicker td {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease;
+}
 
 /* Активная дата при наведении */
-  .datepicker td:hover {
-    background-color: #3498db !important;
-      color: #ffffff !important;
-  }
+.datepicker td:hover {
+    background-color: var(--primary-glow) !important;
+    color: var(--primary) !important;
+}
 
 /* Выбранная дата */
-  .datepicker td.active,
+.datepicker td.active,
 .datepicker td.active:hover {
-  background-color: #e74c3c !important;
+    background-color: var(--primary) !important;
     color: #ffffff !important;
+    font-weight: 600;
 }
 
 /* Диапазон дат */
-  .datepicker td.range {
-    background-color: #34495e !important;
-      color: #ecf0f1 !important;
-  }
+.datepicker td.range {
+    background-color: var(--primary-glow) !important;
+    color: var(--text-primary) !important;
+    border-radius: 0 !important;
+}
 
 .datepicker td.range:hover {
-  background-color: #4a5f7a !important;
+    background-color: rgba(99, 102, 241, 0.35) !important;
 }
 
 /* Начало и конец диапазона */
-  .datepicker td.range-start,
+.datepicker td.range-start,
 .datepicker td.range-end {
-  background-color: #e74c3c !important;
+    background-color: var(--primary) !important;
     color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 6px !important;
 }
 
 /* Неактивные даты (другие месяцы) */
-  .datepicker td.disabled,
+.datepicker td.disabled,
 .datepicker td.old,
 .datepicker td.new {
-  color: #7f8c8d !important;
-    background-color: #2c3e50 !important;
+    color: var(--text-secondary) !important;
+    opacity: 0.4;
+    background-color: transparent !important;
 }
 
 /* Стрелки навигации */
-  .datepicker .prev,
+.datepicker .prev,
 .datepicker .next {
-  color: #ecf0f1 !important;
+    color: var(--text-primary) !important;
+    border-radius: 6px !important;
 }
 
 .datepicker .prev:hover,
 .datepicker .next:hover {
-  background-color: #34495e !important;
-    color: #3498db !important;
+    background-color: var(--primary-glow) !important;
+    color: var(--primary) !important;
 }
 
 /* Название месяца/года */
-  .datepicker .datepicker-switch {
-    background-color: #34495e !important;
-      color: #ecf0f1 !important;
-      border: none !important;
-  }
+.datepicker .datepicker-switch {
+    background-color: transparent !important;
+    color: var(--text-primary) !important;
+    border: none !important;
+    border-radius: 6px !important;
+}
 
 .datepicker .datepicker-switch:hover {
-  background-color: #4a5f7a !important;
+    background-color: var(--primary-glow) !important;
+    color: var(--primary) !important;
 }
 
 /* Сегодняшняя дата */
-  .datepicker td.today {
-    background-color: #f39c12 !important;
-      color: #2c3e50 !important;
-  }
+.datepicker td.today {
+    background-color: var(--warning) !important;
+    color: #0f172a !important;
+    font-weight: 600;
+}
 
 .datepicker td.today:hover {
-  background-color: #e67e22 !important;
+    background-color: var(--warning-hover) !important;
 }
 
 /* Выходные дни */
-  .datepicker td.weekend {
-    color: #e74c3c !important;
-  }
+.datepicker td.weekend {
+    color: var(--danger) !important;
+}
 
 /* Дополнительные стили для месяцев и годов */
-  .datepicker table tr td span {
-    color: #ecf0f1 !important;
-      background-color: #2c3e50 !important;
-  }
+.datepicker table tr td span {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+    border-radius: 8px !important;
+    transition: all 0.15s ease;
+}
 
 .datepicker table tr td span:hover {
-  background-color: #3498db !important;
-    color: #ffffff !important;
+    background-color: var(--primary-glow) !important;
+    color: var(--primary) !important;
 }
 
 .datepicker table tr td span.active {
-  background-color: #e74c3c !important;
+    background-color: var(--primary) !important;
     color: #ffffff !important;
 }
 
 /* Стили для input полей календаря */
-  .form-control[data-date] {
-    background-color: #34495e !important;
-      border-color: #4a5f7a !important;
-      color: #ecf0f1 !important;
-  }
+.form-control[data-date], .datepicker-input {
+    background-color: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--text-primary) !important;
+}
 
-.form-control[data-date]:focus {
-  background-color: #2c3e50 !important;
-    border-color: #3498db !important;
-    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25) !important;
+.form-control[data-date]:focus, .datepicker-input:focus {
+    background-color: var(--input-bg) !important;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
 }

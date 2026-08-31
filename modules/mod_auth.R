@@ -25,33 +25,78 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
               justify-content: center;
               align-items: center;
               height: 100vh;
-              background-color: #333;
+              background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%);
+              font-family: 'Plus Jakarta Sans', sans-serif;
             }
             .login-container .form-container {
               width: 100%;
               max-width: 400px;
-              padding: 20px;
-              border: 1px solid #555;
-              border-radius: 5px;
-              background-color: #444;
+              padding: 35px 40px;
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              border-radius: 16px;
+              background-color: rgba(30, 41, 59, 0.7);
+              backdrop-filter: blur(16px);
+              box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
             }
-            .login-container .form-container input, 
+            .login-container .form-container .form-group {
+              margin-bottom: 20px;
+            }
+            .login-container .form-container label {
+              color: #94a3b8;
+              font-weight: 500;
+              font-size: 0.85em;
+              margin-bottom: 6px;
+            }
+            .login-container .form-container input {
+              width: 100%;
+              padding: 12px 16px;
+              background-color: rgba(15, 23, 42, 0.6) !important;
+              color: #f8fafc !important;
+              border: 1px solid rgba(255, 255, 255, 0.1) !important;
+              border-radius: 8px !important;
+              transition: all 0.2s ease;
+            }
+            .login-container .form-container input:focus {
+              border-color: #6366f1 !important;
+              box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25) !important;
+              outline: none;
+            }
             .login-container .form-container button {
               width: 100%;
-              padding: 10px;
-              margin-bottom: 10px;
-              background-color: #555;
-              color: #f5f5f5;
-              border-color: #666;
+              padding: 12px;
+              background-color: #6366f1 !important;
+              color: #ffffff !important;
+              border: none !important;
+              border-radius: 8px !important;
+              font-weight: 600 !important;
+              margin-top: 15px;
+              transition: all 0.2s ease !important;
+              box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
             }
-            .login-container .form-container button {
-              background-color: #007bff;
+            .login-container .form-container button:hover {
+              background-color: #4f46e5 !important;
+              transform: translateY(-1px);
+              box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+            }
+            .login-container .form-container button:active {
+              transform: translateY(0);
             }
             #title-panel {
               text-align: center;
-              color: #f5f5f5;
-              font-size: 24px;
-              margin-bottom: 20px;
+              color: #f8fafc;
+              font-size: 26px;
+              font-weight: 700;
+              letter-spacing: -0.5px;
+              margin-bottom: 25px;
+              margin-top: 0;
+            }
+            #auth-login_message {
+              text-align: center;
+              color: #ef4444;
+              font-size: 0.9em;
+              margin-top: 15px;
+              font-weight: 500;
+              display: block;
             }
           ")),
           div(class = "login-container",

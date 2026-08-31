@@ -1,32 +1,88 @@
+/* www/css/header-styles.css */
+
 .header-container {
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
-    background-color: #333;
-    color: #fff;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 12px 24px;
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--card-shadow) !important;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .controls-wrapper {
     display: flex;
     justify-content: flex-start;
     align-items: center;
+    width: 100%;
 }
 
 .controls-container {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
 }
 
-.controls-container .btn-sm {
-    padding: 5px 10px;
+/* Стили для бейджа пользователя */
+.text-primary {
+    color: var(--primary) !important;
+    font-weight: 600;
+    font-size: 0.9em;
+    background-color: rgba(99, 102, 241, 0.08);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.light-mode .header-container {
-    background-color: #f7f7f7;
-    color: #333;
+.light-mode .text-primary {
+    background-color: rgba(79, 70, 229, 0.06);
+    border: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+/* Кнопка переключения темы */
+#toggle_theme {
+    background-color: transparent !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 6px 14px;
+    font-size: 0.85em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: none !important;
+    transition: all 0.2s ease !important;
+}
+
+#toggle_theme:hover {
+    color: var(--text-primary) !important;
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    border-color: var(--primary) !important;
+    transform: translateY(-1px);
+}
+
+/* Кнопка выхода */
+#logout_btn {
+    background-color: transparent !important;
+    color: var(--danger) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    padding: 6px 14px;
+    font-size: 0.85em;
+    font-weight: 500;
+    transition: all 0.2s ease !important;
+}
+
+#logout_btn:hover {
+    background-color: rgba(239, 68, 68, 0.08) !important;
+    border-color: var(--danger) !important;
+    transform: translateY(-1px);
 }
