@@ -631,3 +631,72 @@ body.light-mode .waiter-overlay-content h4 {
         font-size: 0.9em !important;
     }
 }
+
+/* ===== Полная интеграция Selectize.js с темой Slate & Indigo ===== */
+
+/* 1. Стилизация основного поля выбора */
+.selectize-input {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    box-shadow: none !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease !important;
+}
+
+/* 2. Подсветка при фокусе (клике) */
+.selectize-input.focus, 
+.selectize-input.input-active {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+}
+
+/* 3. Явное исправление цвета вводимого текста и фона */
+.selectize-input input {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+}
+
+/* 4. Выпадающий список (Dropdown) */
+.selectize-dropdown {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    box-shadow: var(--card-shadow-hover) !important;
+    padding: 4px !important;
+}
+
+/* 5. Элементы списка (Choices / Options) */
+.selectize-dropdown .option {
+    color: var(--text-primary) !important;
+    background-color: transparent !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.15s ease !important;
+}
+
+/* Активный/выбранный пункт при наведении или навигации клавишами */
+.selectize-dropdown .active {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+/* 6. Мультивыбор (теги выбранных элементов) */
+.selectize-control.multi .selectize-input > div {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    border-radius: 6px !important;
+    border: none !important;
+    padding: 4px 10px !important;
+}
+
+.selectize-control.multi .selectize-input > div.active {
+    background-color: var(--primary-hover) !important;
+}
+
+/* Кнопка удаления тега (крестик) */
+.selectize-control.multi .selectize-input > div .remove {
+    border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #ffffff !important;
+}
