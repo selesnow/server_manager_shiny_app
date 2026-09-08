@@ -3,6 +3,29 @@ mod_tab_services_ui <- function(id) {
   
   tabPanel(
     title = "Службы",
+    # Скрипт для отслеживания двойного клика по строке таблицы служб
+    tags$script(HTML(paste0("
+    $(document).ready(function() {
+      $(document).on('dblclick', '#", id, "-service_table tbody tr', function(e) {
+        e.preventDefault();
+        
+        var serviceName = $(this).attr('data-service');
+        
+        if (!serviceName) {
+          serviceName = $(this).find('td:eq(0)').text().trim(); // fallback на первую ячейку
+        }
+        
+        console.log('Double-clicked on service row, serviceName:', serviceName);
+        
+        // Отправляем событие в Shiny
+        Shiny.setInputValue('", id, "-service_table_cell_clicked', {
+          serviceName: serviceName,
+          value: 'dblclick',
+          timestamp: new Date().getTime()
+        }, {priority: 'event'});
+      });
+    });
+    "))),
     
     # Блок с управлением службами
     fluidRow(
@@ -52,10 +75,21 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
     })
     
     output$service_table <- renderDT({
-      datatable(services_data() %>% select(-update_time), ,
+      df <- services_data() %>% select(-update_time)
+      datatable(df,
+                rownames = FALSE, # Отключаем нумерацию для прямого сопоставления data[0] -> Service
                 filter   = "top",
-                options  = list(pageLength = 25, scrollX = TRUE),
-                selection = 'none')
+                options  = list(
+                  pageLength = 25, 
+                  scrollX = TRUE,
+                  rowCallback = DT::JS(
+                    "function(row, data, index) {",
+                    "  $(row).attr('data-service', data[0]);", # data[0] - имя службы
+                    "}"
+                  )
+                ),
+                selection = 'none') %>%
+        formatStyle(columns = 1:ncol(df), cursor = 'pointer')
     })
     
     observeEvent(services_data(), {
@@ -108,6 +142,125 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
       req(input$selected_service)
       system(glue::glue("nssm restart {input$selected_service}"), intern = TRUE)
       showNotification("Служба перезапущена", type = "message")
+    })
+    
+    # === Карточка службы и управление ей (двойной клик) ===
+    current_modal_service <- reactiveVal(NULL)
+    
+    # Окно с подробной карточкой службы при двойном клике по строке таблицы
+    observeEvent(input$service_table_cell_clicked, {
+      click_info <- input$service_table_cell_clicked
+      req(click_info)
+      
+      # Проверяем, что это двойной клик
+      if (!is.null(click_info$value) && click_info$value == "dblclick") {
+        service_name <- click_info$serviceName
+        req(service_name)
+        
+        # Получаем данные службы
+        current_data <- services_data() %>% filter(Service == service_name)
+        req(nrow(current_data) > 0)
+        
+        row <- current_data[1, ]
+        
+        # Статус-бейдж
+        status_badge <- if (row$Status == "Running" || grepl("RUNNING", row$Status, ignore.case = TRUE)) {
+          span(row$Status, style = "background-color: rgba(16, 185, 129, 0.15); color: var(--success); padding: 4px 8px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.25);")
+        } else {
+          span(row$Status, style = "background-color: rgba(239, 68, 68, 0.15); color: var(--danger); padding: 4px 8px; border-radius: 6px; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.25);")
+        }
+        
+        # Показываем модальное окно
+        showModal(modalDialog(
+          title = paste("Информация о службе:", row$Service),
+          size = "m",
+          tags$head(
+            tags$style(HTML("
+              .modal-content {
+                  background-color: var(--bg-card) !important;
+                  color: var(--text-primary) !important;
+                  border: 1px solid var(--border-color) !important;
+                  border-radius: 12px !important;
+              }
+              .modal-header, .modal-footer {
+                  border: none !important;
+              }
+              .modal-title {
+                  color: var(--text-primary) !important;
+                  font-weight: bold;
+              }
+              .modal-body strong {
+                  color: var(--primary) !important;
+              }
+            "))
+          ),
+          easyClose = TRUE,
+          footer = tagList(
+            modalButton("Закрыть")
+          ),
+          
+          div(
+            div(class = "mb-2", strong("Название: "), span(row$Service)),
+            div(class = "mb-2", strong("Отображаемое имя: "), span(row$DisplayName)),
+            div(class = "mb-2", strong("Описание: "), span(row$Description)),
+            div(class = "mb-2", strong("Статус: "), status_badge),
+            div(class = "mb-2", strong("Клиент: "), span(row$Client)),
+            div(class = "mb-2", strong("Директория: "), span(row$AppDirectory)),
+            div(class = "mb-2", strong("Параметры: "), span(row$AppParameters)),
+            div(class = "mb-2", strong("PID: "), span(row$PID)),
+            div(class = "mb-2", strong("Время запуска: "), span(row$StartTime)),
+            
+            # Управление внутри модалки
+            if (user_role() %in% conf_rv()$access_managemet$`Управление службами`) {
+              tagList(
+                tags$hr(),
+                h4("Управление службой", style = "color: var(--primary); font-weight: 600; margin-bottom: 12px;"),
+                div(
+                  class = "d-flex gap-2",
+                  actionButton(ns("modal_start_service"), "Запустить", icon = icon("play"), class = "btn btn-success"),
+                  actionButton(ns("modal_stop_service"), "Остановить", icon = icon("stop"), class = "btn btn-danger"),
+                  actionButton(ns("modal_restart_service"), "Перезапустить", icon = icon("sync"), class = "btn btn-warning")
+                )
+              )
+            }
+          )
+        ))
+        
+        current_modal_service(service_name)
+      }
+    }, ignoreInit = TRUE)
+    
+    # --- Запуск из модалки ---
+    observeEvent(input$modal_start_service, {
+      req(current_modal_service())
+      service_name <- current_modal_service()
+      
+      write_action_log(user = auth$user()$login, func = 'Service start', session_id, value = service_name)
+      system(glue::glue("nssm start {service_name}"), intern = TRUE)
+      showNotification("Служба запущена", type = "message")
+      removeModal()
+    })
+    
+    # --- Остановка из модалки ---
+    observeEvent(input$modal_stop_service, {
+      req(current_modal_service())
+      service_name <- current_modal_service()
+      
+      write_action_log(user = auth$user()$login, func = 'Service stop', session_id, value = service_name)
+      system(glue::glue("nssm stop {service_name}"), intern = TRUE)
+      showNotification("Служба остановлена", type = "warning")
+      removeModal()
+    })
+    
+    # --- Перезапуск из модалки ---
+    observeEvent(input$modal_restart_service, {
+      req(current_modal_service())
+      service_name <- current_modal_service()
+      
+      write_action_log(user = auth$user()$login, func = 'Service restart', session_id, value = service_name)
+      system(glue::glue("nssm restart {service_name}"), intern = TRUE)
+      showNotification("Служба перезапущена", type = "message")
+      removeModal()
     })
   })
 }
