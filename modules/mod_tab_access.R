@@ -1,6 +1,29 @@
 mod_access_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    # Скрипт для отслеживания двойного клика по строке таблицы пользователей
+    tags$script(HTML(paste0("
+    $(document).ready(function() {
+      $(document).on('dblclick', '#", id, "-users_table tbody tr', function(e) {
+        e.preventDefault();
+        
+        var username = $(this).attr('data-username');
+        
+        if (!username) {
+          username = $(this).find('td:eq(0)').text().trim(); // fallback на первую ячейку (логин при rownames = FALSE)
+        }
+        
+        console.log('Double-click detected on row! Username resolved to:', username);
+        
+        // Отправляем событие в Shiny
+        Shiny.setInputValue('", id, "-users_table_cell_clicked', {
+          username: username,
+          value: 'dblclick',
+          timestamp: new Date().getTime()
+        }, {priority: 'event'});
+      });
+    });
+    "))),
     h3("Управление доступом"),
     h4("Список пользователей"),
     DTOutput(ns("users_table")),
@@ -83,7 +106,19 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     output$users_table <- renderDT({
-      datatable(load_users(), options = list(pageLength = 5))
+      df <- load_users()
+      datatable(df,
+                rownames = FALSE, # Отключаем нумерацию строк для сопоставления data[0] с login
+                options = list(
+                  pageLength = 5,
+                  rowCallback = DT::JS(
+                    "function(row, data, index) {",
+                    "  $(row).attr('data-username', data[0]);", # data[0] - логин пользователя
+                    "}"
+                  )
+                ),
+                selection = 'none') %>%
+        formatStyle(columns = 1:ncol(df), cursor = 'pointer')
     })
     
     update_user_inputs <- function() {
@@ -267,6 +302,175 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
       conf(new_conf)
       yaml::write_yaml(new_conf, "config.yaml")
       showNotification("✅ Пути к базам обновлены", type = "message")
+    })
+    
+    # === Карточка пользователя и управление им (двойной клик) ===
+    current_modal_username <- reactiveVal(NULL)
+    
+    # Окно с карточкой пользователя при двойном клике по строке таблицы пользователей
+    observeEvent(input$users_table_cell_clicked, {
+      click_info <- input$users_table_cell_clicked
+      req(click_info)
+      
+      # Проверяем, что это двойной клик
+      if (!is.null(click_info$value) && click_info$value == "dblclick") {
+        username <- click_info$username
+        req(username)
+        
+        # Получаем данные пользователя из БД
+        user_info <- dbGetQuery(conn, "SELECT login, role FROM users WHERE login = ?", params = list(username))
+        req(nrow(user_info) > 0)
+        
+        user_role_val <- user_info$role[1]
+        
+        # Запрос даты регистрации из логов
+        reg_info <- dbGetQuery(conn, "SELECT datetime FROM action_log WHERE func_name = 'User add' AND value = ? ORDER BY datetime ASC LIMIT 1", params = list(username))
+        reg_date <- if (nrow(reg_info) > 0) reg_info$datetime[1] else "Неизвестно (создан до логирования)"
+        
+        # Запрос последней активности из логов
+        last_act_info <- dbGetQuery(conn, "
+          SELECT MAX(dt) as last_act FROM (
+            SELECT MAX(datetime) as dt FROM action_log WHERE user = ?
+            UNION
+            SELECT MAX(datetime) as dt FROM session_log WHERE user = ?
+          )
+        ", params = list(username, username))
+        
+        last_activity <- if (nrow(last_act_info) > 0 && !is.na(last_act_info$last_act[1])) last_act_info$last_act[1] else "Нет активности в логах"
+        
+        # Показываем модальное окно
+        showModal(modalDialog(
+          title = paste("Карточка пользователя:", username),
+          size = "m",
+          tags$head(
+            tags$style(HTML("
+              .modal-content {
+                  background-color: var(--bg-card) !important;
+                  color: var(--text-primary) !important;
+                  border: 1px solid var(--border-color) !important;
+                  border-radius: 12px !important;
+              }
+              .modal-header, .modal-footer {
+                  border: none !important;
+              }
+              .modal-title {
+                  color: var(--text-primary) !important;
+                  font-weight: bold;
+              }
+              .modal-body strong {
+                  color: var(--primary) !important;
+              }
+            "))
+          ),
+          easyClose = TRUE,
+          footer = tagList(
+            modalButton("Закрыть")
+          ),
+          
+          # Карточка с информацией
+          div(
+            div(class = "mb-2", strong("Логин: "), span(username)),
+            div(class = "mb-2", strong("Текущая роль: "), span(user_role_val)),
+            div(class = "mb-2", strong("Дата регистрации: "), span(reg_date)),
+            div(class = "mb-2", strong("Последняя активность: "), span(last_activity)),
+            
+            tags$hr(),
+            
+            # Раздел управления пользователем внутри модалки
+            h4("Управление пользователем", class = "mb-3", style = "color: var(--primary); font-weight: 600;"),
+            
+            # 1. Изменение роли
+            div(
+              class = "mb-4 p-3", style = "background-color: rgba(99, 102, 241, 0.03); border: 1px solid var(--border-color); border-radius: 8px;",
+              h5("🛠 Изменить роль", style = "font-weight: 600; margin-top: 0; margin-bottom: 10px;"),
+              fluidRow(
+                column(8, selectInput(ns("modal_updated_role"), "Новая роль:", choices = c("admin", "user", "viewer"), selected = user_role_val)),
+                column(4, actionButton(ns("modal_change_role"), "Изменить роль", class = "btn btn-warning w-100", style = "margin-top: 25px;"))
+              )
+            ),
+            
+            # 2. Сброс пароля
+            div(
+              class = "mb-4 p-3", style = "background-color: rgba(99, 102, 241, 0.03); border: 1px solid var(--border-color); border-radius: 8px;",
+              h5("🔐 Сброс пароля", style = "font-weight: 600; margin-top: 0; margin-bottom: 10px;"),
+              fluidRow(
+                column(4, passwordInput(ns("modal_new_password"), "Новый пароль")),
+                column(4, passwordInput(ns("modal_confirm_password"), "Подтвердите")),
+                column(4, actionButton(ns("modal_reset_password"), "Сбросить пароль", class = "btn btn-warning w-100", style = "margin-top: 25px;"))
+              )
+            ),
+            
+            # 3. Удаление пользователя
+            if (username != "root" && username != auth$user()$login) {
+              div(
+                class = "mb-3 p-3", style = "background-color: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;",
+                h5("🗑️ Удалить пользователя", style = "font-weight: 600; color: var(--danger); margin-top: 0; margin-bottom: 10px;"),
+                p("Внимание: это действие необратимо!", style = "font-size: 0.85em; color: var(--text-secondary); margin-bottom: 10px;"),
+                actionButton(ns("modal_delete_user"), "Удалить аккаунт", class = "btn btn-danger")
+              )
+            } else {
+              div(
+                class = "mb-3 p-3", style = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid var(--border-color); border-radius: 8px;",
+                p("Удаление этого пользователя ограничено (системный аккаунт или текущая сессия).", style = "font-size: 0.85em; color: var(--text-secondary); margin-bottom: 0;")
+              )
+            }
+          )
+        ))
+        
+        current_modal_username(username)
+      }
+    }, ignoreInit = TRUE)
+    
+    # --- Изменение роли из модалки ---
+    observeEvent(input$modal_change_role, {
+      req(current_modal_username())
+      username <- current_modal_username()
+      
+      write_action_log(user = auth$user()$login, func = 'User change role', session_id, value = username)
+      dbExecute(conn,
+                "UPDATE users SET role = ? WHERE login = ?",
+                params = list(input$modal_updated_role, username))
+      
+      showNotification(paste("Роль пользователя", username, "обновлена"), type = "message")
+      users_trigger(users_trigger() + 1)
+      removeModal()
+    })
+    
+    # --- Сброс пароля из модалки ---
+    observeEvent(input$modal_reset_password, {
+      req(current_modal_username())
+      username <- current_modal_username()
+      
+      if (input$modal_new_password != input$modal_confirm_password) {
+        showNotification("Пароли не совпадают!", type = "error")
+        return()
+      }
+      
+      write_action_log(user = auth$user()$login, func = 'User password reset', session_id, value = username)
+      dbExecute(conn,
+                "UPDATE users SET password = ? WHERE login = ?",
+                params = list(input$modal_new_password, username))
+      
+      showNotification(paste("Пароль пользователя", username, "обновлён"), type = "message")
+      removeModal()
+    })
+    
+    # --- Удаление из модалки ---
+    observeEvent(input$modal_delete_user, {
+      req(current_modal_username())
+      username <- current_modal_username()
+      
+      if (username == "root" || username == auth$user()$login) {
+        showNotification("Удаление этого пользователя запрещено!", type = "error")
+        return()
+      }
+      
+      write_action_log(user = auth$user()$login, func = 'User remove', session_id, value = username)
+      dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(username))
+      
+      showNotification(paste("Пользователь", username, "удалён"), type = "message")
+      users_trigger(users_trigger() + 1)
+      removeModal()
     })
   })
 }
