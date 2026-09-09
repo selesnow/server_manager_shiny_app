@@ -187,12 +187,14 @@ mod_tab_statistic_server <- function(id, all_tasks, triggers, conf_rv) {
         stats$new_structure_crons, " (", stats$new_structure_percent, " %)</div>",
         "<div class='stats-item'>◦ Активных кронов которые надо перенести: ", 
         stats$crons_to_move, " (", stats$to_move_percent, " %)</div>",
-        "<div class='stats-item'>◦ Наличие элементов проектов: <br>",
-        "<div style='margin-left: 30px;'>◦ README: ", stats$readme, " (",  stats$readme_rate, "%)</div>", 
-        "<div style='margin-left: 30px;'>◦ NEWS: ", stats$news, " (",  stats$news_rate, "%)</div>", 
-        "<div style='margin-left: 30px;'>◦ Git: ", stats$git, " (",  stats$git_rate, "%)</div>", 
-        "<div style='margin-left: 30px;'>◦ Rproj: ",  stats$rproj, " (",  stats$rproj_rate, "%)</div>",
-        "<div style='margin-left: 30px;'>◦ Logs: ",  stats$has_log, " (",  stats$has_log_rate, "%)</div></div>"
+        "<div class='stats-item'>◦ Наличие элементов проектов:</div>",
+        "<div style='margin-left: 30px; display: flex; flex-direction: column; gap: 6px; margin-top: 5px; margin-bottom: 10px;'>",
+        "<div>◦ README: ", stats$readme, " (",  stats$readme_rate, "%)</div>", 
+        "<div>◦ NEWS: ", stats$news, " (",  stats$news_rate, "%)</div>", 
+        "<div>◦ Git: ", stats$git, " (",  stats$git_rate, "%)</div>", 
+        "<div>◦ Rproj: ",  stats$rproj, " (",  stats$rproj_rate, "%)</div>",
+        "<div>◦ Logs: ",  stats$has_log, " (",  stats$has_log_rate, "%)</div>",
+        "</div>"
       ))
     })
     

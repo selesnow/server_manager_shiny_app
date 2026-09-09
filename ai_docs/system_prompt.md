@@ -683,6 +683,47 @@ pr2 <- pup_get_projects()
     * services_documents
     * planfix_tasks
 
+* pup_get_fin_zp() - Запрос ФОТ и начислений сотрудников из финансового учёта ПУПа
+  * аргументы
+    * month - Месяц, за который запрашиваются данные, в формате `"ГГГГ-ММ-01"` (по умолчанию первый день предыдущего месяца)
+    * articles - Числовой или текстовый вектор, фильтр по ID статей финансового дерева
+    * section - Текстовый вектор, фильтр по разделу (razdel)
+    * subsection - Текстовый вектор, фильтр по подразделу (podrazdel)
+    * category - Текстовый вектор, фильтр по категории финансового дерева (category)
+    * company - Текстовый вектор, фильтр по компании (company)
+    * decrypted - Расшифровывать ли зашифрованные финансовые поля на лету. По умолчанию `TRUE`
+    * fields - Список полей, которые вы хотите получить в результате. По умолчанию `"*"` (все поля)
+  * возвращаемые поля
+    * category - Категория финансового дерева
+    * razdel - Раздел финансового дерева
+    * podrazdel - Подраздел финансового дерева
+    * company - Компания сотрудника
+    * username - Ник сотрудника
+    * year - Год начисления
+    * month_number - Номер месяца начисления
+    * rates - Ставка из профиля (расшифрованная, если `decrypted = TRUE`)
+    * paid_rate - Выплаченная ставка (расшифрованная, если `decrypted = TRUE`)
+    * fin_zp_advance - Аванс (расшифрованный, если `decrypted = TRUE`)
+    * minimum_guaranteed_surcharge - Минимальная гарантированная выплата (расшифрованная, если `decrypted = TRUE`)
+    * fin_zp_minuses - Минусы из зарплаты (расшифрованные, если `decrypted = TRUE`)
+    * off_pays - Официальные выплаты (оф. ЗП + оф. аванс + отпускные + доп. выплаты + удержания)
+    * fin_zp_correction - Коррекция (расшифрованная, если `decrypted = TRUE`)
+    * fin_zp_bonuses - Бонусы (расшифрованные, если `decrypted = TRUE`)
+    * bonuses_correction - Коррекция бонусов (расшифрованная, если `decrypted = TRUE`)
+    * salary_reduction - Урезание ЗП (расшифрованное, если `decrypted = TRUE`)
+    * total_paid - Итого выплачено (с учетом коррекций, бонусов, минусов и урезаний)
+    * colleague - Передачи коллегам (плюс передачи - минус передачи)
+    * fin_zp_comission - Комиссия за выплату ЗП (расшифрованная, если `decrypted = TRUE`)
+    * of_rates_tax - Налог на официальную ставку (расшифрованный, если `decrypted = TRUE`)
+    * FOT - Фонд Оплаты Труда (FOT)
+    * koef - Коэффициент выплаты
+  * к каким таблицам обращается
+    * fin_zp
+    * fin_sections
+    * fin_categories
+    * companies
+    * contacts
+
 * pup_get_fin_netting() - Получить данные о взаиморасчётах между компаниями
   * аргументы
     * date_type - По какой дате фильтровать данные: date_add - дата добавления взаиморасчёта, done_time - дата выполнения запроса по взаиморасчётам, create_date - дата создания запроса денег
@@ -1419,7 +1460,7 @@ als_ash_dh <- pup_get_user_leaders(pup_user_ids = c(301, 460))
 * Получение ключа из переменной окружения `ENC_KEY_PUP` или keyring (Windows Credential Manager): `key <- decrypter$get_key()`
 * Запись/сохранение ключа шифрования в keyring: `decrypter$set_key()`
 
-Функции `pup_get_user_info()`, `pup_get_salary()` и `pup_get_official_payments()` автоматически расшифровывают конфиденциальные поля (`rates`, `min_guaranteed_payments`, `mgv_probation_size`, `probation_rate`, `minimum_guaranteed_surcharge`, `size_all`, `salary_done_size`, `rate`, `paid_rate`, `salary_done_comission`, `size`), если аргумент `decrypted = TRUE` (по умолчанию) и ключ дешифрования настроен в системе.
+Функции `pup_get_user_info()`, `pup_get_salary()`, `pup_get_official_payments()` и `pup_get_fin_zp()` автоматически расшифровывают конфиденциальные поля (`rates`, `min_guaranteed_payments`, `mgv_probation_size`, `probation_rate`, `minimum_guaranteed_surcharge`, `size_all`, `salary_done_size`, `rate`, `paid_rate`, `salary_done_comission`, `size`, `fin_zp_advance`, `fin_zp_minuses`, `off_zp`, `off_advance`, `vacation_payouts`, `additional_payouts`, `withholding`, `fin_zp_correction`, `fin_zp_bonuses`, `bonuses_correction`, `of_rates_tax`, `salary_reduction`), если аргумент `decrypted = TRUE` (по умолчанию) и ключ дешифрования настроен в системе.
 
 Пример получения зарплат на чистом R:
 
