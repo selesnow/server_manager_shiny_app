@@ -5,7 +5,7 @@ create_new_chat <- function(user_role, conf_temp) {
 
   new_chat <- ellmer::chat_google_gemini(
     system_prompt = interpolate_file(path = here::here('ai_docs', 'system_prompt.md')),
-    model = 'gemini-2.5-flash',  
+    model = 'gemini-3.8-flash',  
     echo  = 'none'
   )
   
