@@ -81,10 +81,10 @@ ui <- fluidPage(
     tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=3"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=3"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=8"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=8"),
     # стиль календаря
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=3")
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=8")
   ),
   # JS для авто логина
   tags$script(HTML("

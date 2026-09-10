@@ -161,18 +161,22 @@ body {
     color: #ffffff !important;
 }
 
-/* Стили для форм и инпутов */
-select, input, .form-control {
+/* Стили для форм и инпутов (за исключением элементов внутри чата, чтобы не ломать автовысоту) */
+select.form-control, 
+input.form-control, 
+textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea) {
     background-color: var(--input-bg) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--input-border) !important;
     border-radius: 8px !important;
     padding: 8px 12px !important;
-    height: auto !important;
+    height: auto;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 
-select:focus, input:focus, .form-control:focus {
+select.form-control:focus, 
+input.form-control:focus, 
+textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea):focus {
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px var(--primary-glow) !important;
     outline: none !important;
@@ -413,10 +417,26 @@ table.dataTable tbody tr:hover td {
     margin-top: 20px;
 }
 
+/* Безопасная стилизация цвета и формы поля ввода чата под тему (круглая капсула, JS-автовысота сохранена) */
+shiny-chat-input textarea.form-control {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 26px !important; /* Красивая круглая форма капсулы */
+    padding: 10px 16px !important; /* Удобные паддинги */
+    padding-right: 40px !important; /* Отступ справа для кнопки-стрелочки */
+    height: auto; /* Без !important, чтобы JS мог плавно регулировать высоту */
+}
+
 shiny-chat-message {
     border-bottom: 1px solid var(--border-color) !important;
     padding: 16px 20px !important;
     transition: background-color 0.2s ease;
+}
+
+/* Сохранение переносов строк (newline) в отправленных сообщениях чата */
+shiny-chat-message, shiny-user-message, shiny-markdown-stream {
+    white-space: pre-wrap !important;
 }
 
 /* Стилизация сообщений пользователя и ассистента */
@@ -611,6 +631,11 @@ body.light-mode .waiter-overlay-content h4 {
     }
 
     /* Чат AI-Ассистента */
+    shiny-chat-container {
+        height: calc(100vh - 250px) !important;
+        min-height: 350px !important;
+    }
+
     shiny-chat-message {
         padding: 12px 14px !important;
     }
@@ -625,8 +650,10 @@ body.light-mode .waiter-overlay-content h4 {
         flex: 1 1 auto !important;
     }
 
-    /* Формы и инпуты */
-    select, input, .form-control {
+    /* Формы и инпуты (за исключением элементов внутри чата) */
+    select.form-control, 
+    input.form-control, 
+    textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea) {
         padding: 6px 10px !important;
         font-size: 0.9em !important;
     }
@@ -645,6 +672,11 @@ body.light-mode .waiter-overlay-content h4 {
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease !important;
 }
 
+/* 1.1. Исправление паддингов при мультивыборе с уже выбранными элементами для сохранения аккуратного размера */
+.selectize-control.multi .selectize-input.has-items {
+    padding: 5px 8px 2px !important;
+}
+
 /* 2. Подсветка при фокусе (клике) */
 .selectize-input.focus, 
 .selectize-input.input-active {
@@ -652,10 +684,15 @@ body.light-mode .waiter-overlay-content h4 {
     box-shadow: 0 0 0 3px var(--primary-glow) !important;
 }
 
-/* 3. Явное исправление цвета вводимого текста и фона */
+/* 3. Явное исправление цвета вводимого текста и фона (сброс рамок и паддингов, чтобы убрать артефакты) */
 .selectize-input input {
     color: var(--text-primary) !important;
     background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    height: auto !important;
+    max-width: 100% !important;
 }
 
 /* 4. Выпадающий список (Dropdown) */
