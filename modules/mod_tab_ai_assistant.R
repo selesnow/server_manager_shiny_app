@@ -95,6 +95,7 @@ mod_tab_ai_assistant_server <- function(id,
         id = "simple_chat",
         client = new_client,
         history = history_options(
+          restore_mode = "none", # Начинаем сессию всегда с чистого листа, не подгружая прошлый чат при старте
           store = FileConversationStore$new(dir = history_dir),
           scope = usr_login # Разделяем историю по пользователям
         )
@@ -153,9 +154,16 @@ mod_tab_ai_assistant_server <- function(id,
             echo = FALSE,
             force = TRUE
           )
-          message("[AI module] Slash commands synchronized with client successfully")
+          
+          # Форсируем отправку списка истории бесед на клиент для решения проблемы race condition при restore_mode = "none"
+          ctrl <- shinychat:::get_session_chat_bookmark_info(session, "simple_chat.history-controller")
+          if (!is.null(ctrl)) {
+            ctrl$send_history_update()
+          }
+          
+          message("[AI module] Slash commands and conversation history synchronized with client successfully")
         }, error = function(e) {
-          message("[AI module] Error during slash command sync: ", conditionMessage(e))
+          message("[AI module] Error during slash command/history sync: ", conditionMessage(e))
         })
       }
       
