@@ -164,7 +164,7 @@ body {
 /* Стили для форм и инпутов (за исключением элементов внутри чата, чтобы не ломать автовысоту) */
 select.form-control, 
 input.form-control, 
-textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea) {
+textarea.form-control:not(.shiny-chat-container textarea):not(shiny-chat-container textarea):not(.shiny-chat-input textarea):not(shiny-chat-input textarea) {
     background-color: var(--input-bg) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--input-border) !important;
@@ -176,7 +176,7 @@ textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input te
 
 select.form-control:focus, 
 input.form-control:focus, 
-textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea):focus {
+textarea.form-control:not(.shiny-chat-container textarea):not(shiny-chat-container textarea):not(.shiny-chat-input textarea):not(shiny-chat-input textarea):focus {
     border-color: var(--primary) !important;
     box-shadow: 0 0 0 3px var(--primary-glow) !important;
     outline: none !important;
@@ -408,26 +408,312 @@ table.dataTable tbody tr:hover td {
     color: #333 !important;
 }
 
-/* ===== Стили для ЧАТА (AI Assistant) ===== */
-.shiny-chat-container {
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    background-color: var(--bg-card) !important;
-    overflow: hidden;
-    margin-top: 20px;
+/* Стилизация и видимость кнопки закрытия (крестика) во всех всплывающих окнах и боковых панелях (drawers) */
+.btn-close,
+button.close,
+.shiny-chat-container .btn-close,
+.shiny-chat-container button.close,
+.shiny-chat-drawer-close,
+.shiny-chat-drawer-close svg {
+    opacity: 0.8 !important;
+    filter: invert(1) grayscale(1) brightness(2) !important; /* Делает крестик белым в тёмной теме */
+    cursor: pointer !important;
+    pointer-events: auto !important;
 }
 
-/* Безопасная стилизация цвета и формы поля ввода чата под тему (круглая капсула, JS-автовысота сохранена) */
-shiny-chat-input textarea.form-control {
+body.light-mode .btn-close,
+body.light-mode button.close,
+body.light-mode .shiny-chat-container .btn-close,
+body.light-mode .shiny-chat-container button.close,
+body.light-mode .shiny-chat-drawer-close,
+body.light-mode .shiny-chat-drawer-close svg {
+    filter: none !important; /* Возвращает тёмный крестик в светлой теме */
+}
+
+.btn-close:hover,
+button.close:hover,
+.shiny-chat-drawer-close:hover {
+    opacity: 1 !important;
+}
+
+/* ===== Стили для ЧАТА (AI Assistant) ===== */
+shiny-chat-container,
+.shiny-chat-container,
+#ai_tab-simple_chat {
+    overflow: hidden;
+    margin-top: 20px !important;
+    height: auto !important; /* Высота подстраивается под контент, чат свободно растёт вверх/вниз */
+    min-height: 520px !important; /* Удобный минимальный размер */
+    position: relative !important;
+    
+    /* Установка CSS-переменных shinychat под нашу тему Slate & Indigo */
+    --shiny-chat-bg: var(--bg-app) !important; /* Убираем фон карточки, делаем бесшовным */
+    --shiny-chat-border: none !important; /* Убираем рамки чата */
+    --shiny-chat-thinking-bg: rgba(99, 102, 241, 0.03) !important;
+    --shiny-chat-thinking-color: var(--text-primary) !important;
+    --shiny-chat-thinking-border-color: var(--border-color) !important;
+    --shiny-chat-footer-color: var(--text-muted) !important;
+}
+
+/* ===== Стилизация нативной палитры Слэш-команд (/) ===== */
+.shiny-chat-slash-palette,
+div.shiny-chat-slash-palette,
+.shiny-chat-slash-palette-empty {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+    padding: 6px !important;
+    color: var(--text-primary) !important;
+    z-index: 1000 !important;
+}
+
+.shiny-chat-slash-palette-item {
+    background-color: transparent !important;
+    border-radius: 6px !important;
+    padding: 8px 12px !important;
+    margin-bottom: 2px !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+}
+
+.shiny-chat-slash-palette-item:hover,
+.shiny-chat-slash-palette-item.active {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    color: var(--text-primary) !important;
+}
+
+.shiny-chat-slash-palette-name {
+    color: var(--primary) !important;
+    font-weight: 600 !important;
+    font-size: 0.9em !important;
+}
+
+.shiny-chat-slash-palette-item:hover .shiny-chat-slash-palette-name,
+.shiny-chat-slash-palette-item.active .shiny-chat-slash-palette-name {
+    color: #ffffff !important;
+}
+
+.shiny-chat-slash-palette-desc {
+    color: var(--text-secondary) !important;
+    font-size: 0.8em !important;
+}
+
+/* Стилизация нативной плавающей кнопки вызова истории (иконка часиков в правом верхнем углу) */
+.shiny-chat-history-trigger,
+button.shiny-chat-history-trigger {
+    color: #ffffff !important;
+    background-color: var(--primary) !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 38px !important;
+    height: 38px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25) !important;
+    pointer-events: auto !important;
+    opacity: 0.9 !important;
+    position: absolute !important;
+    top: 15px !important;
+    right: 15px !important;
+    z-index: 100 !important;
+}
+
+.shiny-chat-history-trigger:hover,
+button.shiny-chat-history-trigger:hover {
+    background-color: var(--primary-hover) !important;
+    transform: scale(1.08) !important;
+    opacity: 1 !important;
+}
+
+.shiny-chat-history-trigger svg,
+button.shiny-chat-history-trigger svg {
+    width: 18px !important;
+    height: 18px !important;
+    stroke: #ffffff !important; /* Делаем стрелку часов контрастно белой */
+}
+
+/* Стилизация выдвижной панели истории диалогов (Drawer) */
+.shiny-chat-drawer,
+aside.shiny-chat-drawer {
+    background-color: var(--bg-card) !important;
+    border-left: 1px solid var(--border-color) !important;
+    box-shadow: -4px 0 25px rgba(0, 0, 0, 0.3) !important;
+    color: var(--text-primary) !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.shiny-chat-drawer-header {
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 16px 20px !important;
+    background-color: rgba(99, 102, 241, 0.04) !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+}
+
+.shiny-chat-drawer-header h2 {
+    color: var(--text-primary) !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+}
+
+/* Кнопка "New Chat" (Новый диалог) в истории */
+.shiny-chat-history-new,
+button.shiny-chat-history-new {
+    background-color: var(--primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    font-weight: 600 !important;
+    font-size: 0.9em !important;
+    width: calc(100% - 30px) !important;
+    margin: 15px 15px 5px 15px !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease, transform 0.15s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    display: block !important;
+}
+
+.shiny-chat-history-new:hover,
+button.shiny-chat-history-new:hover {
+    background-color: var(--primary-hover) !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Поле поиска по истории переписок */
+.shiny-chat-history-search {
+    background-color: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 20px !important;
+    padding: 8px 16px !important;
+    width: calc(100% - 30px) !important;
+    margin: 10px 15px !important;
+    font-size: 0.85em !important;
+}
+
+/* Список сохраненных бесед */
+.shiny-chat-history-list {
+    padding: 10px 15px !important;
+    overflow-y: auto !important;
+    flex-grow: 1 !important;
+}
+
+.shiny-chat-history-item {
+    background-color: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    margin-bottom: 6px !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.15s ease !important;
+    cursor: pointer !important;
+    font-size: 0.85em !important;
+}
+
+.shiny-chat-history-item:hover {
+    background-color: rgba(99, 102, 241, 0.05) !important;
+    color: var(--text-primary) !important;
+}
+
+.shiny-chat-history-item[aria-selected="true"],
+.shiny-chat-history-item.active {
+    background-color: rgba(99, 102, 241, 0.12) !important;
+    border-color: var(--primary) !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+}
+
+/* Кнопка закрытия Drawer (крестик) */
+.shiny-chat-drawer-close,
+button.shiny-chat-drawer-close {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-secondary) !important;
+    width: 32px !important;
+    height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 50% !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.shiny-chat-drawer-close:hover,
+button.shiny-chat-drawer-close:hover {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    color: var(--text-primary) !important;
+}
+
+.shiny-chat-drawer-close svg {
+    width: 14px !important;
+    height: 14px !important;
+    stroke: var(--text-secondary) !important;
+}
+
+.shiny-chat-drawer-close:hover svg {
+    stroke: var(--text-primary) !important;
+}
+
+/* Стилизация современного поля ввода Tiptap в shinychat 0.5.0 */
+.shiny-chat-input .tiptap,
+.shiny-chat-input .tiptap.form-control,
+.tiptap {
     background-color: var(--input-bg) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--input-border) !important;
     border-radius: 26px !important; /* Красивая круглая форма капсулы */
-    padding: 10px 16px !important; /* Удобные паддинги */
-    padding-right: 40px !important; /* Отступ справа для кнопки-стрелочки */
-    height: auto; /* Без !important, чтобы JS мог плавно регулировать высоту */
+    padding: 10px 16px !important;
+    padding-right: 40px !important; /* Отступ справа для кнопки отправки */
+    min-height: 42px !important;
+    height: auto !important; /* Позволяет JS изменять автовысоту поля ввода */
+    line-height: 1.5 !important;
 }
 
+.shiny-chat-input .tiptap:focus,
+.shiny-chat-input .tiptap:focus-within,
+.tiptap:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+    outline: none !important;
+}
+
+/* Стилизация обёртки ввода при наличии вложений */
+.shiny-chat-input:has(.shiny-chat-input-attachments) {
+    background-color: var(--input-bg) !important;
+    border: 1px solid var(--input-border) !important;
+    border-radius: 20px !important;
+}
+
+.shiny-chat-input:has(.shiny-chat-input-attachments):focus-within {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px var(--primary-glow) !important;
+}
+
+/* Стилизация кнопок отправки и прикрепления файлов в чате */
+.shiny-chat-input .shiny-chat-btn-send,
+.shiny-chat-input .shiny-chat-btn-attach {
+    color: var(--text-secondary) !important;
+}
+
+.shiny-chat-input .shiny-chat-btn-send:hover:not(:disabled),
+.shiny-chat-input .shiny-chat-btn-attach:hover:not(:disabled) {
+    color: var(--primary) !important;
+}
+
+.shiny-chat-message,
 shiny-chat-message {
     border-bottom: 1px solid var(--border-color) !important;
     padding: 16px 20px !important;
@@ -435,24 +721,43 @@ shiny-chat-message {
 }
 
 /* Сохранение переносов строк (newline) в отправленных сообщениях чата */
-shiny-chat-message, shiny-user-message, shiny-markdown-stream {
+.shiny-chat-message,
+shiny-chat-message,
+.shiny-chat-user-message,
+shiny-user-message,
+.shiny-chat-message-body,
+.shiny-chat-message-content,
+shiny-markdown-stream {
     white-space: pre-wrap !important;
 }
 
 /* Стилизация сообщений пользователя и ассистента */
-shiny-chat-message[role="user"] {
+.shiny-chat-message[data-role="user"],
+shiny-chat-message[data-role="user"],
+.shiny-chat-message[role="user"],
+shiny-chat-message[role="user"],
+.shiny-chat-user-message {
     background-color: rgba(99, 102, 241, 0.05) !important;
 }
 
-shiny-chat-message[role="assistant"] {
+.shiny-chat-message[data-role="assistant"],
+shiny-chat-message[data-role="assistant"],
+.shiny-chat-message[role="assistant"],
+shiny-chat-message[role="assistant"],
+.shiny-chat-assistant-message {
     background-color: transparent !important;
 }
 
-.light-mode shiny-chat-message[role="user"] {
+.light-mode .shiny-chat-message[data-role="user"],
+.light-mode shiny-chat-message[data-role="user"],
+.light-mode .shiny-chat-message[role="user"],
+.light-mode shiny-chat-message[role="user"],
+.light-mode .shiny-chat-user-message {
     background-color: rgba(79, 70, 229, 0.03) !important;
 }
 
 /* Исправление отрисовки таблиц в чате */
+.shiny-chat-message table,
 shiny-chat-message table {
     width: 100% !important;
     margin: 15px 0 !important;
@@ -462,6 +767,7 @@ shiny-chat-message table {
     overflow: hidden;
 }
 
+.shiny-chat-message table thead th,
 shiny-chat-message table thead th {
     background-color: rgba(99, 102, 241, 0.08) !important;
     color: var(--text-primary) !important;
@@ -470,28 +776,34 @@ shiny-chat-message table thead th {
     border: 1px solid var(--border-color) !important;
 }
 
+.shiny-chat-message table tbody tr,
 shiny-chat-message table tbody tr {
     background-color: transparent !important;
 }
 
+.shiny-chat-message table tbody tr td,
 shiny-chat-message table tbody tr td {
     color: var(--text-primary) !important;
     padding: 10px 14px !important;
     border: 1px solid var(--border-color) !important;
 }
 
+.shiny-chat-message table.table-striped tbody tr:nth-of-type(odd),
 shiny-chat-message table.table-striped tbody tr:nth-of-type(odd) {
     background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
+.shiny-chat-message table.table-striped tbody tr:nth-of-type(even),
 shiny-chat-message table.table-striped tbody tr:nth-of-type(even) {
     background-color: rgba(255, 255, 255, 0.04) !important;
 }
 
+.light-mode .shiny-chat-message table.table-striped tbody tr:nth-of-type(odd),
 .light-mode shiny-chat-message table.table-striped tbody tr:nth-of-type(odd) {
     background-color: rgba(0, 0, 0, 0.01) !important;
 }
 
+.light-mode .shiny-chat-message table.table-striped tbody tr:nth-of-type(even),
 .light-mode shiny-chat-message table.table-striped tbody tr:nth-of-type(even) {
     background-color: rgba(0, 0, 0, 0.02) !important;
 }
@@ -631,11 +943,13 @@ body.light-mode .waiter-overlay-content h4 {
     }
 
     /* Чат AI-Ассистента */
+    .shiny-chat-container,
     shiny-chat-container {
         height: calc(100vh - 250px) !important;
         min-height: 350px !important;
     }
 
+    .shiny-chat-message,
     shiny-chat-message {
         padding: 12px 14px !important;
     }
@@ -653,7 +967,7 @@ body.light-mode .waiter-overlay-content h4 {
     /* Формы и инпуты (за исключением элементов внутри чата) */
     select.form-control, 
     input.form-control, 
-    textarea.form-control:not(shiny-chat-container textarea):not(shiny-chat-input textarea) {
+    textarea.form-control:not(.shiny-chat-container textarea):not(shiny-chat-container textarea):not(.shiny-chat-input textarea):not(shiny-chat-input textarea) {
         padding: 6px 10px !important;
         font-size: 0.9em !important;
     }

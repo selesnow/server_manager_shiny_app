@@ -36,16 +36,23 @@ mod_tab_ai_assistant_ui <- function(id, messages = NULL) {
           ))
       ),
       
-      # UI чата (initial messages можно оставить)
-      chat_mod_ui(
-        ns("simple_chat"),
-        messages = messages#"👋 Привет!<br>Я умею писать код для работы со всеми внутренними источниками данных, такими как ПУП, N1, Планфикс, умею работать со скриптами на сервере аналитики, а так же запрашивать информацию о задачах из Планфикс.<Br><Br>Чем могу тебе помочь?"
+      chat_ui(
+        id = ns("simple_chat"),
+        greeting = if (!is.null(messages)) htmltools::HTML(messages) else NULL,
+        icon_assistant = TRUE,
+        submit_key = "enter",
+        allow_attachments = TRUE
       ),
       
-      # кнопка сброса
-      div(class = "chat-controls", style = "margin-top: 15px; text-align: center;",
-          actionButton(ns("reset_chat"), "Сбросить чат",
-                       icon = icon("refresh"), class = "btn-warning btn-sm"))
+      div(style = "text-align: center; margin-top: 15px; margin-bottom: 10px;",
+          actionButton(
+            ns("reset_chat_btn"), 
+            "Очистить чат", 
+            icon = icon("trash"), 
+            class = "btn-danger btn-sm",
+            style = "padding: 6px 16px !important; font-size: 0.9em; border-radius: 8px !important;"
+          )
+      )
     )
   )
 }
@@ -62,19 +69,109 @@ mod_tab_ai_assistant_server <- function(id,
     
     # хранилища
     client_rv <- reactiveVal(NULL)        # ellmer::Chat
-    simple_chat_rv <- reactiveVal(NULL)   # объект, возвращаемый chat_mod_server()
+    simple_chat_rv <- reactiveVal(NULL)   # объект, возвращаемый chat_server()
     
-    # ----- Инициализация клиента и chat_mod_server -----
+    # ----- Инициализация клиента и chat_server -----
     # делаем создание клиента внутри реактивного обработчика (чтобы не дергать user_role() вне реактивного контекста)
     observeEvent(list(user_role(), conf_rv()), {
       new_client <- create_new_chat(user_role(), conf_rv())  # должен вернуть ellmer::Chat
       client_rv(new_client)
       
-      # call chat_mod_server and keep the returned object
-      sc <- chat_mod_server("simple_chat", client = new_client)
-      simple_chat_rv(sc)
+      # Получаем текущего пользователя для разделения истории диалогов
+      usr_login <- "anonymous"
+      try({
+        u <- auth$user()
+        if (!is.null(u) && nzchar(u$login)) usr_login <- u$login
+      }, silent = TRUE)
       
-      message("[AI module] chat_mod_server initialized")
+      # Инициализация папки для хранения истории чатов
+      history_dir <- here::here("chathistory")
+      if (!dir.exists(history_dir)) {
+        dir.create(history_dir, recursive = TRUE)
+      }
+      
+      # Инициализируем chat_server с поддержкой истории по каждому пользователю
+      sc <- chat_server(
+        id = "simple_chat",
+        client = new_client,
+        history = history_options(
+          store = FileConversationStore$new(dir = history_dir),
+          scope = usr_login # Разделяем историю по пользователям
+        )
+      )
+      
+      # Функция для надежной регистрации/синхронизации Slash-команд с фронтендом
+      register_cmds <- function() {
+        tryCatch({
+          # 1) /failed - быстрая проверка упавших задач
+          sc$slash_command(
+            name = "failed",
+            description = "Найти задачи в планировщике, завершившиеся ошибкой",
+            handler = function() {
+              failed_tasks <- get_failed_tasks()
+              if (identical(failed_tasks, "Все задачи выполнены успешно!")) {
+                sc$append("🎉 Все задачи в планировщике Windows работают без ошибок!")
+              } else {
+                sc$append(paste0("⚠️ **Найдены упавшие задачи:**\n\n", failed_tasks))
+              }
+            },
+            echo = TRUE,
+            force = TRUE
+          )
+          
+          # 2) /help - справочное меню по внутренним пакетам
+          sc$slash_command(
+            name = "help",
+            description = "Показать справку по внутренним пакетам аналитики",
+            handler = function() {
+              sc$append(paste0(
+                "### 📚 Доступные внутренние R-пакеты:\n\n",
+                "- `rpup` — Основной пакет для подключения и запроса данных из базы данных ПУПа.\n",
+                "- `pfworker` — Пакет для работы со всеми возможностями API Планфикса.\n",
+                "- `n1` — Пакет для работы с HR ERP-системой N1 компании.\n",
+                "- `segments` — Пакет автоматического определения сегментов по списаниям или проект-услугам.\n",
+                "- `serviceaccounts` — Пакет авторизации и работы с Google Sheets / Google Drive через сервисные аккаунты.\n\n",
+                "Вы можете задавать любые вопросы по использованию этих пакетов, ассистент умеет генерировать готовый Tidyverse-код с их использованием."
+              ))
+            },
+            echo = TRUE,
+            force = TRUE
+          )
+          
+          # 3) /new - начать новый диалог (удобный аналог сброса чата)
+          sc$slash_command(
+            name = "new",
+            description = "Начать новый диалог (сохраняет текущий и очищает экран)",
+            handler = function() {
+              tryCatch({
+                sc$new_chat()
+                showNotification("Начат новый диалог. Старый сохранен в истории.", type = "message", duration = 4)
+              }, error = function(e) {
+                showNotification(paste("Ошибка при создании нового чата:", conditionMessage(e)), type = "error")
+              })
+            },
+            echo = FALSE,
+            force = TRUE
+          )
+          message("[AI module] Slash commands synchronized with client successfully")
+        }, error = function(e) {
+          message("[AI module] Error during slash command sync: ", conditionMessage(e))
+        })
+      }
+      
+      # Первичное выполнение при старте
+      register_cmds()
+      
+      # Создаем периодический самовосстанавливающийся таймер для автоматической синхронизации команд (каждые 4 секунды)
+      # Это решает любые проблемы с ленивой загрузкой вкладок, гонкой условий в JS и рендерингом DOM
+      sync_timer <- reactiveTimer(4000)
+      observe({
+        sync_timer()
+        register_cmds()
+      })
+      
+      simple_chat_rv(sc)
+      message("[AI module] chat_server 0.5.0 initialized with history and slash commands")
     }, ignoreInit = FALSE, once = TRUE)
     
     
@@ -90,6 +187,17 @@ mod_tab_ai_assistant_server <- function(id,
         
         # Получаем текст, который ввёл пользователь
         user_text <- sc$last_input()
+        
+        # Если это сложный объект (с вложениями), извлекаем текст из него
+        if (is.list(user_text)) {
+          text_parts <- sapply(user_text, function(part) {
+            if (is.character(part)) return(part)
+            if (is.list(part) && !is.null(part$text)) return(part$text)
+            if (inherits(part, "S7_object") && "text" %in% names(part)) return(part@text)
+            return("")
+          })
+          user_text <- paste(text_parts, collapse = "\n")
+        }
         
         # Безопасно взятие логина
         usr_login <- NULL
@@ -123,52 +231,45 @@ mod_tab_ai_assistant_server <- function(id,
       
       # Optionally: наблюдать ответ ассистента (последний turn)
       observeEvent(sc$last_turn(), {
-        # last_turn() обычно содержит текст ответа ассистента
         assistant_turn <- sc$last_turn()
-        # можно логировать или триггерить дополнительные действия
+        
+        text_content <- ""
+        try({ text_content <- as.character(assistant_turn@text) }, silent = TRUE)
+        if (!nzchar(text_content)) {
+          try({ text_content <- as.character(assistant_turn$text) }, silent = TRUE)
+        }
+        if (!nzchar(text_content)) {
+          try({ text_content <- as.character(assistant_turn) }, silent = TRUE)
+        }
+        
         write_ai_chat_log(
           user       = auth$user()$login,
           session_id = session_id,
           role       = 'ai', 
-          message    = as.character(sc$last_turn()@text)
+          message    = text_content
         )
-        message("[AI module] assistant last_turn length: ", nchar(as.character(sc$last_turn()@text)))
+        message("[AI module] assistant last_turn length: ", nchar(text_content))
       }, ignoreNULL = TRUE)
       
     }, once = TRUE) # настройка подписок один раз
     
-    # ----- Сброс чата -----
-    observeEvent(input$reset_chat, {
-      # логируем действие
-      usr_login <- tryCatch({ auth$user()$login }, error = function(e) NULL)
+    # ----- Обработчик кнопки нового диалога в тулбаре чата -----
+    observeEvent(input$reset_chat_btn, {
+      usr_login <- tryCatch({ auth$user()$login }, error = function(e) "anonymous")
       write_action_log(user = usr_login %||% "unknown",
-                       func = 'AI Assistant Reset Chat',
+                       func = 'AI Assistant Clear Chat Button',
                        session_id = session_id)
-      
-      # 1) очистить историю внутри ellmer::Chat (если API поддерживает)
-      if (!is.null(client_rv())) {
-        tryCatch({
-          client_rv()$set_turns(list())   # очищаем internal history
-          message("[AI module] client_rv() turns cleared")
-        }, error = function(e) {
-          message("[AI module] client_rv()$set_turns error: ", conditionMessage(e))
-        })
-      }
-      
-      # 2) очистить UI виджета
+
+      # Нативно вызываем метод начала нового чата в контроллере shinychat
       sc <- simple_chat_rv()
       if (!is.null(sc)) {
         tryCatch({
-          sc$clear()
-          message("[AI module] simple_chat$clear called")
+          sc$new_chat()
+          showNotification("Начат новый диалог. Предыдущий сохранён в истории.", type = "message", duration = 4)
         }, error = function(e) {
-          message("[AI module] simple_chat$clear error: ", conditionMessage(e))
+          try({ sc$clear() }, silent = TRUE)
         })
       }
-      
-      # 3) показать уведомление
-      showNotification("Контекст чата сброшен. Бот забыл всю предыдущую историю.", type = "message", duration = 4)
-      
     })
 
   })

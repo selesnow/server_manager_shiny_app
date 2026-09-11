@@ -12,7 +12,7 @@ get_failed_tasks <- function() {
     unique()
   
   if (nrow(tasks) == 0) {
-    return('Все задачи выполнены успешно!')
+    return(jsonlite::toJSON('Все задачи выполнены успешно!'))
   } 
   
   task_info <- pmap_chr(tasks, ~ glue("{..1}: `{..2}`")) %>%
