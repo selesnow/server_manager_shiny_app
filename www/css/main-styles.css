@@ -547,17 +547,42 @@ button.shiny-chat-history-trigger svg {
     stroke: #ffffff !important; /* Делаем стрелку часов контрастно белой */
 }
 
-/* Стилизация выдвижной панели истории диалогов (Drawer) */
+/* Стилизация выдвижной панели инструментов (Drawer) */
 .shiny-chat-drawer,
-aside.shiny-chat-drawer,
-.shiny-chat-history-drawer {
+aside.shiny-chat-drawer {
     background-color: var(--bg-card) !important;
     border-left: 1px solid var(--border-color) !important;
     box-shadow: -4px 0 25px rgba(0, 0, 0, 0.3) !important;
     color: var(--text-primary) !important;
     display: flex !important;
     flex-direction: column !important;
+}
+
+/* Стилизация выдвижной панели истории диалогов (Drawer) */
+.shiny-chat-history-drawer {
+    background-color: var(--bg-card) !important;
+    border-right: 1px solid var(--border-color) !important; /* Навешиваем границу справа, так как панель выкатывается слева */
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3) !important; /* Тень направлена вправо */
+    color: var(--text-primary) !important;
+    display: flex !important;
+    flex-direction: column !important;
     width: min(420px, 85%) !important; /* Увеличиваем ширину выдвижного ящика истории для удобства чтения */
+    position: fixed !important; /* Намертво фиксируем ящик на экране по высоте */
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important; /* Привязываем к левому краю экрана */
+    height: 100vh !important; /* Настоящая фиксированная высота для активации внутреннего скролла */
+    overflow: hidden !important; /* Запрещаем вытекание детей за границы ящика */
+    pointer-events: auto !important; /* Разрешаем клики и прокрутку внутри ящика */
+}
+
+/* Промежуточный div внутри ящика истории, ломающий флекс-цепочку и скролл */
+.shiny-chat-history-drawer > div:not(.shiny-chat-history-header) {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 !important; /* Насильно заставляем промежуточный контейнер занимать ровно оставшееся место */
+    min-height: 0 !important; /* Запрещаем ему растягиваться за пределы экрана */
+    overflow: hidden !important; /* Скрываем избыточное переполнение */
 }
 
 .shiny-chat-drawer-header {
@@ -576,6 +601,20 @@ aside.shiny-chat-drawer,
     margin: 0 !important;
 }
 
+/* Закрепляем сам контейнер истории во весь экран по высоте и ширине, чтобы работал внутренний скролл */
+shiny-chat-history,
+.shiny-chat-history {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important; /* Настоящая полная ширина во весь экран для сохранения координатной сетки кликов */
+    height: 100vh !important;
+    z-index: 1070 !important;
+    pointer-events: auto !important; /* ВАЖНО: Разрешаем клики и скролл на самом хост-элементе, чтобы они не улетали сквозь него на чат! */
+}
+
 /* Кнопка "New Chat" (Новый диалог) в истории */
 .shiny-chat-history-new,
 button.shiny-chat-history-new {
@@ -583,40 +622,40 @@ button.shiny-chat-history-new {
     color: #ffffff !important;
     border: none !important;
     border-radius: 8px !important;
-    padding: 10px 16px !important;
+    padding: 6px 12px !important;
     font-weight: 600 !important;
-    font-size: 0.9em !important;
-    width: calc(100% - 30px) !important;
-    margin: 15px 15px 5px 15px !important;
+    font-size: 0.85em !important;
     cursor: pointer !important;
     transition: background-color 0.2s ease, transform 0.15s ease !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-    display: block !important;
 }
 
 .shiny-chat-history-new:hover,
 button.shiny-chat-history-new:hover {
     background-color: var(--primary-hover) !important;
-    transform: translateY(-1px) !important;
 }
 
 /* Поле поиска по истории переписок */
-.shiny-chat-history-search {
+input.form-control.shiny-chat-history-search {
     background-color: var(--input-bg) !important;
     color: var(--text-primary) !important;
     border: 1px solid var(--input-border) !important;
     border-radius: 20px !important;
-    padding: 8px 16px !important;
-    width: calc(100% - 30px) !important;
-    margin: 10px 15px !important;
     font-size: 0.85em !important;
+    height: 32px !important;
+    padding-left: 35px !important; /* Гарантированно сдвигает текст вправо, решая проблему наложения на иконку лупы */
+}
+
+.shiny-chat-history-search-icon {
+    color: var(--text-secondary) !important;
 }
 
 /* Список сохраненных бесед */
 .shiny-chat-history-list {
     padding: 10px 15px !important;
     overflow-y: auto !important;
-    flex-grow: 1 !important;
+    flex: 1 !important; /* Гарантируем сжатие списка внутри флекс-контейнера */
+    min-height: 0 !important; /* Предотвращает раздувание списка по высоте и активирует скролл */
 }
 
 .shiny-chat-history-item {
