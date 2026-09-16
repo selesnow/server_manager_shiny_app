@@ -440,10 +440,11 @@ button.close:hover,
 shiny-chat-container,
 .shiny-chat-container,
 #ai_tab-simple_chat {
-    overflow: hidden;
+    overflow: visible !important; /* Разрешаем фиксированному инпуту липнуть без обрезки */
     margin-top: 20px !important;
-    height: auto !important; /* Высота подстраивается под контент, чат свободно растёт вверх/вниз */
+    height: auto !important; /* Настоящая гибкая высота под контент, чат свободно растёт вверх/вниз */
     min-height: 520px !important; /* Удобный минимальный размер */
+    padding-bottom: 160px !important; /* Отступ снизу, чтобы сообщения не скрывались под плавающим инпутом и кнопкой */
     position: relative !important;
     
     /* Установка CSS-переменных shinychat под нашу тему Slate & Indigo */
@@ -453,6 +454,12 @@ shiny-chat-container,
     --shiny-chat-thinking-color: var(--text-primary) !important;
     --shiny-chat-thinking-border-color: var(--border-color) !important;
     --shiny-chat-footer-color: var(--text-muted) !important;
+    
+    /* Переменные для нативной выдвижной панели истории бесед (Drawer) */
+    --shiny-chat-history-bg: var(--bg-card) !important; /* Насыщенный тёмный фон */
+    --shiny-chat-history-fg: var(--text-primary) !important; /* Контрастный белый текст */
+    --shiny-chat-history-border-color: var(--border-color) !important; /* Тонкие границы */
+    --shiny-chat-history-accent: var(--primary) !important; /* Активный чат в цвете индиго */
 }
 
 /* ===== Стилизация нативной палитры Слэш-команд (/) ===== */
@@ -542,13 +549,15 @@ button.shiny-chat-history-trigger svg {
 
 /* Стилизация выдвижной панели истории диалогов (Drawer) */
 .shiny-chat-drawer,
-aside.shiny-chat-drawer {
+aside.shiny-chat-drawer,
+.shiny-chat-history-drawer {
     background-color: var(--bg-card) !important;
     border-left: 1px solid var(--border-color) !important;
     box-shadow: -4px 0 25px rgba(0, 0, 0, 0.3) !important;
     color: var(--text-primary) !important;
     display: flex !important;
     flex-direction: column !important;
+    width: min(420px, 85%) !important; /* Увеличиваем ширину выдвижного ящика истории для удобства чтения */
 }
 
 .shiny-chat-drawer-header {
@@ -690,6 +699,52 @@ button.shiny-chat-drawer-close:hover {
     outline: none !important;
 }
 
+/* Закрепление кнопки очистки чата по центру СНИЗУ под полем ввода */
+#ai_tab-reset_chat_btn,
+.btn-danger#ai_tab-reset_chat_btn {
+    position: fixed !important;
+    bottom: 15px !important; /* Навешиваем прямо ПОД полем ввода у самого низа экрана */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 1001 !important; /* На 1 уровень выше, чтобы кликалось безупречно */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
+    transition: none !important;
+}
+
+/* Закрепление окна ввода в нижней части экрана как плавающий слой НАД кнопкой очистки */
+.shiny-chat-input {
+    position: fixed !important;
+    bottom: 65px !important; /* Прижимаем к низу экрана над кнопкой сброса */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: min(720px, 90%) !important; /* Наша идеальная капсула */
+    z-index: 1000 !important;
+    background-color: var(--bg-app) !important; /* Сообщения прокручиваются за ним, уходя в фон */
+    padding: 10px !important;
+    border-radius: 30px !important;
+    box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.12) !important; /* Мягкая тень */
+    transition: none !important; /* Отключаем нативную анимацию "скатывания" при загрузке */
+    transform: translateX(-50%) !important; /* Отключаем прыжки по вертикали */
+    translate: none !important; /* Отключаем прыжки от JS-переменных */
+    --_input-control-inset: 14px !important; /* Нативно центрирует иконки плюсика и стрелочки по вертикали */
+}
+
+.shiny-chat-composer {
+    transition: none !important; /* Отключаем нативную анимацию у дочернего элемента */
+    transform: none !important; /* Блокируем JS-трансформации, вызывающие прыжки */
+    translate: none !important; /* Блокируем JS-сдвиги */
+}
+
+/* Скрываем нативный нефункционирующий крестик закрытия приветствия и посторонние триггеры (визуальный мусор с линией) */
+.shiny-chat-greeting-dismiss,
+button.shiny-chat-greeting-dismiss,
+.shiny-chat-container .shiny-chat-greeting-dismiss,
+.shiny-chat-drawer-trigger,
+button.shiny-chat-drawer-trigger,
+.shiny-chat-container .shiny-chat-drawer-trigger {
+    display: none !important;
+}
+
 /* Стилизация обёртки ввода при наличии вложений */
 .shiny-chat-input:has(.shiny-chat-input-attachments) {
     background-color: var(--input-bg) !important;
@@ -706,6 +761,7 @@ button.shiny-chat-drawer-close:hover {
 .shiny-chat-input .shiny-chat-btn-send,
 .shiny-chat-input .shiny-chat-btn-attach {
     color: var(--text-secondary) !important;
+    bottom: 18px !important; /* Центрируем иконки идеально по вертикали ровно по центру капсулы ввода */
 }
 
 .shiny-chat-input .shiny-chat-btn-send:hover:not(:disabled),
