@@ -644,6 +644,33 @@ button.shiny-chat-history-new:hover {
     font-weight: 600 !important;
 }
 
+/* Стилизация выпадающего меню 3 точек в истории чатов (Rename / Delete) */
+.shiny-chat-history-menu {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+}
+
+.shiny-chat-history-menu > button {
+    color: var(--text-primary) !important; /* Делаем текст команд ("Переименовать") светлым и контрастным */
+}
+
+.shiny-chat-history-menu > button:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+}
+
+.shiny-chat-history-menu-danger,
+.shiny-chat-history-menu > button.shiny-chat-history-menu-danger {
+    color: var(--danger) !important; /* Насыщенный красный цвет для команды "Удалить" */
+}
+
+.shiny-chat-history-menu-danger:hover,
+.shiny-chat-history-menu > button.shiny-chat-history-menu-danger:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #ff6b6b !important;
+}
+
 /* Кнопка закрытия Drawer (крестик) */
 .shiny-chat-drawer-close,
 button.shiny-chat-drawer-close {
