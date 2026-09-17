@@ -93,7 +93,7 @@ mod_tab_tasks_ui <- function(id) {
                         h4("Управление задачами"),
                         selectInput(
                           ns("selected_task"), "Выберите задачу:",
-                          choices = NULL, width = "750px"
+                          choices = NULL, width = "100%"
                         ),
                         div(
                           class = "action-buttons",
@@ -102,6 +102,22 @@ mod_tab_tasks_ui <- function(id) {
                           # Стили для кнопок
                           tags$style("
                             .action-buttons { text-align: center; width: 100%; }
+                            
+                            /* Троеточие для выбранного элемента в поле selectInput */
+                            .selectize-control.single .selectize-input, 
+                            .selectize-control.single .selectize-input .item {
+                              white-space: nowrap !important;
+                              overflow: hidden !important;
+                              text-overflow: ellipsis !important;
+                              max-width: calc(100% - 20px) !important; /* Оставляем место под стрелочку */
+                            }
+                            /* Троеточие для элементов внутри выпадающего списка */
+                            .selectize-dropdown .option {
+                              white-space: nowrap !important;
+                              overflow: hidden !important;
+                              text-overflow: ellipsis !important;
+                            }
+                            
                             .action-buttons .btn-row {
                               display: flex !important;
                               justify-content: center !important;
@@ -1159,6 +1175,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
               .modal-title {
                   color: #ffffff;              /* заголовок яркий */
                   font-weight: bold;
+                  word-break: break-all !important;
+                  white-space: normal !important;
               }
                   .modal-body strong {
                   color: #c9e6ff;              /* выделение для strong */
@@ -1238,11 +1256,11 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
               modalButton("Закрыть")
             ),
             div(
-              div(class = "mb-2",
-                  strong("Название: "),
-                  span(id = ns("popup_task_name_text"), row$TaskName, style = "cursor: pointer;"),
+              div(class = "mb-2 d-flex align-items-center flex-wrap", style = "gap: 5px;",
+                  strong("Название: ", style = "margin-right: 5px; flex-shrink: 0;"),
+                  span(id = ns("popup_task_name_text"), row$TaskName, style = "cursor: pointer; word-break: break-all; flex-grow: 1; white-space: normal;"),
                   actionButton(ns("copy_popup_task_name"), label = NULL, icon = icon("copy"), 
-                               class = "btn btn-sm btn-outline-secondary", style = "margin-left: 5px;")
+                               class = "btn btn-sm btn-outline-secondary", style = "flex-shrink: 0;")
               ),
               div(class = "mb-2", strong("Автор: "),              span(row$Author)),
               div(class = "mb-2", strong("Запускается от имени: "), span(row$`Run As User`)),
