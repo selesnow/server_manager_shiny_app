@@ -73,7 +73,7 @@ body {
     border-radius: 12px !important;
     box-shadow: var(--card-shadow) !important;
     margin-bottom: 24px;
-    overflow: hidden;
+    overflow: visible !important; /* Разрешаем выпадающим спискам и календарям выходить за пределы карточки */
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
 }
 
@@ -90,6 +90,13 @@ body {
     color: var(--text-primary);
     font-size: 1.05em;
     letter-spacing: -0.2px;
+    border-top-left-radius: 11px !important; /* Скругление верхних углов заголовка под радиус карточки */
+    border-top-right-radius: 11px !important;
+}
+
+.card-footer {
+    border-bottom-left-radius: 11px !important; /* Скругление нижних углов подвала под радиус карточки */
+    border-bottom-right-radius: 11px !important;
 }
 
 .light-mode .card-header {
@@ -1153,6 +1160,7 @@ body.light-mode .waiter-overlay-content h4 {
     border-radius: 8px !important;
     box-shadow: var(--card-shadow-hover) !important;
     padding: 4px !important;
+    z-index: 10000 !important; /* Гарантирует, что выпадающий список будет перед любыми карточками */
 }
 
 /* 5. Элементы списка (Choices / Options) */
