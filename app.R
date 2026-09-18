@@ -550,7 +550,8 @@ server <- function(input, output, session) {
         auth = auth,
         user_role = user_role,
         conf_rv = conf_rv,
-        session_id = session$token
+        session_id = session$token,
+        active = reactive({ input$main_tabs == "AI Ассистент" })
       )
       
       # Модуль процессов

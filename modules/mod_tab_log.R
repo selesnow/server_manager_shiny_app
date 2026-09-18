@@ -280,7 +280,38 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       if (!file.exists(rout_path)) {
         return("Файл app.Rout не найден.")
       }
-      paste(readLines(rout_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+      
+      fsize <- file.info(rout_path)$size
+      if (is.na(fsize) || fsize == 0) return("")
+      
+      # Если файл меньше 500 KB, читаем его целиком
+      if (fsize < 500000) {
+        lines <- readLines(rout_path, warn = FALSE, encoding = "UTF-8")
+        return(paste(tail(lines, 1000), collapse = "\n"))
+      }
+      
+      # Если файл большой, быстро читаем последние ~200 KB с конца файла бинарным способом
+      con <- file(rout_path, "rb")
+      on.exit(close(con))
+      
+      seek(con, max(0, fsize - 200000), origin = "start")
+      bytes <- readBin(con, "raw", n = 200000)
+      
+      # Переводим байты в UTF-8
+      text <- iconv(list(bytes), from = "UTF-8", to = "UTF-8", sub = "byte")[[1]]
+      if (is.null(text) || is.na(text)) {
+        text <- tryCatch(rawToChar(bytes), error = function(e) "")
+      }
+      
+      lines <- strsplit(text, "\r?\n")[[1]]
+      
+      # Первая строка может быть обрезана, удаляем её
+      if (length(lines) > 1) {
+        lines <- lines[-1]
+      }
+      
+      # Возвращаем последние 1000 строк
+      paste(tail(lines, 1000), collapse = "\n")
     }
     
     # читаем один раз при загрузке
