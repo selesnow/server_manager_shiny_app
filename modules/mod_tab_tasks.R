@@ -366,9 +366,10 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
         mutate(
           TaskName = paste(
             dplyr::case_when(
-              `Last Result` == "0" ~ "🟢",
-              `Last Result` == "267009" ~ "🟡",
-              is.na(`Last Result`) | `Last Result` %in% c("267011", "(Empty)", "") ~ "⚪",
+              is.na(`Last Result`) | `Last Result` %in% c("", "(Empty)") | 
+                grepl("не запускалась|ожидает|Приостановлена|Завершена|267011|267010|267012|267013", dplyr::coalesce(`Last Result`, "")) ~ "⚪",
+              grepl("Успешно|\\b0\\b", dplyr::coalesce(`Last Result`, "")) ~ "🟢",
+              grepl("выполняется|Запущена|267009|267008", dplyr::coalesce(`Last Result`, "")) ~ "🟡",
               TRUE ~ "🔴"
             ),
             TaskName
