@@ -396,7 +396,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
                     `white-space` = "normal",
                     `word-break` = "break-all",
                     `word-wrap` = "break-word",
-                    `max-width` = "400px")
+                    `min-width` = "450px",
+                    `max-width` = "700px")
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────
