@@ -391,7 +391,12 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
                   )
                 ),
                 selection = 'none') %>%
-        formatStyle(columns = 1:ncol(df), cursor = 'pointer')
+        formatStyle(columns = 1:ncol(df), cursor = 'pointer') %>%
+        formatStyle(columns = "TaskName",
+                    `white-space` = "normal",
+                    `word-break` = "break-all",
+                    `word-wrap` = "break-word",
+                    `max-width` = "400px")
     })
     
     # ───────────── КНОПКИ и обработчики ─────────────
