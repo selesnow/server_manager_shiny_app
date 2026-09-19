@@ -361,7 +361,19 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     
     # ───── Таблица с поиском по всем столбцам ─────
     output$task_table <- renderDT({
-      df <- task_data() %>% select(-update_time)
+      df <- task_data() %>% 
+        select(-update_time) %>%
+        mutate(
+          TaskName = paste(
+            dplyr::case_when(
+              `Last Result` == "0" ~ "🟢",
+              `Last Result` == "267009" ~ "🟡",
+              is.na(`Last Result`) | `Last Result` %in% c("267011", "(Empty)", "") ~ "⚪",
+              TRUE ~ "🔴"
+            ),
+            TaskName
+          )
+        )
       
       datatable(df,
                 filter   = "top",

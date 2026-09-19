@@ -375,7 +375,7 @@ server <- function(input, output, session) {
           });
         "),
         
-        # JavaScript для переключения темной/светлой темы
+        # JavaScript для переключения темной/светлой темы и горячих клавиш
         tags$script(HTML("
           $(document).ready(function() {
             // Темная тема по умолчанию
@@ -388,6 +388,14 @@ server <- function(input, output, session) {
                 $('body').addClass('light-mode');
                 $('#toggle_theme').html('<i class=\"fa fa-moon\"></i> Тёмная тема');  // Текст на кнопке
                 $('#toggle_theme').removeClass('btn-dark').addClass('btn-light');  // Класс кнопки
+              }
+            });
+
+            // Горячие клавиши Ctrl + Shift + U для обновления данных
+            $(document).on('keydown', function(e) {
+              if (e.ctrlKey && e.shiftKey && (e.key === 'U' || e.key === 'u' || e.code === 'KeyU')) {
+                e.preventDefault();
+                $('#refresh_data').click();
               }
             });
           });

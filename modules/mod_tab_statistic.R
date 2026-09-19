@@ -80,14 +80,14 @@ mod_tab_statistic_ui <- function(id) {
     fluidRow(
       column(6, 
              div(class = "card",
-                 div(class = "card-header", "Активные задачи по годам"),
+                 div(class = "card-header", "Динамика сбоев задач"),
                  div(class = "card-body",
                      plotOutput(ns("task_log_plot")))
                  )
              ),
       column(6, 
              div(class = "card",
-                 div(class = "card-header", "Активные задачи по годам"),
+                 div(class = "card-header", "Динамика количества задач"),
                  div(class = "card-body",
                      plotOutput(ns("task_info_plot")))
              )
