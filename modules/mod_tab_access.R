@@ -149,16 +149,20 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
         return()
       }
       
-      existing <- dbGetQuery(conn, "SELECT * FROM users WHERE login = ?", params = list(input$new_login))
+      error <- validate_new_login(input$new_login) %||% validate_new_password(input$new_password)
+      if (!is.null(error)) {
+        showNotification(error, type = "error")
+        return()
+      }
+
+      existing <- dbGetQuery(conn, "SELECT login FROM users WHERE login = ?", params = list(input$new_login))
       if (nrow(existing) > 0) {
         showNotification("Пользователь уже существует!", type = "error")
         return()
       }
-      
-      dbExecute(conn,
-                "INSERT INTO users (login, password, role) VALUES (?, ?, ?)",
-                params = list(input$new_login, input$new_password, input$new_role))
-      
+
+      create_user(conn, input$new_login, input$new_password, input$new_role)
+
       showNotification("Пользователь добавлен!", type = "message")
       users_trigger(users_trigger() + 1)
     })
@@ -186,9 +190,14 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
         return()
       }
       
-      dbExecute(conn,
-                "UPDATE users SET password = ? WHERE login = ?",
-                params = list(input$new_user_password, input$user_to_reset))
+      error <- validate_new_password(input$new_user_password)
+      if (!is.null(error)) {
+        showNotification(error, type = "error")
+        return()
+      }
+
+      # сохраняем хеш пароля и отзываем токены автовхода пользователя
+      set_user_password(conn, input$user_to_reset, input$new_user_password)
       showNotification("Пароль обновлён", type = "message")
     })
     
@@ -446,11 +455,16 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
         return()
       }
       
+      error <- validate_new_password(input$modal_new_password)
+      if (!is.null(error)) {
+        showNotification(error, type = "error")
+        return()
+      }
+
       write_action_log(user = auth$user()$login, func = 'User password reset', session_id, value = username)
-      dbExecute(conn,
-                "UPDATE users SET password = ? WHERE login = ?",
-                params = list(input$modal_new_password, username))
-      
+      # сохраняем хеш пароля и отзываем токены автовхода пользователя
+      set_user_password(conn, username, input$modal_new_password)
+
       showNotification(paste("Пароль пользователя", username, "обновлён"), type = "message")
       removeModal()
     })

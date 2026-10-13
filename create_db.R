@@ -101,45 +101,23 @@ CREATE TABLE IF NOT EXISTS actions (
 );
 ")
 
-# Вставка root-пользователя (если ещё не существует)
 dbExecute(con, "
-INSERT OR IGNORE INTO users (login, password, role)
-VALUES ('root', 'root', 'admin');
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_login TEXT NOT NULL,
+  token_hash TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  expires_at DATETIME NOT NULL,
+  revoked INTEGER DEFAULT 0
+);
 ")
 
-# Вставка действий (если пусто)
-dbExecute(con, "
-INSERT OR IGNORE INTO actions (id, key, name, tab) VALUES
-(1, 'AI Assistant Reset Chat', 'Сброс AI чата', 'AI Ассистент'),
-(2, 'AI Assistant', 'Отправка сообщения в AI чат', 'AI Ассистент'),
-(3, 'User add', 'Добавление нового пользователя', 'Доступы'),
-(4, 'User remove', 'Удаление пользователя', 'Доступы'),
-(5, 'User change role', 'Изменение роли пользователя', 'Доступы'),
-(6, 'User password reset', 'Изменение пароля пользователя', 'Доступы'),
-(7, 'CMD', 'Командная строка', 'CMD'),
-(8, 'Find in files', 'Поиск по файлам', 'Поиск по файлам'),
-(9, 'Process kill', 'Завершение процесса', 'Процессы'),
-(10, 'Service start', 'Запуск службы', 'Службы'),
-(11, 'Service stop', 'Остановка службы', 'Службы'),
-(12, 'Service restart', 'Перезапуск службы', 'Службы'),
-(13, 'Task run', 'Запуск задачи', 'Задачи'),
-(14, 'Task run (popup)', 'Запуск задачи', 'Задачи'),
-(15, 'Task log', 'Запрос лога задачи', 'Задачи'),
-(16, 'Task script', 'Запрос кода задачи', 'Задачи'),
-(17, 'Task README', 'Просмотрт README', 'Задачи'),
-(18, 'Load task table to google sheet', 'Загрузка таблицы задач в Google Sheets', 'Задачи'),
-(19, 'Rout ai analyze', 'Анализ Rout задачи', 'Задачи'),
-(20, 'Script ai analyze', 'Анализ скрипта задачи', 'Задачи'),
-(21, 'Task deactivate (popup)', 'Деактивация задачи', 'Задачи'),
-(22, 'Task activate (popup)', 'Активация задачи', 'Задачи');
-(23, 'Task deactivate', 'Деактивация задачи', 'Задачи');
-(24, 'Task activate', 'Активация задачи', 'Задачи');
-(25, 'Task NEWS', 'Просмотр NEWS', 'Задачи');
-(26, 'Access config change', 'Изменение конфига доступов', 'Доступы');
-(27, 'Logging config change', 'Изменение конфига логгирования', 'Доступы');
-(28, 'Database config change', 'Изменение конфига баз данных', 'Доступы');
-(29, 'Cleare app.Rout', 'Очистка app.Rout', 'Логи');
-")
+# Пользователей по умолчанию не создаём: при первом запуске приложение
+# предложит создать первого пользователя с ролью admin.
+
+# Заполнение справочника действий, список лежит в R/actions.R
+source('R/actions.R')
+sync_actions(con)
 
 # Проверка
 print(dbReadTable(con, "actions"))

@@ -11,3 +11,5 @@ desktop.ini
 app.Rout
 renv/library/
 chathistory/
+
+app.db.bak*

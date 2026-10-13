@@ -6,13 +6,19 @@ mod_auth_ui <- function(id) {
   uiOutput(ns("auth_ui"))  # динамически отрисуем твой login form
 }
 
-mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
+mod_auth_server <- function(id, logged_in, user_role, check_user_fun, conn) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # подхватываем логин пользователя
     user <- reactiveVal(NULL)
-    
+
+    # есть ли в базе хоть один пользователь, если нет, вместо входа показываем
+    # форму создания первого пользователя (администратора)
+    users_exist <- reactiveVal(
+      DBI::dbGetQuery(conn, "SELECT COUNT(*) AS n FROM users")$n > 0
+    )
+
     output$auth_ui <- renderUI({
       if (!logged_in()) {
         fluidPage(
@@ -90,7 +96,7 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
               margin-bottom: 25px;
               margin-top: 0;
             }
-            #auth-login_message {
+            #auth-login_message, #auth-setup_message {
               text-align: center;
               color: #ef4444;
               font-size: 0.9em;
@@ -103,11 +109,28 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
               fluidRow(
                 column(12, class = "form-container",
                        tags$img(src = "favicon.png", height = "50px", style = "display: block; margin: 0 auto 20px;"),
-                       tags$h2(id = "title-panel", "Авторизация"),
-                       textInput(ns("login"), "Логин"),
-                       passwordInput(ns("password"), "Пароль"),
-                       actionButton(ns("login_btn"), "Войти"),
-                       textOutput(ns("login_message"))
+                       if (users_exist()) {
+                         tagList(
+                           tags$h2(id = "title-panel", "Авторизация"),
+                           textInput(ns("login"), "Логин"),
+                           passwordInput(ns("password"), "Пароль"),
+                           actionButton(ns("login_btn"), "Войти"),
+                           textOutput(ns("login_message"))
+                         )
+                       } else {
+                         tagList(
+                           tags$h2(id = "title-panel", "Создание администратора"),
+                           tags$p(
+                             style = "color: #94a3b8; font-size: 0.85em; text-align: center;",
+                             "В приложении ещё нет пользователей. Первый созданный пользователь получает роль admin."
+                           ),
+                           textInput(ns("setup_login"), "Логин"),
+                           passwordInput(ns("setup_password"), "Пароль"),
+                           passwordInput(ns("setup_password_confirm"), "Подтвердите пароль"),
+                           actionButton(ns("setup_btn"), "Создать администратора"),
+                           textOutput(ns("setup_message"))
+                         )
+                       }
                 )
               )
           )
@@ -115,48 +138,83 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun) {
       }
     })
     
-    observeEvent(input$login_btn, {
-      
-      res <- check_user_fun(input$login, input$password)
-      
-      if (!is.null(res)) {
-        
-        # 1. фиксируем логин пользователя
-        user_login <- input$login
-        
-        # 2. сохраняем пользователя в reactiveVal
-        user(list(
-          login = user_login,
-          role  = res$role[1]
-        ))
-        
-        # 3. поднимаем флаги авторизации
-        logged_in(TRUE)
-        user_role(res$role[1])
-        
-        # 4. генерим persistent token
-        raw_token  <- openssl::rand_bytes(32) |> openssl::base64_encode()
-        token_hash <- openssl::sha256(raw_token)
-        
-        # 5. пишем в БД
-        app_con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
-        
-        DBI::dbExecute(
-          app_con,
-          "
+    # завершение входа: фиксируем пользователя, поднимаем флаги авторизации,
+    # создаём persistent token и кладём его в cookie
+    finish_login <- function(user_login, role) {
+
+      # 1. сохраняем пользователя в reactiveVal
+      user(list(
+        login = user_login,
+        role  = role
+      ))
+
+      # 2. поднимаем флаги авторизации
+      logged_in(TRUE)
+      user_role(role)
+
+      # 3. генерим persistent token
+      raw_token  <- openssl::rand_bytes(32) |> openssl::base64_encode()
+      token_hash <- openssl::sha256(raw_token)
+
+      # 4. пишем в БД
+      app_con <- dbConnect(SQLite(), conf$database_settings$app_data_base)
+
+      DBI::dbExecute(
+        app_con,
+        "
       INSERT INTO auth_sessions (user_login, token_hash, expires_at)
       VALUES (?, ?, datetime('now', '+30 days'))
       ",
-          params = list(user_login, token_hash)
-        )
-        
-        dbDisconnect(app_con)
-        
-        # 6. кладём cookie в браузер
-        session$sendCustomMessage("setAuthCookie", raw_token)
-        
+        params = list(user_login, token_hash)
+      )
+
+      dbDisconnect(app_con)
+
+      # 5. кладём cookie в браузер
+      session$sendCustomMessage("setAuthCookie", raw_token)
+    }
+
+    observeEvent(input$login_btn, {
+
+      res <- check_user_fun(input$login, input$password)
+
+      if (!is.null(res)) {
+        # логин берём из базы, а не из введённой строки
+        finish_login(res$login[1], res$role[1])
       } else {
         output$login_message <- renderText("Неверный логин или пароль")
+      }
+    })
+
+    # создание первого пользователя, срабатывает только если пользователей ещё нет
+    observeEvent(input$setup_btn, {
+
+      # на случай если пользователь уже создан в другой вкладке или сессии
+      if (DBI::dbGetQuery(conn, "SELECT COUNT(*) AS n FROM users")$n > 0) {
+        users_exist(TRUE)
+        return()
+      }
+
+      login    <- trimws(input$setup_login)
+      password <- input$setup_password
+
+      error <- validate_new_login(login) %||% validate_new_password(password)
+      if (is.null(error) && !identical(password, input$setup_password_confirm)) {
+        error <- "Пароли не совпадают"
+      }
+
+      if (!is.null(error)) {
+        output$setup_message <- renderText(error)
+        return()
+      }
+
+      # запрос создаёт пользователя только если таблица users пустая
+      if (create_first_admin(conn, login, password)) {
+        write_action_log(user = login, func = 'User add', session_id = session$token, value = login)
+        users_exist(TRUE)
+        finish_login(login, "admin")
+      } else {
+        users_exist(TRUE)
       }
     })
     

@@ -66,6 +66,14 @@ ggthemr('flat dark')
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
 
+# Синхронизация справочника действий для логов (добавляет недостающие, существующие не меняет)
+local({
+  con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
+  on.exit(dbDisconnect(con))
+  n_added <- sync_actions(con)
+  if (n_added > 0) message("Добавлено действий в справочник actions: ", n_added)
+})
+
 # Загрузка модулей
 for(mod in dir(here::here("modules"))) if (mod == "desktop.ini") next else source(here::here("modules", mod))
 
@@ -200,22 +208,8 @@ server <- function(input, output, session) {
   
   
   check_user <- function(login, password) {
-    # логин и пароль должны быть непустыми строками
-    is_valid <- function(x) is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x)
-    if (!is_valid(login) || !is_valid(password)) return(NULL)
-
-    # параметризованный запрос, исключает SQL инъекции
-    res <- dbGetQuery(
-      app_con,
-      "SELECT login, role FROM users WHERE login = ? AND password = ?",
-      params = list(login, password)
-    )
-
-    if (nrow(res) == 1) {
-      return(res)
-    } else {
-      return(NULL)
-    }
+    # параметризованный запрос и проверка пароля по хешу, см. R/passwords.R
+    authenticate_user(app_con, login, password)
   }
   
   # Reactives
@@ -224,7 +218,7 @@ server <- function(input, output, session) {
   
   # Модуль авторизации
   #mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
-  auth <- mod_auth_server("auth", logged_in, user_role, check_user)
+  auth <- mod_auth_server("auth", logged_in, user_role, check_user, conn = app_con)
   
   # UI для основного контента
   output$app_ui <- renderUI({
