@@ -200,9 +200,18 @@ server <- function(input, output, session) {
   
   
   check_user <- function(login, password) {
-    query <- paste("SELECT * FROM users WHERE login = '", login, "' AND password = '", password, "'", sep = "")
-    res <- dbGetQuery(app_con, query)
-    if (nrow(res) > 0) {
+    # логин и пароль должны быть непустыми строками
+    is_valid <- function(x) is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x)
+    if (!is_valid(login) || !is_valid(password)) return(NULL)
+
+    # параметризованный запрос, исключает SQL инъекции
+    res <- dbGetQuery(
+      app_con,
+      "SELECT login, role FROM users WHERE login = ? AND password = ?",
+      params = list(login, password)
+    )
+
+    if (nrow(res) == 1) {
       return(res)
     } else {
       return(NULL)
