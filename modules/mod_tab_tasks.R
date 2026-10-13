@@ -421,8 +421,21 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
         actionButton(ns("view_script"), "Код", icon = icon("code"), class = "btn-info")
     })
     
+    # имя задачи приходит от клиента, поэтому действия над задачей выполняются
+    # только если такая задача есть в таблице задач приложения
+    check_task <- function(task_name) {
+      if (!is.character(task_name) || length(task_name) != 1 || !task_name %in% all_tasks_reactive()$TaskName) {
+        message("Отказано: неизвестная задача ", paste(task_name, collapse = ","))
+        showNotification("Задача не найдена", type = "error")
+        req(FALSE)
+      }
+      invisible(task_name)
+    }
+
     observeEvent(input$run_task, {
       req(input$selected_task)
+      require_permission(auth, conf_rv, "Запуск задач", session_id)
+      check_task(input$selected_task)
       write_action_log(user = auth$user()$login, func = 'Task run', session_id, value = input$selected_task)
       taskscheduler_runnow(taskname = input$selected_task)
       showNotification(glue("Задача '{input$selected_task}' запущена."),
@@ -432,7 +445,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Активировать задачу (блок управления задачами)
     observeEvent(input$activate_task, {
       req(input$selected_task)
-      
+      require_permission(auth, conf_rv, "Активация задач", session_id)
+      check_task(input$selected_task)
+
       write_action_log(user = auth$user()$login, func = 'Activate task',
                        session_id, value = input$selected_task)
       
@@ -442,10 +457,12 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     
     # Деактивировать задачу (блок управления задачами)
     observeEvent(input$deactivate_task, {
+      req(input$selected_task)
+      require_permission(auth, conf_rv, "Активация задач", session_id)
+      check_task(input$selected_task)
       write_action_log(user = auth$user()$login, func = 'Deactivate task',
                        session_id, value = input$selected_task)
-      req(input$selected_task)
-      
+
       task_state_change(input$selected_task, action = "Disable")
       showNotification(paste("Задача", input$selected_task, "деактивирована"), type = "warning")
     })
@@ -453,6 +470,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     
     observeEvent(input$run_task_popup, {
       req(input$selected_task)
+      require_permission(auth, conf_rv, "Запуск задач", session_id)
+      check_task(popup_task_name())
       write_action_log(user = auth$user()$login, func = 'Task run (popup)', session_id, value = popup_task_name())
       taskscheduler_runnow(taskname = popup_task_name())
       showNotification(glue("Задача '{popup_task_name()}' запущена."),
@@ -697,7 +716,16 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
           }
         }
       } else {
-        # Если выбран исторический лог
+        # Если выбран исторический лог: читаем только файлы из списка логов этой
+        # задачи, который собрало приложение, путь от клиента принимать нельзя
+        allowed_logs <- unname(log_history_files())
+        if (!input$selected_log_file %in% allowed_logs) {
+          message("Отказано: файл лога вне списка задачи ", input$selected_log_file)
+          current_log_content("Файл лога не найден")
+          output$task_log_content <- renderText({ current_log_content() })
+          return()
+        }
+
         if (file.exists(input$selected_log_file)) {
           log_content <- try({
             readLines(input$selected_log_file, warn = FALSE) %>% 
@@ -720,6 +748,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Обработчик кнопки "Код"
     observeEvent(input$view_script, {
       req(input$selected_task)
+      require_permission(auth, conf_rv, "Просмотр кода", session_id)
       write_action_log(user = auth$user()$login, func = 'Task script', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
@@ -974,6 +1003,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     })
     
     observeEvent(input$upload_to_gs, {
+      require_permission(auth, conf_rv, "Задачи", session_id)
       req(filtered_task_data())
 
       # Авторизация
@@ -1012,6 +1042,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Анализ Rout
     observeEvent(input$analyze_log, {
       req(input$selected_task)
+      require_permission(auth, conf_rv, "AI анализ", session_id)
       write_action_log(user = auth$user()$login, func = 'Rout ai analyze', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
@@ -1069,6 +1100,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Анализ R кода
     observeEvent(input$analyze_script, {
       req(input$selected_task)
+      require_permission(auth, conf_rv, "AI анализ", session_id)
       write_action_log(user = auth$user()$login, func = 'Script ai analyze', session_id, value = input$selected_task)
       selected_task_data <- all_tasks_reactive() %>% 
         filter(TaskName == input$selected_task)
@@ -1137,6 +1169,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Обработчик деактивации задачи
     observeEvent(input$deactivate_task_popup, {
       req(popup_task_name())
+      require_permission(auth, conf_rv, "Активация задач", session_id)
+      check_task(popup_task_name())
       write_action_log(user = auth$user()$login, func = 'Task deactivate (popup)', session_id, value = popup_task_name())
       tryCatch({
         task_state_change(popup_task_name(), action = "Disable")
@@ -1149,6 +1183,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Обработчик активации задачи
     observeEvent(input$activate_task_popup, {
       req(popup_task_name())
+      require_permission(auth, conf_rv, "Активация задач", session_id)
+      check_task(popup_task_name())
       write_action_log(user = auth$user()$login, func = 'Task activate (popup)', session_id, value = popup_task_name())
       tryCatch({
         task_state_change(popup_task_name(), action = "Enable")

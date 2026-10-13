@@ -96,7 +96,27 @@ mod_access_ui <- function(id) {
 mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
+    # Серверная проверка: все действия этой вкладки доступны только админу.
+    # Роль админа проверяется отдельно от конфига, что бы нельзя было выдать
+    # управление пользователями другой роли и повысить себе права.
+    require_access_admin <- function() {
+      require_permission(auth, conf_rv, "Доступ", session_id)
+      if (!identical(auth$user()$role, "admin")) {
+        showNotification("Недостаточно прав для этого действия", type = "error")
+        req(FALSE)
+      }
+    }
+
+    # допустимые роли при создании пользователя и смене роли
+    valid_roles <- c("admin", "user", "viewer")
+    require_valid_role <- function(role) {
+      if (!is.character(role) || length(role) != 1 || !role %in% valid_roles) {
+        showNotification("Недопустимая роль", type = "error")
+        req(FALSE)
+      }
+    }
+
     # === Работа с пользователями ===
     users_trigger <- reactiveVal(0)
     
@@ -143,6 +163,8 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     observeEvent(input$add_user, {
+      require_access_admin()
+      require_valid_role(input$new_role)
       write_action_log(user = auth$user()$login, func = 'User add', session_id, value = input$new_login)
       if (input$new_password != input$confirm_password) {
         showNotification("Пароли не совпадают!", type = "error")
@@ -168,6 +190,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     observeEvent(input$delete_user, {
+      require_access_admin()
       write_action_log(user = auth$user()$login, func = 'User remove', session_id, value = input$user_to_delete)
       dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(input$user_to_delete))
       showNotification("Пользователь удалён", type = "message")
@@ -175,6 +198,8 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     observeEvent(input$change_role, {
+      require_access_admin()
+      require_valid_role(input$updated_role)
       write_action_log(user = auth$user()$login, func = 'User change role', session_id, value = input$user_to_change)
       dbExecute(conn,
                 "UPDATE users SET role = ? WHERE login = ?",
@@ -184,6 +209,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     })
     
     observeEvent(input$reset_password, {
+      require_access_admin()
       write_action_log(user = auth$user()$login, func = 'User password reset', session_id, value = input$user_to_reset)
       if (input$new_user_password != input$confirm_user_password) {
         showNotification("Пароли не совпадают!", type = "error")
@@ -267,6 +293,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Save роли ---
     observeEvent(input$save_roles, {
+      require_access_admin()
       write_action_log(user = auth$user()$login, func = 'Access config change', session_id)
       new_conf <- conf()
       tab_nodes <- names(new_conf$access_managemet)
@@ -283,6 +310,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Save логирование ---
     observeEvent(input$save_logging, {
+      require_access_admin()
       write_action_log(user = auth$user()$login, func = 'Logging config change', session_id)
       new_conf <- conf()
       log_nodes <- names(new_conf$logging)
@@ -299,6 +327,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Save базы ---
     observeEvent(input$save_database, {
+      require_access_admin()
       write_action_log(user = auth$user()$login, func = 'Database config change', session_id)
       new_conf <- conf()
       db_nodes <- names(new_conf$database_settings)
@@ -318,6 +347,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # Окно с карточкой пользователя при двойном клике по строке таблицы пользователей
     observeEvent(input$users_table_cell_clicked, {
+      require_access_admin()
       click_info <- input$users_table_cell_clicked
       req(click_info)
       
@@ -432,6 +462,8 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Изменение роли из модалки ---
     observeEvent(input$modal_change_role, {
+      require_access_admin()
+      require_valid_role(input$modal_updated_role)
       req(current_modal_username())
       username <- current_modal_username()
       
@@ -447,6 +479,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Сброс пароля из модалки ---
     observeEvent(input$modal_reset_password, {
+      require_access_admin()
       req(current_modal_username())
       username <- current_modal_username()
       
@@ -471,6 +504,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     # --- Удаление из модалки ---
     observeEvent(input$modal_delete_user, {
+      require_access_admin()
       req(current_modal_username())
       username <- current_modal_username()
       

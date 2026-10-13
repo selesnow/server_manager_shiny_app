@@ -51,7 +51,7 @@ mod_tab_find_in_files_ui <- function(id) {
 }
 
 # Сервер
-mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
+mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     search_dirs <- c(
       'C:/my_develop_workshop',
@@ -64,6 +64,7 @@ mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
     search_time <- reactiveVal(NULL) 
     
     observeEvent(input$search_btn, {
+      require_permission(auth, conf_rv, "Поиск по файлам", session_id)
       req(input$file_pattern, input$file_types)
       
       write_action_log(user = auth$user()$login, func = 'Find in files', session_id, value = input$file_pattern)
@@ -143,7 +144,7 @@ mod_tab_find_in_files_server <- function(id, tasks_data, auth, session_id) {
         df_chr,
         options = list(pageLength = 10),
         rownames = FALSE,
-        escape = FALSE,
+        escape = TRUE,  # содержимое файлов не должно интерпретироваться как HTML
         selection = 'none'
       )
     })

@@ -123,24 +123,46 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
       paste0("Данные обновлены: ", format(last_time, "%Y-%m-%d %H:%M:%S %Z"))
     })
     
+    # Проверка перед управлением службой: у роли есть право, а имя службы
+    # входит в список служб приложения (имя приходит от клиента и ему не доверяем)
+    check_service_action <- function(service) {
+      require_permission(auth, conf_rv, "Управление службами", session_id)
+
+      if (!is.character(service) || length(service) != 1 || !service %in% services_data()$Service) {
+        message("Отказано: неизвестная служба ", paste(service, collapse = ","))
+        showNotification("Служба не найдена", type = "error")
+        req(FALSE)
+      }
+
+      invisible(service)
+    }
+
+    # управление службой через nssm, аргументы передаются списком без склейки строки
+    nssm_service <- function(action, service) {
+      system2("nssm", c(action, service), stdout = TRUE, stderr = TRUE)
+    }
+
     observeEvent(input$start_service, {
-      write_action_log(user = auth$user()$login, func = 'Service start', session_id, value = input$selected_service)
       req(input$selected_service)
-      system(glue::glue("nssm start {input$selected_service}"), intern = TRUE)
+      check_service_action(input$selected_service)
+      write_action_log(user = auth$user()$login, func = 'Service start', session_id, value = input$selected_service)
+      nssm_service("start", input$selected_service)
       showNotification("Служба запущена", type = "message")
     })
-    
+
     observeEvent(input$stop_service, {
-      write_action_log(user = auth$user()$login, func = 'Service stop', session_id, value = input$selected_service)
       req(input$selected_service)
-      system(glue::glue("nssm stop {input$selected_service}"), intern = TRUE)
+      check_service_action(input$selected_service)
+      write_action_log(user = auth$user()$login, func = 'Service stop', session_id, value = input$selected_service)
+      nssm_service("stop", input$selected_service)
       showNotification("Служба остановлена", type = "warning")
     })
-    
+
     observeEvent(input$restart_service, {
-      write_action_log(user = auth$user()$login, func = 'Service restart', session_id, value = input$selected_service)
       req(input$selected_service)
-      system(glue::glue("nssm restart {input$selected_service}"), intern = TRUE)
+      check_service_action(input$selected_service)
+      write_action_log(user = auth$user()$login, func = 'Service restart', session_id, value = input$selected_service)
+      nssm_service("restart", input$selected_service)
       showNotification("Служба перезапущена", type = "message")
     })
     
@@ -235,8 +257,9 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
       req(current_modal_service())
       service_name <- current_modal_service()
       
+      check_service_action(service_name)
       write_action_log(user = auth$user()$login, func = 'Service start', session_id, value = service_name)
-      system(glue::glue("nssm start {service_name}"), intern = TRUE)
+      nssm_service("start", service_name)
       showNotification("Служба запущена", type = "message")
       removeModal()
     })
@@ -246,8 +269,9 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
       req(current_modal_service())
       service_name <- current_modal_service()
       
+      check_service_action(service_name)
       write_action_log(user = auth$user()$login, func = 'Service stop', session_id, value = service_name)
-      system(glue::glue("nssm stop {service_name}"), intern = TRUE)
+      nssm_service("stop", service_name)
       showNotification("Служба остановлена", type = "warning")
       removeModal()
     })
@@ -257,8 +281,9 @@ mod_tab_services_server <- function(id, services_data, user_role, auth, session_
       req(current_modal_service())
       service_name <- current_modal_service()
       
+      check_service_action(service_name)
       write_action_log(user = auth$user()$login, func = 'Service restart', session_id, value = service_name)
-      system(glue::glue("nssm restart {service_name}"), intern = TRUE)
+      nssm_service("restart", service_name)
       showNotification("Служба перезапущена", type = "message")
       removeModal()
     })

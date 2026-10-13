@@ -51,8 +51,10 @@ library(forcats)
 library(ggthemr)
 library(lubridate)
 
-# проверка создан ли конфиг
-if (!file.exists('config.yaml')) source('create_config.R')
+# config.yaml у dev и prod свой и в git не хранится: создаём из значений по умолчанию
+# или дописываем в существующий недостающие настройки, значения не перезаписываются
+source('create_config.R')
+ensure_config('config.yaml')
 
 # Чтение конфига
 conf <<- yaml::read_yaml('config.yaml')
@@ -217,7 +219,6 @@ server <- function(input, output, session) {
   user_role <- reactiveVal(NULL)
   
   # Модуль авторизации
-  #mod_auth_server("auth", logged_in, user_role, check_user_fun = check_user)
   auth <- mod_auth_server("auth", logged_in, user_role, check_user, conn = app_con)
   
   # UI для основного контента
@@ -408,18 +409,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # Обработчик кнопки "Войти"
-  observeEvent(input$login_btn, {
-    user <- check_user(input$login, input$password)
-    
-    if (!is.null(user)) {
-      logged_in(TRUE)  # Успешная авторизация
-      user_role(user$role)  # Сохраняем роль пользователя
-    } else {
-      output$login_message <- renderText("Неверный логин или пароль")
-    }
-  })
-  
   # Обработчик кнопки "Выйти"
   observeEvent(input$logout_btn, {
     # чистим куки при вылогинываение
@@ -434,11 +423,24 @@ server <- function(input, output, session) {
         params = list(openssl::sha256(input$auth_cookie))
       )
     }
-    
+
+    # фиксируем завершение сессии, пока пользователь ещё известен
+    if (!is.null(session$userData$login)) {
+      session_log(
+        session_id = session$token,
+        user = session$userData$login,
+        action = 'end'
+      )
+    }
+
     session$sendCustomMessage("clearAuthCookie", TRUE)
-    
+
+    # сбрасываем состояние авторизации и перезагружаем страницу, что бы все
+    # зарегистрированные в сессии модули и обработчики прежнего пользователя исчезли
     logged_in(FALSE)
     user_role(NULL)
+    auth$user(NULL)
+    session$reload()
   })
   
   # Инфо по задачам, процессам и службам
@@ -546,40 +548,66 @@ server <- function(input, output, session) {
         #waiter_hide()
       })
       
+      # Серверные модули регистрируются только если у роли пользователя есть
+      # право на вкладку, иначе подделанные запросы не найдут их обработчиков.
+      # Права действий внутри модулей дополнительно проверяет require_permission().
+      can <- function(permission) user_can(auth$user()$role, permission, conf_rv())
+
       # модуль служб ------------------------------------------------------------
-      mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token, conf_rv)
-      
+      if (can("Службы")) {
+        mod_tab_services_server("services_tab", services_data, user_role, auth, session_id = session$token, conf_rv)
+      }
+
       # Модуль вкладки задач ----------------------------------------------------
-      mod_tab_tasks_server("tasks_tab", all_tasks, task_triggers_store, user_role, auth, session_id = session$token, conf_rv)
-      
+      if (can("Задачи")) {
+        mod_tab_tasks_server("tasks_tab", all_tasks, task_triggers_store, user_role, auth, session_id = session$token, conf_rv)
+      }
+
       # Модуль статистики
-      mod_tab_statistic_server("stats_tab", all_tasks, task_triggers_store, conf_rv)
-      
+      if (can("Статистика")) {
+        mod_tab_statistic_server("stats_tab", all_tasks, task_triggers_store, conf_rv)
+      }
+
       # Модуль AI ассистент
-      mod_tab_ai_assistant_server(
-        "ai_tab",
-        auth = auth,
-        user_role = user_role,
-        conf_rv = conf_rv,
-        session_id = session$token,
-        active = reactive({ input$main_tabs == "AI Ассистент" })
-      )
-      
+      if (can("AI Ассистент")) {
+        mod_tab_ai_assistant_server(
+          "ai_tab",
+          auth = auth,
+          user_role = user_role,
+          conf_rv = conf_rv,
+          session_id = session$token,
+          active = reactive({ input$main_tabs == "AI Ассистент" })
+        )
+      }
+
       # Модуль процессов
       process_data <- reactive({
         processes_store()
       })
-      
-      # модуль процессов
-      mod_tab_processes_server("processes_tab", process_data = process_data, auth, session_id = session$token)
-      
+
+      if (can("Процессы")) {
+        mod_tab_processes_server("processes_tab", process_data = process_data, auth, session_id = session$token, conf_rv = conf_rv)
+      }
+
       # Модуль поощь и новости
-      mod_help_server("help")
-      mod_news_server("news")
-      
+      if (can("Readme")) mod_help_server("help")
+      if (can("News"))   mod_news_server("news")
+
       # Модуль логов
-      mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update, conf_rv, auth, session_id = session$token)
-      
+      if (can("Логи")) {
+        mod_tab_logs_server("logs_tab", session_store, action_store, logs_last_update, conf_rv, auth, session_id = session$token)
+      }
+
+      # Командная строка
+      if (can("CMD")) {
+        mod_tab_cmd_server("cmd", auth, session_id = session$token, conf_rv = conf_rv)
+      }
+
+      # Поиск по файлам
+      if (can("Поиск по файлам")) {
+        mod_tab_find_in_files_server("file_search", all_tasks, auth, session_id = session$token, conf_rv = conf_rv)
+      }
+
       # Добавим обработчик для поиска в таблице служб
       filtered_service_data <- reactive({
         data <- services_data()
@@ -601,14 +629,9 @@ server <- function(input, output, session) {
   }
   )
   
-  # Командная строка --------------------------------------------------------
-  mod_tab_cmd_server("cmd", auth, session_id = session$token)
-  
-  # Поиск по файлам ---------------------------------------------------------
-  mod_tab_find_in_files_server("file_search", all_tasks, auth, session_id = session$token)
-  
   # Модифицируем обработчик для кнопки обновления данных
   observeEvent(input$refresh_data, {
+    req(logged_in())
     waiter_show(
       html = HTML(paste(spin_fading_circles(), br(), h4("Обновляем данные..."))),
       color = "#333"

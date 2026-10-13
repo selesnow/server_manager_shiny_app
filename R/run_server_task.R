@@ -5,6 +5,11 @@
 #' @returns Информацию о том какая задача запущена
 #' @export
 run_server_task <- function(task_name) {
+  # имя задачи может прийти от AI ассистента, запускаем только существующие задачи
+  if (!task_exists_in_scheduler(task_name)) {
+    return('Задача не найдена в планировщике заданий, запуск отменён.')
+  }
+
   taskscheduler_runnow(taskname = task_name)
   cli::cli_alert_info('Задача {task_name} запущена на сервере')
   return(glue::glue('Задача {task_name} запущена на сервере'))

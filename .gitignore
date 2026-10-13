@@ -13,3 +13,5 @@ renv/library/
 chathistory/
 
 app.db.bak*
+
+config.yaml

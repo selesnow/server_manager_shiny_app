@@ -591,7 +591,8 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     
     # очистка app.Rout
     observeEvent(input$clear_rout, {
-      
+      require_permission(auth, conf_rv, "Логи", session_id)
+
       write_action_log(user = auth$user()$login, func = 'Cleare app.Rout', session_id)
       rout_path <- file.path(getwd(), "app.Rout")
       if (file.exists(rout_path)) {
@@ -607,6 +608,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
     
     # обновление логов
     observeEvent(input$refresh_logs, {
+      require_permission(auth, conf_rv, "Логи", session_id)
       # Обновляем "метку обновления"
       logs_last_update(lubridate::with_tz(Sys.time(), "Europe/Kyiv"))
       

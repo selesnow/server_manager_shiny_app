@@ -44,7 +44,7 @@ mod_tab_processes_ui <- function(id) {
   )
 }
 
-mod_tab_processes_server <- function(id, process_data, auth, session_id) {
+mod_tab_processes_server <- function(id, process_data, auth, session_id, conf_rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     
@@ -124,6 +124,7 @@ mod_tab_processes_server <- function(id, process_data, auth, session_id) {
     })
     
     observeEvent(input$kill_process, {
+      require_permission(auth, conf_rv, "Процессы", session_id)
       req(input$filter_files)
       write_action_log(user = auth$user()$login, func = 'Process kill', session_id, value = input$filter_files)
       data <- process_data()

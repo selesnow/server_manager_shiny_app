@@ -8,7 +8,13 @@
 task_state_change <- function(task_name, action = c("Enable", "Disable")) {
   # Проверка аргументов
   action <- match.arg(action)
-  
+
+  # имя задачи может прийти от AI ассистента, меняем состояние только существующих задач
+  if (!task_exists_in_scheduler(task_name)) {
+    warning(sprintf("Задача '%s' не найдена в планировщике, состояние не изменено.", task_name))
+    return(invisible(FALSE))
+  }
+
   # Подготовка аргументов команды
   args <- c("/Change", "/TN", shQuote(task_name), paste0("/", action))
   
