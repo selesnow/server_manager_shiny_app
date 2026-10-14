@@ -37,6 +37,7 @@ default_config <- function() {
       "Активация задач" = c("admin", "user"),
       "Управление службами" = c("admin", "user"),
       "AI анализ" = c("admin", "user"),
+      "Просмотр кода" = c("admin", "user"),
       "Управление мониторингом задач" = c("admin", "user")
     )
   )
