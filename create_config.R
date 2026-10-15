@@ -21,6 +21,12 @@ default_config <- function() {
       find_in_files_log = TRUE,
       cmd_log           = TRUE
     ),
+    # защита входа от подбора пароля, см. R/login_protection.R
+    security = list(
+      max_failed_logins            = 5,   # неудачных попыток до блокировки логина
+      lockout_minutes              = 15,  # окно подсчёта и длительность блокировки, минут
+      max_failed_logins_per_minute = 30   # общий лимит неудачных попыток по всем логинам за минуту
+    ),
     access_managemet = list(
       "Задачи" = c("admin", "user", "viewer"),
       "Службы" = c("admin", "user"),

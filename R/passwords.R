@@ -156,10 +156,15 @@ authenticate_user <- function(conn, login, password) {
   is_valid <- function(x) is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x)
   if (!is_valid(login) || !is_valid(password)) return(NULL)
 
-  user <- DBI::dbGetQuery(
-    conn,
-    "SELECT login, role, password FROM users WHERE login = ?",
-    params = list(login)
+  # колонка blocked появляется при запуске приложения (R/user_blocking.R), если
+  # её по какой-то причине нет, вход работает как раньше
+  user <- tryCatch(
+    DBI::dbGetQuery(conn, "SELECT login, role, password, blocked FROM users WHERE login = ?", params = list(login)),
+    error = function(e) {
+      u <- DBI::dbGetQuery(conn, "SELECT login, role, password FROM users WHERE login = ?", params = list(login))
+      u$blocked <- 0L
+      u
+    }
   )
 
   if (nrow(user) != 1) {
@@ -170,7 +175,9 @@ authenticate_user <- function(conn, login, password) {
 
   if (!verify_password(password, user$password[1])) return(NULL)
 
-  user[, c("login", "role"), drop = FALSE]
+  # blocked = 1 значит учётная запись заблокирована администратором: пароль верный,
+  # но войти нельзя, вызывающий код (modules/mod_auth.R) сообщает об этом пользователю
+  user[, c("login", "role", "blocked"), drop = FALSE]
 }
 
 #' Миграция паролей в открытом виде в хеши

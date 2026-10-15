@@ -88,7 +88,8 @@ CREATE TABLE IF NOT EXISTS users (
   id       INTEGER PRIMARY KEY AUTOINCREMENT,
   login    TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
-  role     TEXT NOT NULL
+  role     TEXT NOT NULL,
+  blocked  INTEGER NOT NULL DEFAULT 0
 );
 ")
 
@@ -111,6 +112,10 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
   revoked INTEGER DEFAULT 0
 );
 ")
+
+# Попытки входа для защиты от подбора пароля
+source('R/login_protection.R')
+ensure_login_attempts_table(con)
 
 # Пользователей по умолчанию не создаём: при первом запуске приложение
 # предложит создать первого пользователя с ролью admin.

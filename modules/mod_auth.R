@@ -174,15 +174,68 @@ mod_auth_server <- function(id, logged_in, user_role, check_user_fun, conn) {
       session$sendCustomMessage("setAuthCookie", raw_token)
     }
 
+    # Защита от подбора пароля (R/login_protection.R). Если проверка блокировок
+    # недоступна (например, нет таблицы), вход продолжает работать по паролю,
+    # а ошибка пишется в лог приложения.
+    lock_seconds <- function(login) {
+      tryCatch(login_lock_remaining(conn, login), error = function(e) {
+        message("Проверка блокировки входа недоступна: ", conditionMessage(e))
+        0L
+      })
+    }
+
+    lock_text <- function(seconds) {
+      paste0("Слишком много неудачных попыток входа. Повторите через ", max(1, ceiling(seconds / 60)), " мин.")
+    }
+
     observeEvent(input$login_btn, {
 
-      res <- check_user_fun(input$login, input$password)
+      login <- input$login
+
+      # общий лимит неудачных попыток по всем логинам за минуту
+      throttled <- tryCatch(login_global_throttled(conn), error = function(e) FALSE)
+      if (isTRUE(throttled)) {
+        output$login_message <- renderText("Слишком много попыток входа. Повторите через минуту.")
+        return()
+      }
+
+      # логин заблокирован: пароль не проверяем и попытку не записываем,
+      # что бы блокировка не продлевалась
+      remaining <- lock_seconds(login)
+      if (remaining > 0) {
+        output$login_message <- renderText(lock_text(remaining))
+        return()
+      }
+
+      res <- check_user_fun(login, input$password)
+
+      if (!is.null(res) && isTRUE(res$blocked[1] == 1)) {
+        # пароль верный, но учётная запись заблокирована администратором: сообщаем
+        # об этом только тому, кто знает пароль, что бы не раскрывать список логинов
+        try(write_action_log(user = normalize_login(login), func = 'Blocked login attempt',
+                             session_id = session$token, value = normalize_login(login)), silent = TRUE)
+        output$login_message <- renderText("Учётная запись заблокирована администратором. Обратитесь к администратору.")
+        return()
+      }
 
       if (!is.null(res)) {
+        try(record_login_attempt(conn, login, success = TRUE), silent = TRUE)
         # логин берём из базы, а не из введённой строки
         finish_login(res$login[1], res$role[1])
       } else {
-        output$login_message <- renderText("Неверный логин или пароль")
+        try(record_login_attempt(conn, login, success = FALSE), silent = TRUE)
+
+        # эта попытка могла привести к блокировке
+        remaining <- lock_seconds(login)
+        if (remaining > 0) {
+          try(write_action_log(user = normalize_login(login), func = 'Login locked',
+                               session_id = session$token, value = normalize_login(login)), silent = TRUE)
+          output$login_message <- renderText(lock_text(remaining))
+        } else {
+          try(write_action_log(user = normalize_login(login), func = 'Login failed',
+                               session_id = session$token, value = normalize_login(login)), silent = TRUE)
+          output$login_message <- renderText("Неверный логин или пароль")
+        }
       }
     })
 

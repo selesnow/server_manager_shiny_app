@@ -72,6 +72,12 @@ for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here
 local({
   con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
   on.exit(dbDisconnect(con))
+  # защита входа: создаёт таблицу попыток входа в уже работающей базе (dev и prod
+  # базы разные, поэтому схема обновляется при запуске, а не отдельным скриптом)
+  # и чистит устаревшие данные
+  prepare_login_protection(con)
+  # ручная блокировка пользователей: добавляет колонку users.blocked в работающую базу
+  prepare_user_blocking(con)
   n_added <- sync_actions(con)
   if (n_added > 0) message("Добавлено действий в справочник actions: ", n_added)
 })
@@ -92,7 +98,7 @@ ui <- fluidPage(
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
     tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=9"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=9"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=10"),
     # стиль календаря
     tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=9")
   ),
@@ -170,19 +176,9 @@ server <- function(input, output, session) {
     
     token_hash <- openssl::sha256(input$auth_cookie)
     
-    res <- DBI::dbGetQuery(
-      app_con,
-      "
-    SELECT u.login, u.role
-    FROM auth_sessions s
-    JOIN users u ON u.login = s.user_login
-    WHERE s.token_hash = ?
-      AND s.revoked = 0
-      AND s.expires_at > datetime('now')
-    ",
-      params = list(token_hash)
-    )
-    
+    # заблокированные и удалённые пользователи по cookie не входят
+    res <- find_session_user(app_con, token_hash)
+
     if (nrow(res) == 1) {
       
       user_obj <- list(
@@ -409,10 +405,12 @@ server <- function(input, output, session) {
     }
   })
   
-  # Обработчик кнопки "Выйти"
-  observeEvent(input$logout_btn, {
+  # Выход из приложения: по кнопке "Выйти" и принудительно, если пользователя
+  # заблокировали или удалили
+  perform_logout <- function() {
     # чистим куки при вылогинываение
-    if (!is.null(input$auth_cookie)) {
+    cookie <- isolate(input$auth_cookie)
+    if (!is.null(cookie)) {
       DBI::dbExecute(
         app_con,
         "
@@ -420,7 +418,7 @@ server <- function(input, output, session) {
     SET revoked = 1
     WHERE token_hash = ?
     ",
-        params = list(openssl::sha256(input$auth_cookie))
+        params = list(openssl::sha256(cookie))
       )
     }
 
@@ -441,6 +439,22 @@ server <- function(input, output, session) {
     user_role(NULL)
     auth$user(NULL)
     session$reload()
+  }
+
+  # Обработчик кнопки "Выйти"
+  observeEvent(input$logout_btn, perform_logout())
+
+  # Если пользователя заблокировали или удалили, пока у него открыта сессия,
+  # закрываем её при ближайшей проверке (раз в 30 секунд)
+  observe({
+    req(logged_in())
+    invalidateLater(30000, session)
+
+    usr <- isolate(auth$user())
+    if (!is.null(usr) && !user_session_valid(app_con, usr$login)) {
+      message("Сессия закрыта: пользователь ", usr$login, " заблокирован или удалён")
+      perform_logout()
+    }
   })
   
   # Инфо по задачам, процессам и службам

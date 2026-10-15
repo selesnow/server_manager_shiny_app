@@ -122,18 +122,28 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     load_users <- reactive({
       users_trigger()
-      dbGetQuery(conn, "SELECT login, role FROM users")
+      invalidateLater(60000, session)  # статусы блокировок со временем меняются
+      users_overview(conn)             # login, role, Статус, state
     })
-    
+
     output$users_table <- renderDT({
       df <- load_users()
+
+      # колонка state нужна только для подсветки строк, в таблице она скрыта
+      hidden_col <- which(names(df) == "state") - 1
+
       datatable(df,
                 rownames = FALSE, # Отключаем нумерацию строк для сопоставления data[0] с login
                 options = list(
                   pageLength = 5,
+                  columnDefs = list(list(visible = FALSE, targets = hidden_col)),
                   rowCallback = DT::JS(
                     "function(row, data, index) {",
                     "  $(row).attr('data-username', data[0]);", # data[0] - логин пользователя
+                    # заблокированные пользователи (вручную или после неудачных попыток входа)
+                    # получают класс user-row-blocked, красный фон задан в www/css/main-styles.css
+                    # (инлайновый фон строки тема приложения перебивает правилом с !important)
+                    sprintf("  $(row).toggleClass('user-row-blocked', data[%d] === 'blocked' || data[%d] === 'locked');", hidden_col, hidden_col),
                     "}"
                   )
                 ),
@@ -376,6 +386,12 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
         ", params = list(username, username))
         
         last_activity <- if (nrow(last_act_info) > 0 && !is.na(last_act_info$last_act[1])) last_act_info$last_act[1] else "Нет активности в логах"
+
+        # заблокирован ли вход пользователю после неудачных попыток ввода пароля
+        lock_left <- tryCatch(login_lock_remaining(conn, username), error = function(e) 0L)
+
+        # заблокирован ли пользователь администратором вручную
+        blocked_now <- is_user_blocked(conn, username)
         
         # Показываем модальное окно
         showModal(modalDialog(
@@ -412,6 +428,36 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
             div(class = "mb-2", strong("Текущая роль: "), span(user_role_val)),
             div(class = "mb-2", strong("Дата регистрации: "), span(reg_date)),
             div(class = "mb-2", strong("Последняя активность: "), span(last_activity)),
+            div(
+              class = "mb-2",
+              strong("Учётная запись: "),
+              if (blocked_now) {
+                tagList(
+                  span("заблокирована администратором ", style = "color: var(--danger);"),
+                  actionButton(ns("modal_unblock_user"), "Разблокировать", class = "btn btn-success btn-sm")
+                )
+              } else {
+                tagList(
+                  span("активна "),
+                  # себя заблокировать нельзя
+                  if (!identical(username, auth$user()$login)) {
+                    actionButton(ns("modal_block_user"), "Заблокировать", class = "btn btn-danger btn-sm")
+                  }
+                )
+              }
+            ),
+            div(
+              class = "mb-2",
+              strong("Вход: "),
+              if (lock_left > 0) {
+                tagList(
+                  span(paste0("заблокирован ещё ", ceiling(lock_left / 60), " мин. "), style = "color: var(--danger);"),
+                  actionButton(ns("modal_unlock_login"), "Снять блокировку", class = "btn btn-warning btn-sm")
+                )
+              } else {
+                span("не заблокирован")
+              }
+            ),
             
             tags$hr(),
             
@@ -502,6 +548,55 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
       removeModal()
     })
     
+    # --- Снятие блокировки входа из модалки ---
+    observeEvent(input$modal_unlock_login, {
+      require_access_admin()
+      req(current_modal_username())
+      username <- current_modal_username()
+
+      write_action_log(user = auth$user()$login, func = 'Login unlock', session_id, value = username)
+      clear_login_attempts(conn, username)
+
+      showNotification(paste("Блокировка входа пользователя", username, "снята"), type = "message")
+      users_trigger(users_trigger() + 1)
+      removeModal()
+    })
+
+    # --- Блокировка пользователя администратором (без удаления учётной записи) ---
+    observeEvent(input$modal_block_user, {
+      require_access_admin()
+      req(current_modal_username())
+      username <- current_modal_username()
+
+      reason <- check_can_block_user(conn, username, auth$user()$login)
+      if (!is.null(reason)) {
+        showNotification(reason, type = "error")
+        return()
+      }
+
+      write_action_log(user = auth$user()$login, func = 'User block', session_id, value = username)
+      set_user_blocked(conn, username, TRUE)
+
+      showNotification(paste("Пользователь", username, "заблокирован"), type = "warning")
+      users_trigger(users_trigger() + 1)
+      removeModal()
+    })
+
+    observeEvent(input$modal_unblock_user, {
+      require_access_admin()
+      req(current_modal_username())
+      username <- current_modal_username()
+
+      write_action_log(user = auth$user()$login, func = 'User unblock', session_id, value = username)
+      set_user_blocked(conn, username, FALSE)
+      # заодно снимаем блокировку после неудачных попыток входа, если она есть
+      clear_login_attempts(conn, username)
+
+      showNotification(paste("Пользователь", username, "разблокирован"), type = "message")
+      users_trigger(users_trigger() + 1)
+      removeModal()
+    })
+
     # --- Удаление из модалки ---
     observeEvent(input$modal_delete_user, {
       require_access_admin()
