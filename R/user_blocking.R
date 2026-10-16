@@ -88,6 +88,57 @@ check_can_block_user <- function(conn, login, acting_login) {
   NULL
 }
 
+#' Можно ли удалить пользователя
+#'
+#' Нельзя удалить самого себя и нельзя остаться без активных администраторов.
+#'
+#' @param conn соединение с app.db
+#' @param login кого удаляем
+#' @param acting_login кто удаляет (текущий администратор)
+#'
+#' @returns NULL если можно, иначе текст причины отказа
+check_can_delete_user <- function(conn, login, acting_login) {
+  if (!is.character(login) || length(login) != 1 || is.na(login) || !nzchar(login)) {
+    return("Пользователь не указан")
+  }
+
+  user <- DBI::dbGetQuery(conn, "SELECT login, role FROM users WHERE login = ?", params = list(login))
+  if (nrow(user) == 0) return("Пользователь не найден")
+
+  if (identical(login, acting_login)) return("Нельзя удалить самого себя")
+
+  # нельзя остаться без активных администраторов
+  if (identical(user$role[1], "admin")) {
+    other_admins <- DBI::dbGetQuery(
+      conn,
+      "SELECT COUNT(*) AS n FROM users WHERE role = 'admin' AND blocked = 0 AND login <> ?",
+      params = list(login)
+    )$n
+    if (other_admins == 0) return("Нельзя удалить последнего активного администратора")
+  }
+
+  NULL
+}
+
+#' Удаление пользователя
+#'
+#' Кроме самой записи удаляет токены автовхода и неудачные попытки входа этого
+#' логина. Без этого человек, которому позже достанется такой же логин, мог бы
+#' войти по старой cookie прежнего владельца. Проверки допустимости
+#' (check_can_delete_user) вызывающий код делает до этого.
+#'
+#' @returns число удалённых пользователей
+delete_user_account <- function(conn, login) {
+  n <- DBI::dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(login))
+
+  if (n > 0) {
+    DBI::dbExecute(conn, "DELETE FROM auth_sessions WHERE user_login = ?", params = list(login))
+    tryCatch(clear_login_attempts(conn, login), error = function(e) NULL)
+  }
+
+  n
+}
+
 #' Блокировка и разблокировка пользователя
 #'
 #' При блокировке отзывает все токены автовхода пользователя. Проверки

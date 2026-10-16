@@ -201,8 +201,16 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
     
     observeEvent(input$delete_user, {
       require_access_admin()
+
+      # нельзя удалить себя и последнего активного администратора
+      reason <- check_can_delete_user(conn, input$user_to_delete, auth$user()$login)
+      if (!is.null(reason)) {
+        showNotification(reason, type = "error")
+        return()
+      }
+
       write_action_log(user = auth$user()$login, func = 'User remove', session_id, value = input$user_to_delete)
-      dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(input$user_to_delete))
+      delete_user_account(conn, input$user_to_delete)
       showNotification("Пользователь удалён", type = "message")
       users_trigger(users_trigger() + 1)
     })
@@ -392,6 +400,9 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
 
         # заблокирован ли пользователь администратором вручную
         blocked_now <- is_user_blocked(conn, username)
+
+        # можно ли удалить этого пользователя (NULL) или причина, почему нельзя
+        delete_reason <- check_can_delete_user(conn, username, auth$user()$login)
         
         # Показываем модальное окно
         showModal(modalDialog(
@@ -486,7 +497,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
             ),
             
             # 3. Удаление пользователя
-            if (username != "root" && username != auth$user()$login) {
+            if (is.null(delete_reason)) {
               div(
                 class = "mb-3 p-3", style = "background-color: rgba(239, 68, 68, 0.03); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;",
                 h5("🗑️ Удалить пользователя", style = "font-weight: 600; color: var(--danger); margin-top: 0; margin-bottom: 10px;"),
@@ -496,7 +507,7 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
             } else {
               div(
                 class = "mb-3 p-3", style = "background-color: rgba(148, 163, 184, 0.05); border: 1px solid var(--border-color); border-radius: 8px;",
-                p("Удаление этого пользователя ограничено (системный аккаунт или текущая сессия).", style = "font-size: 0.85em; color: var(--text-secondary); margin-bottom: 0;")
+                p(paste0("Удаление этого пользователя недоступно: ", delete_reason, "."), style = "font-size: 0.85em; color: var(--text-secondary); margin-bottom: 0;")
               )
             }
           )
@@ -603,13 +614,15 @@ mod_access_server <- function(id, conn, auth, session_id, conf_rv) {
       req(current_modal_username())
       username <- current_modal_username()
       
-      if (username == "root" || username == auth$user()$login) {
-        showNotification("Удаление этого пользователя запрещено!", type = "error")
+      # нельзя удалить себя и последнего активного администратора
+      reason <- check_can_delete_user(conn, username, auth$user()$login)
+      if (!is.null(reason)) {
+        showNotification(reason, type = "error")
         return()
       }
-      
+
       write_action_log(user = auth$user()$login, func = 'User remove', session_id, value = username)
-      dbExecute(conn, "DELETE FROM users WHERE login = ?", params = list(username))
+      delete_user_account(conn, username)
       
       showNotification(paste("Пользователь", username, "удалён"), type = "message")
       users_trigger(users_trigger() + 1)

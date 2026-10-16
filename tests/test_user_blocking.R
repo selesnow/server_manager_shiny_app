@@ -178,5 +178,83 @@ chk("колонка state скрыта, колонка «Статус» видн
 chk("логин остаётся первой колонкой (на него опирается двойной клик по строке)", grepl("data-username', data[0]", rendered, fixed = TRUE))
 
 dbDisconnect(con)
-unlink(c(db_old, db_dev, db))
+
+# ======================= 6. Защита от удаления себя и последнего администратора =======================
+db_del <- temp_path("tb_del.db"); unlink(db_del)
+conf <<- list(database_settings = list(app_data_base = db_del), logging = list(action_log = TRUE))
+invisible(capture.output(suppressWarnings(source("create_db.R"))))
+con <- dbConnect(SQLite(), db_del)   # create_db.R перезаписал con, открываем заново
+create_user_q(con, "boss", "bosspass1", "admin"); create_user_q(con, "boss2", "bosspass2", "admin")
+create_user_q(con, "worker", "workpass1", "user"); create_user_q(con, "viewer1", "viewpass1", "viewer")
+log_count <- function(fn) dbGetQuery(con, "SELECT COUNT(*) AS n FROM action_log WHERE func_name = ?", params = list(fn))$n
+user_exists <- function(l) nrow(dbGetQuery(con, "SELECT 1 FROM users WHERE login = ?", params = list(l))) == 1
+add_token <- function(login, hash) dbExecute(con, "INSERT INTO auth_sessions (user_login, token_hash, expires_at) VALUES (?, ?, datetime('now', '+30 days'))", params = list(login, hash))
+
+# --- проверки допустимости
+chk("удаление: обычного пользователя можно", is.null(check_can_delete_user(con, "worker", "boss")))
+chk("удаление: себя нельзя", grepl("самого себя", check_can_delete_user(con, "boss", "boss")))
+chk("удаление: несуществующего и пустое значение нельзя", grepl("не найден", check_can_delete_user(con, "ghost", "boss")) && !is.null(check_can_delete_user(con, "", "boss")) && !is.null(check_can_delete_user(con, NA_character_, "boss")))
+chk("удаление: админа можно, пока остаётся другой активный админ", is.null(check_can_delete_user(con, "boss2", "boss")))
+set_blocked_q(con, "boss2", TRUE)
+chk("удаление: админа нельзя, если другие админы заблокированы (остался бы без активных)", grepl("последнего активного администратора", check_can_delete_user(con, "boss", "worker")))
+chk("удаление: заблокированного админа можно, пока есть активный", is.null(check_can_delete_user(con, "boss2", "boss")))
+set_blocked_q(con, "boss2", FALSE)
+
+# --- удаление чистит токены: логин не достаётся новому владельцу вместе с чужой cookie
+create_user_q(con, "temp1", "temppass1", "user"); add_token("temp1", "tok_temp1")
+for (i in 1:5) record_login_attempt(con, "temp1", FALSE)
+chk("до удаления токен находит пользователя, логин заблокирован после попыток", nrow(find_session_user(con, "tok_temp1")) == 1 && login_lock_remaining(con, "temp1") > 0)
+invisible(delete_user_account(con, "temp1"))
+chk("после удаления пользователя нет, его токены удалены", !user_exists("temp1") && dbGetQuery(con, "SELECT COUNT(*) AS n FROM auth_sessions WHERE user_login = 'temp1'")$n == 0)
+create_user_q(con, "temp1", "newpass99", "user")
+chk("новый пользователь с тем же логином НЕ входит по cookie прежнего владельца", nrow(find_session_user(con, "tok_temp1")) == 0)
+chk("и не наследует блокировку после неудачных попыток прежнего", login_lock_remaining(con, "temp1") == 0)
+invisible(delete_user_account(con, "temp1"))
+
+# --- форма «Удалить»
+conf_rv <- reactiveVal(default_config())
+mk_auth <- function(login, role) list(user = reactiveVal(list(login = login, role = role)))
+delete_form <- function(login, role, target) {
+  testServer(mod_access_server, args = list(conn = con, auth = mk_auth(login, role), session_id = "t", conf_rv = conf_rv), {
+    session$setInputs(user_to_delete = target, delete_user = 1)
+  })
+}
+log0 <- log_count("User remove")
+delete_form("boss", "admin", "boss")
+chk("форма: админ НЕ может удалить самого себя", user_exists("boss") && log_count("User remove") == log0)
+set_blocked_q(con, "boss2", TRUE)
+delete_form("worker", "admin", "boss")      # удаляющий - не админ в базе, других активных админов нет
+chk("форма: нельзя удалить последнего активного администратора", user_exists("boss") && log_count("User remove") == log0)
+set_blocked_q(con, "boss2", FALSE)
+delete_form("boss", "user", "worker"); delete_form("boss", "viewer", "worker")
+chk("форма: роли user и viewer НЕ могут удалять", user_exists("worker") && log_count("User remove") == log0)
+add_token("worker", "tok_worker")
+delete_form("boss", "admin", "worker")
+chk("форма: админ удаляет обычного пользователя", !user_exists("worker") && log_count("User remove") == log0 + 1)
+chk("форма: токены удалённого пользователя удалены", nrow(find_session_user(con, "tok_worker")) == 0 && dbGetQuery(con, "SELECT COUNT(*) AS n FROM auth_sessions WHERE user_login = 'worker'")$n == 0)
+delete_form("boss", "admin", "boss2")
+chk("форма: админ удаляет другого админа, пока остаётся активный", !user_exists("boss2") && user_exists("boss"))
+
+# --- карточка пользователя
+create_user_q(con, "worker", "workpass1", "user"); create_user_q(con, "boss2", "bosspass2", "admin")
+delete_card <- function(login, role, target) {
+  testServer(mod_access_server, args = list(conn = con, auth = mk_auth(login, role), session_id = "t", conf_rv = conf_rv), {
+    session$flushReact()   # у обработчика карточки ignoreInit = TRUE
+    session$setInputs(users_table_cell_clicked = list(username = target, value = "dblclick", timestamp = 1))
+    session$setInputs(modal_delete_user = 1)
+  })
+}
+log0 <- log_count("User remove")
+delete_card("boss", "admin", "boss")
+chk("карточка: админ НЕ может удалить самого себя", user_exists("boss") && log_count("User remove") == log0)
+delete_card("boss", "user", "worker")
+chk("карточка: роль user НЕ может удалять", user_exists("worker") && log_count("User remove") == log0)
+delete_card("boss", "admin", "worker")
+chk("карточка: админ удаляет пользователя", !user_exists("worker") && log_count("User remove") == log0 + 1)
+set_blocked_q(con, "boss2", TRUE)
+delete_card("worker", "admin", "boss")
+chk("карточка: нельзя удалить последнего активного администратора", user_exists("boss") && log_count("User remove") == log0 + 1)
+
+dbDisconnect(con)
+unlink(c(db_old, db_dev, db, db_del))
 finish_tests()
