@@ -197,7 +197,11 @@ server <- function(input, output, session) {
   # Подключение к базе данных SQLite
   # Коннект к БД
   app_con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
-  
+
+  # подключение закрывается вместе с сессией, иначе оно остаётся открытым до
+  # остановки процесса R и держит файл базы (его нельзя переименовать или удалить)
+  session$onSessionEnded(function() try(DBI::dbDisconnect(app_con), silent = TRUE))
+
   observe({
     if (logged_in() && user_role() %in% c('admin')) {
       mod_access_server("access", conn = app_con, auth = auth, session_id = session$token, conf_rv = conf_rv)

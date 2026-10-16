@@ -44,6 +44,7 @@ testServer(server, {
   chk("пустая база: на экране создание администратора", grepl("Создание администратора", as.character(output$`auth-auth_ui`$html)))
   session$setInputs(`auth-setup_login` = "boss", `auth-setup_password` = "bosspass1", `auth-setup_password_confirm` = "bosspass1", `auth-setup_btn` = 1)
   chk("первый администратор создан и вошёл", logged_in() && user_role() == "admin")
+  app_con_ref <<- app_con                    # для проверки закрытия подключения в конце теста
   quiet(create_user(con, "worker", "workpass1", "user")); quiet(create_user(con, "other", "otherpass1", "user"))
   session$setInputs(logout_btn = 1)
   chk("выход выполнен", !logged_in())
@@ -105,6 +106,13 @@ testServer(server, {
   chk("после удаления пользователя его открытая сессия закрывается", !logged_in())
 })
 
-dbDisconnect(con)
+dbDisconnect(con)   # собственное подключение теста
+
+# После закрытия всех сессий приложение не должно держать файл базы: раньше подключение
+# app_con не закрывалось, и app.db нельзя было переименовать или удалить, пока жив процесс R.
+chk("после закрытия сессий подключение приложения к app.db закрыто", exists("app_con_ref") && !DBI::dbIsValid(app_con_ref))
+moved <- file.rename("app.db", "app_moved.db")
+chk("после закрытия сессий файл app.db можно переименовать (он не занят)", isTRUE(moved) && file.exists("app_moved.db") && !file.exists("app.db"))
+chk("и снова вернуть имя", file.rename("app_moved.db", "app.db") && file.exists("app.db"))
 setwd(Sys.getenv("TEMP", tempdir())); unlink(tmp, recursive = TRUE)
 finish_tests()

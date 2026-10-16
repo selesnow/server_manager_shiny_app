@@ -15,3 +15,4 @@ chathistory/
 app.db.bak*
 
 config.yaml
+app_*.db

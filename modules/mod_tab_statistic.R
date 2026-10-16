@@ -141,7 +141,10 @@ mod_tab_statistic_ui <- function(id) {
 mod_tab_statistic_server <- function(id, all_tasks, triggers, conf_rv) {
   moduleServer(id, function(input, output, session) {
     con <- dbConnect(SQLite(), conf_rv()$database_settings$task_log_base)
-    
+
+    # подключение закрывается вместе с сессией, иначе оно держит файл базы
+    session$onSessionEnded(function() try(DBI::dbDisconnect(con), silent = TRUE))
+
     # ---- Реактивы для существующей статистики ----
     overall_stats <- reactive({
       req(all_tasks())
