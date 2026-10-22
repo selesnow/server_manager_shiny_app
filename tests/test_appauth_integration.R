@@ -238,6 +238,10 @@ chk("app.R подключает стили и скрипты пакета и м�
 chk("app.R: прежнее имя cookie auth_token сохранено (открытые сессии не теряются)", grepl("cookie_name = \"auth_token\"", app_txt, fixed = TRUE))
 chk("app.R: подключение закрывается вместе с сессией (aa_session_connection) и работает сторож сессии", grepl("aa_session_connection(", app_txt, fixed = TRUE) && grepl("aa_session_guard(", app_txt, fixed = TRUE))
 chk("app.R: самописного JS cookie и старых функций авторизации больше нет", !grepl("setAuthCookie|check_user|perform_logout|authenticate_user|find_session_user", app_txt))
+chk("app.R: кнопки «Сменить пароль» и «Выйти на всех устройствах» с подтверждением подключены к пакету", all(vapply(c("change_password_btn", "logout_all_btn", "logout_all_confirm", "auth$logout_all(", "aa_password_server(\"password\""), function(x) grepl(x, app_txt, fixed = TRUE), logical(1))))
+hdr <- paste(readLines("www/css/header-styles.css", warn = FALSE, encoding = "UTF-8"), collapse = "
+")
+chk("CSS шапки: новые кнопки оформлены как остальные кнопки управления", grepl("#change_password_btn", hdr, fixed = TRUE) && grepl("#logout_all_btn", hdr, fixed = TRUE))
 chk("app.R подключает main-styles.css с обновлённым номером версии", grepl("main-styles\\.css\\?v=(1[1-9]|[2-9][0-9])", app_txt))
 chk("старые файлы авторизации удалены из проекта", !any(file.exists(c("R/passwords.R", "R/login_protection.R", "R/user_blocking.R", "modules/mod_auth.R"))))
 all_code <- unlist(lapply(c("app.R", list.files(c("R", "modules"), full.names = TRUE, pattern = "[.]R$")), readLines, warn = FALSE, encoding = "UTF-8"))

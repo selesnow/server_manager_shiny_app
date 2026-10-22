@@ -114,6 +114,26 @@ testServer(server, {
   chk("после удаления пользователя его открытая сессия закрывается", !logged_in())
 })
 
+# 6. кнопки личного кабинета: смена своего пароля и выход на всех устройствах
+quiet(aa_create_user(con, "cabinet", "cabpass1", "user"))
+dev2 <- aa_issue_token(con, "cabinet")           # «другое устройство»
+active_tokens <- function() dbGetQuery(con, "SELECT COUNT(*) n FROM auth_sessions WHERE user_login = 'cabinet' AND revoked = 0")$n
+testServer(server, {
+  session$setInputs(`auth-login` = "cabinet", `auth-password` = "cabpass1", `auth-login_btn` = 1)
+  chk("cabinet входит", logged_in())
+  session$setInputs(change_password_btn = 1)
+  session$setInputs(`password-old` = "cabpass1", `password-new` = "cabinet-new-1", `password-confirm` = "cabinet-new-1", `password-change` = 1)
+  chk("смена своего пароля: новый пароль подходит, старый нет, сессия осталась открытой",
+      !is.null(aa_authenticate(con, "cabinet", "cabinet-new-1")) && is.null(aa_authenticate(con, "cabinet", "cabpass1")) && logged_in())
+  chk("смена своего пароля: токен другого устройства отозван, токен этой сессии действует",
+      is.null(aa_find_session_user(con, dev2)) && active_tokens() == 1)
+  dev3 <- aa_issue_token(con, "cabinet")
+  session$setInputs(logout_all_btn = 1)
+  chk("«Выйти на всех устройствах»: до подтверждения пользователь остаётся в приложении", logged_in() && active_tokens() == 2)
+  session$setInputs(logout_all_confirm = 1)
+  chk("«Выйти на всех устройствах»: после подтверждения выход и все токены отозваны", !logged_in() && active_tokens() == 0 && is.null(aa_find_session_user(con, dev3)))
+})
+
 dbDisconnect(con)   # собственное подключение теста
 
 # После закрытия всех сессий приложение не должно держать файл базы: раньше подключение

@@ -103,7 +103,7 @@ ui <- fluidPage(
     tags$link(rel = "icon", type = "image/png", href = "favicon.png"),
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=9"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=10"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=11"),
     # стиль календаря
     tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=9")
@@ -257,6 +257,8 @@ server <- function(input, output, session) {
             div(
               class = "controls-container", 
               actionButton("refresh_data", "Обновить данные", icon = icon("refresh"), class = "btn-warning"),
+              actionButton("change_password_btn", "Сменить пароль", icon = icon("key"), class = "btn-secondary btn-sm ml-2"),
+              actionButton("logout_all_btn", "Выйти на всех устройствах", icon = icon("right-from-bracket"), class = "btn-secondary btn-sm ml-2"),
               actionButton("logout_btn", "Выйти",  icon = icon("power-off"), class = "btn-danger btn-sm ml-2"),
               actionButton("toggle_theme", label = "Светлая тема", icon = icon("moon"), class = "btn-secondary btn-sm")
             )
@@ -374,6 +376,34 @@ server <- function(input, output, session) {
   # Выход по кнопке "Выйти": отзывает токен, чистит cookie, перезагружает страницу,
   # чтобы зарегистрированные в сессии модули прежнего пользователя исчезли
   observeEvent(input$logout_btn, auth$logout(reload = TRUE))
+
+  # Смена своего пароля: форма модуля appauth в окне, после успешной смены окно закрывается.
+  # Токены остальных сессий пользователя отзываются, текущая сессия продолжает работать.
+  pw <- aa_password_server("password", app_con, auth, auth_settings, on_event = log_auth_event)
+  observeEvent(input$change_password_btn, {
+    showModal(modalDialog(
+      aa_password_ui("password"),
+      title = "Смена пароля", easyClose = TRUE, footer = modalButton("Закрыть")
+    ))
+  })
+  observeEvent(pw$changed(), removeModal(), ignoreInit = TRUE)
+
+  # «Выйти на всех устройствах» только после подтверждения: кнопка завершает и текущую
+  # сессию, и сессии на других устройствах (их закроет проверка сессий раз в 30 секунд)
+  observeEvent(input$logout_all_btn, {
+    showModal(modalDialog(
+      "Все ваши сессии на всех устройствах будут завершены, в приложение придётся войти заново.",
+      title = "Выйти на всех устройствах?", easyClose = TRUE,
+      footer = tagList(
+        modalButton("Отмена"),
+        actionButton("logout_all_confirm", "Выйти везде", class = "btn-danger")
+      )
+    ))
+  })
+  observeEvent(input$logout_all_confirm, {
+    removeModal()
+    auth$logout_all(reload = TRUE)
+  })
 
   # Инфо по задачам, процессам и службам
   all_tasks           <- reactiveVal(NULL)

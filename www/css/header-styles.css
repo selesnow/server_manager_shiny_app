@@ -46,8 +46,10 @@
     border: 1px solid rgba(79, 70, 229, 0.1);
 }
 
-/* Кнопка переключения темы */
-#toggle_theme {
+/* Кнопки переключения темы, смены пароля и выхода на всех устройствах */
+#toggle_theme,
+#change_password_btn,
+#logout_all_btn {
     background-color: transparent !important;
     color: var(--text-secondary) !important;
     border: 1px solid var(--border-color) !important;
@@ -62,7 +64,9 @@
     transition: all 0.2s ease !important;
 }
 
-#toggle_theme:hover {
+#toggle_theme:hover,
+#change_password_btn:hover,
+#logout_all_btn:hover {
     color: var(--text-primary) !important;
     background-color: rgba(99, 102, 241, 0.05) !important;
     border-color: var(--primary) !important;
@@ -109,6 +113,8 @@
     /* На мобильных кнопкам даем возможность распределяться равномерно */
     .controls-container .btn,
     .controls-container #toggle_theme,
+    .controls-container #change_password_btn,
+    .controls-container #logout_all_btn,
     .controls-container #logout_btn {
         flex: 1 1 calc(50% - 8px) !important; /* Сетка из двух колонок или авто-перенос */
         min-width: 110px !important;
