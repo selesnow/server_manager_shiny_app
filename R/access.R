@@ -2,6 +2,24 @@
 #'
 #' Скрытие кнопок и вкладок в интерфейсе не защищает от подделанных запросов,
 #' поэтому права проверяются на сервере в каждом обработчике действия.
+#' Сама проверка выполняется пакетом appauth (aa_can, aa_require), здесь тонкие
+#' обёртки с прежними именами и сигнатурами, чтобы вызовы в модулях не менялись.
+
+#' Источник прав из матрицы config.yaml (раздел access_managemet)
+#'
+#' @param conf_rv reactiveVal с конфигом: матрица читается при каждой проверке,
+#'   поэтому изменения прав в редакторе действуют сразу, без перезапуска
+conf_permissions <- function(conf_rv) {
+  aa_permissions_from_matrix(function() conf_rv()$access_managemet)
+}
+
+#' Источник прав «только роль администратора»
+#'
+#' Нужен там, где доступ не зависит от матрицы (серверная часть вкладки «Доступ»):
+#' иначе выдача права «Доступ» другой роли дала бы ей управление пользователями.
+admin_only_provider <- function(user) {
+  if (identical(user$role, auth_settings$admin_role)) "Доступ" else character(0)
+}
 
 #' Есть ли у роли право на функцию
 #'
@@ -11,38 +29,31 @@
 #'
 #' @returns TRUE если роль входит в список ролей этого права
 user_can <- function(role, permission, conf) {
-  if (!is.character(role) || length(role) != 1 || is.na(role) || !nzchar(role)) return(FALSE)
-  roles <- conf$access_managemet[[permission]]
-  if (is.null(roles)) return(FALSE)
-  role %in% roles
+  aa_can(
+    list(login = "", role = role),
+    permission,
+    aa_permissions_from_matrix(conf$access_managemet %||% list())
+  )
 }
 
 #' Проверка права в обработчике действия
 #'
 #' Вызывается первой строкой обработчика. Роль берётся из auth$user(), который
 #' заполняется только серверным кодом входа. Если права нет, действие
-#' прерывается и попытка записывается в лог.
+#' прерывается, пользователю показывается уведомление, попытка записывается
+#' в лог (действие 'Access denied').
 #'
-#' @param auth объект авторизации (список с reactiveVal user)
+#' @param auth объект авторизации (результат aa_auth_server)
 #' @param conf_rv reactiveVal с конфигом
 #' @param permission название права
 #' @param session_id id сессии для записи в лог
 require_permission <- function(auth, conf_rv, permission, session_id = 'x0') {
-  usr <- auth$user()
-
-  if (!user_can(usr$role, permission, conf_rv())) {
-    message("Отказано в доступе: пользователь=", usr$login %||% "anonymous", ", право=", permission)
-    try(write_action_log(
-      user       = usr$login %||% "anonymous",
-      func       = 'Access denied',
-      session_id = session_id,
-      value      = permission
-    ), silent = TRUE)
-    showNotification("Недостаточно прав для этого действия", type = "error")
-    req(FALSE)
-  }
-
-  invisible(TRUE)
+  aa_require(
+    auth, permission, conf_permissions(conf_rv),
+    on_event   = log_auth_event,
+    settings   = auth_settings,
+    session_id = session_id
+  )
 }
 
 #' Безопасно ли имя задачи для передачи в schtasks

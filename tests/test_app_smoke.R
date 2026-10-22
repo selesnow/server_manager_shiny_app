@@ -14,7 +14,7 @@ for (f in c("app.R", "app_info.yml", "create_config.R", "create_db.R", "shiny_ta
   file.copy(file.path(proj, f), tmp)
 for (d in c("R", "modules", "ai_docs", "www")) file.copy(file.path(proj, d), tmp, recursive = TRUE)
 setwd(tmp); .libPaths(libs)
-suppressMessages({library(shiny); library(DBI)})
+suppressMessages({library(shiny); library(DBI); library(appauth)})
 
 chk("временная копия: ни app.db, ни config.yaml ещё нет", !file.exists("app.db") && !file.exists("config.yaml"))
 
@@ -41,11 +41,11 @@ chk("в новой базе нет пользователей (root/root не с
 
 # 1. первый администратор
 testServer(server, {
-  chk("пустая база: на экране создание администратора", grepl("Создание администратора", as.character(output$`auth-auth_ui`$html)))
-  session$setInputs(`auth-setup_login` = "boss", `auth-setup_password` = "bosspass1", `auth-setup_password_confirm` = "bosspass1", `auth-setup_btn` = 1)
+  chk("пустая база: на экране создание администратора", grepl("Создание администратора", as.character(output$`auth-form`$html)))
+  session$setInputs(`auth-setup_login` = "boss", `auth-setup_password` = "bosspass1", `auth-setup_confirm` = "bosspass1", `auth-setup_btn` = 1)
   chk("первый администратор создан и вошёл", logged_in() && user_role() == "admin")
   app_con_ref <<- app_con                    # для проверки закрытия подключения в конце теста
-  quiet(create_user(con, "worker", "workpass1", "user")); quiet(create_user(con, "other", "otherpass1", "user"))
+  quiet(aa_create_user(con, "worker", "workpass1", "user")); quiet(aa_create_user(con, "other", "otherpass1", "user"))
   session$setInputs(logout_btn = 1)
   chk("выход выполнен", !logged_in())
 })
@@ -53,7 +53,7 @@ testServer(server, {
 # 2. блокировка после неудачных попыток
 testServer(server, {
   for (i in 1:5) session$setInputs(`auth-login` = "worker", `auth-password` = paste0("bad", i), `auth-login_btn` = i)
-  chk("5 неверных паролей: показано сообщение о блокировке", grepl("Слишком много неудачных попыток", output$`auth-login_message`))
+  chk("5 неверных паролей: показано сообщение о блокировке", grepl("Слишком много неудачных попыток", output$`auth-message`))
   session$setInputs(`auth-login` = "worker", `auth-password` = "workpass1", `auth-login_btn` = 6)
   chk("правильный пароль заблокированного логина не пускает", !logged_in())
   session$setInputs(`auth-login` = "boss", `auth-password` = "bosspass1", `auth-login_btn` = 7)
@@ -68,13 +68,13 @@ testServer(server, {
   chk("worker входит", logged_in() && user_role() == "user")
   session$elapse(31000)
   chk("пока пользователя не заблокировали, сессия остаётся открытой", logged_in())
-  quiet(set_user_blocked(con, "worker", TRUE))
+  quiet(aa_set_blocked(con, "worker", TRUE))
   session$elapse(31000)
   chk("после блокировки открытая сессия закрывается при ближайшей проверке", !logged_in() && is.null(auth$user()) && is.null(user_role()))
 })
 testServer(server, {
   session$setInputs(`auth-login` = "worker", `auth-password` = "workpass1", `auth-login_btn` = 1)
-  chk("заблокированный вручную не входит даже с верным паролем", !logged_in() && grepl("заблокирована администратором", output$`auth-login_message`))
+  chk("заблокированный вручную не входит даже с верным паролем", !logged_in() && grepl("заблокирована администратором", output$`auth-message`))
 })
 
 # 4. вход по cookie автовхода
@@ -83,17 +83,17 @@ add_cookie_token <- function(login, raw) quiet(dbExecute(con, "INSERT INTO auth_
 t_other <- raw_token(); add_cookie_token("other", t_other)
 t_worker <- raw_token(); add_cookie_token("worker", t_worker)
 testServer(server, {
-  session$setInputs(auth_cookie = t_other)
+  session$setInputs(`auth-cookie` = t_other)
   chk("cookie: обычный пользователь входит автоматически", logged_in() && user_role() == "user")
 })
 testServer(server, {
-  session$setInputs(auth_cookie = t_worker)
+  session$setInputs(`auth-cookie` = t_worker)
   chk("cookie: заблокированный пользователь автоматически НЕ входит", !logged_in())
 })
-quiet(set_user_blocked(con, "worker", FALSE))
+quiet(aa_set_blocked(con, "worker", FALSE))
 t_worker2 <- raw_token(); add_cookie_token("worker", t_worker2)
 testServer(server, {
-  session$setInputs(auth_cookie = t_worker2)
+  session$setInputs(`auth-cookie` = t_worker2)
   chk("cookie: после разблокировки автовход снова работает", logged_in() && user_role() == "user")
 })
 

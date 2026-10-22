@@ -113,9 +113,9 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 );
 ")
 
-# Попытки входа для защиты от подбора пароля
-source('R/login_protection.R')
-ensure_login_attempts_table(con)
+# Таблицы авторизации (попытки входа, токены, колонки users.blocked и must_change)
+# достраивает пакет appauth, он же обновляет схему уже работающих баз при запуске
+appauth::aa_init_db(con)
 
 # Пользователей по умолчанию не создаём: при первом запуске приложение
 # предложит создать первого пользователя с ролью admin.

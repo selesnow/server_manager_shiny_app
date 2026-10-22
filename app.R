@@ -36,6 +36,7 @@ library(readr)
 library(glue)
 library(snakecase)
 library(RSQLite)
+library(appauth)   # авторизация: вход, пароли, блокировки, сессии, права
 library(ggplot2)
 library(findInFiles)
 library(purrr)
@@ -68,16 +69,18 @@ ggthemr('flat dark')
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
 
+# настройки авторизации: раздел security из config.yaml, значения по умолчанию из пакета
+# (функция build_auth_settings из R/auth_events.R)
+auth_settings <- build_auth_settings(conf$security)
+
 # Синхронизация справочника действий для логов (добавляет недостающие, существующие не меняет)
 local({
   con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
   on.exit(dbDisconnect(con))
-  # защита входа: создаёт таблицу попыток входа в уже работающей базе (dev и prod
-  # базы разные, поэтому схема обновляется при запуске, а не отдельным скриптом)
-  # и чистит устаревшие данные
-  prepare_login_protection(con)
-  # ручная блокировка пользователей: добавляет колонку users.blocked в работающую базу
-  prepare_user_blocking(con)
+  # авторизация (пакет appauth): достраивает схему в уже работающей базе (dev и prod
+  # базы разные, поэтому схема обновляется при запуске, а не отдельным скриптом):
+  # таблицы попыток входа, токенов, колонки blocked и must_change; чистит устаревшие данные
+  aa_prepare_db(con, auth_settings)
   n_added <- sync_actions(con)
   if (n_added > 0) message("Добавлено действий в справочник actions: ", n_added)
 })
@@ -98,31 +101,13 @@ ui <- fluidPage(
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
     tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=9"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=10"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=11"),
     # стиль календаря
     tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=9")
   ),
-  # JS для авто логина
-  tags$script(HTML("
-      Shiny.addCustomMessageHandler('setAuthCookie', function(token) {
-        document.cookie = 'auth_token=' + token + '; path=/; max-age=2592000';
-      });
-    
-      Shiny.addCustomMessageHandler('clearAuthCookie', function(_) {
-        document.cookie = 'auth_token=; path=/; max-age=0';
-      });
-    
-      Shiny.addCustomMessageHandler('readAuthCookie', function(_) {
-        const match = document.cookie.match(/auth_token=([^;]+)/);
-        Shiny.setInputValue(
-          'auth_cookie',
-          match ? match[1] : null,
-          { priority: 'event' }
-        );
-      });
-    ")),
+  aa_app_head(),           # стили и скрипты авторизации (cookie автовхода)
   useWaiter(),             # Помощник в загрузке приложения
-  mod_auth_ui("auth"),     # Модуль авторизации
+  aa_auth_ui("auth"),      # Модуль авторизации (пакет appauth)
   uiOutput("app_ui")       # Основной контент
 )
 
@@ -166,61 +151,35 @@ server <- function(input, output, session) {
     })
   })
   
-  # чтение куки для авто авторизации
-  observe({
-    session$sendCustomMessage("readAuthCookie", TRUE)
-  })
-  
-  observeEvent(input$auth_cookie, {
-    req(input$auth_cookie)
-    
-    token_hash <- openssl::sha256(input$auth_cookie)
-    
-    # заблокированные и удалённые пользователи по cookie не входят
-    res <- find_session_user(app_con, token_hash)
-
-    if (nrow(res) == 1) {
-      
-      user_obj <- list(
-        login = res$login[1],
-        role  = res$role[1]
-      )
-      
-      auth$user(user_obj)
-      logged_in(TRUE)
-      user_role(user_obj$role)
-    }
-  })
-  
-  
-  # Проверка авторизации ----------------------------------------------------
-  # Подключение к базе данных SQLite
-  # Коннект к БД
-  app_con <- dbConnect(RSQLite::SQLite(), conf$database_settings$app_data_base)
-
-  # подключение закрывается вместе с сессией, иначе оно остаётся открытым до
+  # Авторизация (пакет appauth) ---------------------------------------------
+  # подключение закрывается вместе с сессией: иначе оно остаётся открытым до
   # остановки процесса R и держит файл базы (его нельзя переименовать или удалить)
-  session$onSessionEnded(function() try(DBI::dbDisconnect(app_con), silent = TRUE))
+  app_con <- aa_session_connection(conf$database_settings$app_data_base)
 
-  observe({
-    if (logged_in() && user_role() %in% c('admin')) {
-      mod_access_server("access", conn = app_con, auth = auth, session_id = session$token, conf_rv = conf_rv)
-    }
+  # вход по паролю и по cookie автовхода, защита от подбора пароля, выход.
+  # Имя cookie прежнее (auth_token): токены, выданные до перехода на пакет, продолжают работать
+  auth <- aa_auth_server(
+    "auth", app_con, auth_settings,
+    on_event    = log_auth_event,
+    title       = "Server Manager",
+    logo        = "favicon.png",
+    cookie_name = "auth_token"
+  )
+
+  # прежние имена: на них опираются остальные модули приложения
+  logged_in <- auth$logged_in
+  user_role <- auth$role
+
+  # блокировка, удаление, смена роли и сброс пароля вступают в силу в течение
+  # session_check_seconds (30 секунд): открытая сессия закрывается при проверке
+  aa_session_guard(auth, app_con, auth_settings)
+
+  # управление доступом только для администратора: серверная часть вкладки
+  # регистрируется только ему (проверка роли дублируется внутри модуля)
+  aa_register_module(auth, "Доступ", admin_only_provider, function() {
+    mod_access_server("access", conn = app_con, auth = auth, session_id = session$token, conf_rv = conf_rv)
   })
-  
-  
-  check_user <- function(login, password) {
-    # параметризованный запрос и проверка пароля по хешу, см. R/passwords.R
-    authenticate_user(app_con, login, password)
-  }
-  
-  # Reactives
-  logged_in <- reactiveVal(FALSE)
-  user_role <- reactiveVal(NULL)
-  
-  # Модуль авторизации
-  auth <- mod_auth_server("auth", logged_in, user_role, check_user, conn = app_con)
-  
+
   # UI для основного контента
   output$app_ui <- renderUI({
     if (logged_in()) {
@@ -409,58 +368,10 @@ server <- function(input, output, session) {
     }
   })
   
-  # Выход из приложения: по кнопке "Выйти" и принудительно, если пользователя
-  # заблокировали или удалили
-  perform_logout <- function() {
-    # чистим куки при вылогинываение
-    cookie <- isolate(input$auth_cookie)
-    if (!is.null(cookie)) {
-      DBI::dbExecute(
-        app_con,
-        "
-    UPDATE auth_sessions
-    SET revoked = 1
-    WHERE token_hash = ?
-    ",
-        params = list(openssl::sha256(cookie))
-      )
-    }
+  # Выход по кнопке "Выйти": отзывает токен, чистит cookie, перезагружает страницу,
+  # чтобы зарегистрированные в сессии модули прежнего пользователя исчезли
+  observeEvent(input$logout_btn, auth$logout(reload = TRUE))
 
-    # фиксируем завершение сессии, пока пользователь ещё известен
-    if (!is.null(session$userData$login)) {
-      session_log(
-        session_id = session$token,
-        user = session$userData$login,
-        action = 'end'
-      )
-    }
-
-    session$sendCustomMessage("clearAuthCookie", TRUE)
-
-    # сбрасываем состояние авторизации и перезагружаем страницу, что бы все
-    # зарегистрированные в сессии модули и обработчики прежнего пользователя исчезли
-    logged_in(FALSE)
-    user_role(NULL)
-    auth$user(NULL)
-    session$reload()
-  }
-
-  # Обработчик кнопки "Выйти"
-  observeEvent(input$logout_btn, perform_logout())
-
-  # Если пользователя заблокировали или удалили, пока у него открыта сессия,
-  # закрываем её при ближайшей проверке (раз в 30 секунд)
-  observe({
-    req(logged_in())
-    invalidateLater(30000, session)
-
-    usr <- isolate(auth$user())
-    if (!is.null(usr) && !user_session_valid(app_con, usr$login)) {
-      message("Сессия закрыта: пользователь ", usr$login, " заблокирован или удалён")
-      perform_logout()
-    }
-  })
-  
   # Инфо по задачам, процессам и службам
   all_tasks           <- reactiveVal(NULL)
   services_store      <- reactiveVal(NULL)

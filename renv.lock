@@ -407,6 +407,48 @@
       "Maintainer": "Ivan Krylov <ikrylov@disroot.org>",
       "Repository": "CRAN"
     },
+    "appauth": {
+      "Package": "appauth",
+      "Version": "0.1.0",
+      "Source": "GitLab",
+      "Title": "Безопасная авторизация и управление пользователями для Shiny приложений",
+      "Authors@R": "person(\"Alexey\", \"Seleznev\", , \"a.seleznev@netpeak.group\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-0410-7385\"))",
+      "Description": "Внутренний пакет для Shiny приложений, на SQLite: вход по логину и паролю с хранением паролей только в виде хешей, автовход по cookie, защита от подбора пароля, блокировка и удаление пользователей с защитой от потери последнего администратора, серверные проверки прав, модули интерфейса для входа и управления пользователями с точками расширения, версионные миграции схемы базы данных.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://git.netpeak.net/netpeak_analytics/appauth",
+      "BugReports": "https://git.netpeak.net/netpeak_analytics/appauth/-/issues",
+      "Encoding": "UTF-8",
+      "Roxygen": "list(markdown = TRUE)",
+      "RoxygenNote": "7.3.3",
+      "Imports": [
+        "DBI",
+        "DT",
+        "htmltools",
+        "openssl",
+        "rlang",
+        "RSQLite",
+        "shiny",
+        "sodium"
+      ],
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "testthat (>= 3.0.0)",
+        "withr",
+        "yaml"
+      ],
+      "Config/testthat/edition": "3",
+      "VignetteBuilder": "knitr",
+      "RemoteType": "gitlab",
+      "RemoteHost": "https://git.netpeak.net/",
+      "RemoteRepo": "appauth",
+      "RemoteUsername": "netpeak_analytics",
+      "RemoteRef": "HEAD",
+      "RemoteSha": "fff1f06b34e1331b75574c5c34bb9bacebfdeaa8",
+      "NeedsCompilation": "no",
+      "Author": "Alexey Seleznev [aut, cre] (ORCID: <https://orcid.org/0000-0003-0410-7385>)",
+      "Maintainer": "Alexey Seleznev <a.seleznev@netpeak.group>"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.1",

@@ -8,7 +8,8 @@
 # Скрипт можно запускать повторно, уже хешированные пароли пропускаются.
 # Пароли в консоль не выводятся.
 
-source("R/passwords.R")
+# перенос выполняет пакет appauth (резервная копия, одна транзакция, проверка каждого хеша)
+library(appauth)
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -20,7 +21,7 @@ db_path <- if (length(args) >= 1) {
 
 cat("База данных:", normalizePath(db_path, mustWork = FALSE), "\n")
 
-res <- migrate_passwords_to_hash(db_path)
+res <- aa_migrate_plaintext_passwords(db_path)
 
 cat("Резервная копия:", res$backup, "\n")
 cat("Захешировано паролей:", length(res$migrated), "\n")

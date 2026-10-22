@@ -316,21 +316,26 @@ table.dataTable tbody tr:hover td {
 }
 
 /* Заблокированные пользователи на вкладке «Доступ» (вручную или после неудачных
-   попыток входа): нерезкий красный фон строки. Класс добавляет rowCallback таблицы
-   в modules/mod_tab_access.R, правила стоят после общих правил таблиц DT выше. */
-table.dataTable tbody tr.user-row-blocked td {
+   попыток входа): нерезкий красный фон строки. Класс добавляет таблица модуля
+   пользователей пакета appauth (aa-row-blocked и aa-row-locked), правила стоят
+   после общих правил таблиц DT выше. */
+table.dataTable tbody tr.aa-row-blocked > td,
+table.dataTable tbody tr.aa-row-locked > td {
     background-color: rgba(239, 68, 68, 0.22) !important;
 }
 
-table.dataTable tbody tr.user-row-blocked:hover td {
+table.dataTable tbody tr.aa-row-blocked:hover > td,
+table.dataTable tbody tr.aa-row-locked:hover > td {
     background-color: rgba(239, 68, 68, 0.32) !important;
 }
 
-body.light-mode table.dataTable tbody tr.user-row-blocked td {
+body.light-mode table.dataTable tbody tr.aa-row-blocked > td,
+body.light-mode table.dataTable tbody tr.aa-row-locked > td {
     background-color: rgba(220, 38, 38, 0.14) !important;
 }
 
-body.light-mode table.dataTable tbody tr.user-row-blocked:hover td {
+body.light-mode table.dataTable tbody tr.aa-row-blocked:hover > td,
+body.light-mode table.dataTable tbody tr.aa-row-locked:hover > td {
     background-color: rgba(220, 38, 38, 0.22) !important;
 }
 
