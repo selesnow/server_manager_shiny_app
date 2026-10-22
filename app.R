@@ -70,8 +70,11 @@ ggthemr('flat dark')
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
 
 # настройки авторизации: раздел security из config.yaml, значения по умолчанию из пакета
-# (функция build_auth_settings из R/auth_events.R)
-auth_settings <- build_auth_settings(conf$security)
+# (функция build_auth_settings из R/auth_events.R). Присваивание глобальное (<<-), как у conf:
+# функции из папки R/ (log_auth_event, admin_only_provider, require_permission) ищут
+# auth_settings в глобальном окружении, а app.R при запуске через runApp() загружается
+# в собственное окружение
+auth_settings <<- build_auth_settings(conf$security)
 
 # Синхронизация справочника действий для логов (добавляет недостающие, существующие не меняет)
 local({

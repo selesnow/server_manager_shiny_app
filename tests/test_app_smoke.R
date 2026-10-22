@@ -26,7 +26,11 @@ txt <- txt[-(s:e)]
 k <- grep('^if \\(system\\("git rev-parse', txt)[1]; txt <- c(txt[seq_len(k - 1)], "shinyApp(ui, server)")
 future_promise <- function(expr, ...) promises::promise_resolve(NULL)
 plan <- function(...) invisible(NULL)
-app_obj <- suppressWarnings(suppressMessages(eval(parse(text = txt), envir = globalenv())))   # не печатаем: print() запускает приложение
+# app.R загружается в СВОЁ окружение, как это делает runApp(): при загрузке в глобальное окружение пропадают ошибки
+# вида «функция из R/ не видит переменную, созданную в app.R» (так однажды сломалась вкладка «Доступ»)
+app_env <- new.env(parent = globalenv())
+app_obj <- suppressWarnings(suppressMessages(eval(parse(text = txt), envir = app_env)))   # не печатаем: print() запускает приложение
+server <- app_env$server
 chk("app.R загружен, функция server найдена", is.function(server))
 chk("первый запуск: config.yaml создан приложением", file.exists("config.yaml"))
 cfg <- yaml::read_yaml("config.yaml")
@@ -44,6 +48,10 @@ testServer(server, {
   chk("пустая база: на экране создание администратора", grepl("Создание администратора", as.character(output$`auth-form`$html)))
   session$setInputs(`auth-setup_login` = "boss", `auth-setup_password` = "bosspass1", `auth-setup_confirm` = "bosspass1", `auth-setup_btn` = 1)
   chk("первый администратор создан и вошёл", logged_in() && user_role() == "admin")
+  session$flushReact()
+  access_html <- tryCatch(as.character(output$`access-users-main`$html), error = function(e) "")
+  chk("вкладка «Доступ»: серверная часть зарегистрирована администратору, таблица пользователей и кнопка добавления есть", grepl("access-users-table", access_html, fixed = TRUE) && grepl("access-users-add", access_html, fixed = TRUE))
+  chk("вкладка «Доступ»: редактор прав, переключатели логов и путей к базам отрисованы", all(vapply(c("access-role_editor", "access-logging_editor", "access-database_editor"), function(id) !inherits(tryCatch(output[[id]], error = function(e) e), "error"), logical(1))))
   app_con_ref <<- app_con                    # для проверки закрытия подключения в конце теста
   quiet(aa_create_user(con, "worker", "workpass1", "user")); quiet(aa_create_user(con, "other", "otherpass1", "user"))
   session$setInputs(logout_btn = 1)
