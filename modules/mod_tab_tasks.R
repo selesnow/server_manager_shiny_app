@@ -719,7 +719,7 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
         # Если выбран исторический лог: читаем только файлы из списка логов этой
         # задачи, который собрало приложение, путь от клиента принимать нельзя
         allowed_logs <- unname(log_history_files())
-        if (!input$selected_log_file %in% allowed_logs) {
+        if (!log_file_allowed(input$selected_log_file, allowed_logs)) {
           message("Отказано: файл лога вне списка задачи ", input$selected_log_file)
           current_log_content("Файл лога не найден")
           output$task_log_content <- renderText({ current_log_content() })
@@ -975,9 +975,9 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     
     # копирование название задачи
     observeEvent(input$copy_task_name, {
-      task_name_escaped <- gsub("\\\\", "\\\\\\\\", input$selected_task)
-      js_code <- sprintf("navigator.clipboard.writeText('%s')", task_name_escaped)
-      shinyjs::runjs(js_code)
+      req(input$selected_task)
+      check_task(input$selected_task)
+      clipboard_copy(session, input$selected_task)
       showNotification("Название задачи скопировано", type = "message")
     })
     
@@ -1160,9 +1160,8 @@ mod_tab_tasks_server <- function(id, all_tasks_reactive, task_triggers_data, use
     # Обработчик копирования названия задачи из popup
     observeEvent(input$copy_popup_task_name, {
       req(popup_task_name())
-      task_name_escaped <- gsub("\\\\", "\\\\\\\\", popup_task_name())
-      js_code <- sprintf("navigator.clipboard.writeText('%s')", task_name_escaped)
-      shinyjs::runjs(js_code)
+      check_task(popup_task_name())
+      clipboard_copy(session, popup_task_name())
       showNotification("Название задачи скопировано", type = "message")
     })
     

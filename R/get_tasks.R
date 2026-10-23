@@ -14,6 +14,7 @@ get_tasks <- function() {
   
   # отключенные от мониторинга задачи
   con <- dbConnect(SQLite(), conf$database_settings$task_log_base)
+  on.exit(dbDisconnect(con), add = TRUE)
   quiet_tasks <- dbGetQuery(con, "SELECT task_name FROM forget_queue WHERE quiet_till > datetime('now', 'localtime')")
   
   temp <- taskscheduler_ls(fill = TRUE) %>%

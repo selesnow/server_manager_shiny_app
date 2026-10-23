@@ -677,7 +677,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       if (nrow(df) > 0) {
         df$datetime <- format(as.POSIXct(df$datetime), "%Y-%m-%d %H:%M:%S")
         # если хочешь рендерить markdown в HTML — раскомментируй и подключи пакет commonmark
-        df$message <- vapply(df$message, function(x) commonmark::markdown_html(as.character(x)), character(1))
+        df$message <- ai_log_message_html(df$message)
       }
       
       df
@@ -690,7 +690,7 @@ mod_tab_logs_server <- function(id, session_store, action_store, logs_last_updat
       
       datatable(
         df,
-        escape = FALSE,           # нужно, если ты конвертируешь markdown → HTML выше
+        escape = ai_log_escape_columns(df),   # message уже HTML из markdown, остальные колонки экранируются
         options = list(pageLength = 20, scrollX = TRUE),
         rownames = FALSE
       )
