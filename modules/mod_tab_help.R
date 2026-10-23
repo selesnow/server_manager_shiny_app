@@ -125,8 +125,8 @@ mod_help_ui <- function(id) {
       column(
         width = 12,
         div(class = "card",
-            div(class = "card-body",
-                includeMarkdown(here::here("README.md"))
+            div(class = "card-body readme-body",
+                readme_html(here::here("README.md"))
             )
         )
       )

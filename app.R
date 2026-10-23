@@ -105,7 +105,7 @@ ui <- fluidPage(
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
     tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=10"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=13"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=14"),
     # стиль календаря
     tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=9")
   ),
