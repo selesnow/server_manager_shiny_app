@@ -16,3 +16,5 @@ app.db.bak*
 
 config.yaml
 app_*.db
+
+config_backups/

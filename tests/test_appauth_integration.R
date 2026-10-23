@@ -12,6 +12,8 @@
 suppressMessages({library(shiny); library(DBI); library(RSQLite); library(dplyr); library(tibble); library(lubridate); library(appauth)})
 source("tests/helper.R")
 for (f in c("R/actions.R", "R/logging.R", "R/access.R", "R/auth_events.R", "create_config.R")) source(f)
+source("R/access_settings.R")
+source("R/config_backups.R")
 source("modules/mod_tab_access.R")
 
 proj <- getwd()
@@ -206,12 +208,20 @@ chk("вкладка: роль viewer не может управлять поль
 
 # редактор прав ролей: сохраняет только админ, права читаются и из файла
 before_cfg <- isolate(cfg_rv())$access_managemet$CMD
+# матрица прав: поле на каждую пару «право, роль» (идентификаторы по номерам), здесь CMD выдаётся роли user
+matrix_inputs <- function() {
+  cfg <- isolate(cfg_rv())$access_managemet; roles <- auth_settings$roles
+  vals <- list()
+  for (i in seq_along(cfg)) for (j in seq_along(roles)) vals[[matrix_input_id(i, j)]] <- roles[j] %in% cfg[[i]]
+  vals[[matrix_input_id(match("CMD", names(cfg)), match("user", roles))]] <- TRUE
+  vals
+}
 run_tab(mk_auth("worker", "user"), {
-  session$setInputs(roles_CMD = c("admin", "user"), save_roles = 1)
+  do.call(session$setInputs, c(matrix_inputs(), list(save_roles = 1)))
 })
 chk("редактор прав: роль user не может изменить права", identical(isolate(cfg_rv())$access_managemet$CMD, before_cfg))
 run_tab(mk_auth("boss", "admin"), {
-  session$setInputs(roles_CMD = c("admin", "user"), save_roles = 1)
+  do.call(session$setInputs, c(matrix_inputs(), list(save_roles = 1)))
 })
 chk("редактор прав: администратор сохраняет права, они записаны в config.yaml", identical(isolate(cfg_rv())$access_managemet$CMD, c("admin", "user")) &&
       identical(yaml::read_yaml("config.yaml")$access_managemet$CMD, c("admin", "user")) && log_n("Access config change") == 1)

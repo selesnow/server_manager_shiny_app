@@ -60,14 +60,15 @@ ensure_config('config.yaml')
 # Чтение конфига
 conf <<- yaml::read_yaml('config.yaml')
 
-# проверка развёрнута ли база данных
-if (!file.exists(conf$database_settings$app_data_base)) source('create_db.R')
-
 plan(multisession)
 ggthemr('flat dark')
 
 # Загрузка вспомогательных функций
 for(fun in dir(here::here("R"))) if (fun == "desktop.ini") next else source(here::here("R", fun))
+
+# проверка развёрнута ли база данных: если файла нет (например, в настройках указана новая база)
+# или это пустая база без таблиц, база создаётся с нуля, старая база не затрагивается
+if (database_needs_creation(conf$database_settings$app_data_base)) source('create_db.R')
 
 # настройки авторизации: раздел security из config.yaml, значения по умолчанию из пакета
 # (функция build_auth_settings из R/auth_events.R). Присваивание глобальное (<<-), как у conf:
@@ -104,7 +105,7 @@ ui <- fluidPage(
     
     # Подключаем внешние CSS файлы с cache-busting для сброса кэша браузера
     tags$link(rel = "stylesheet", type = "text/css", href = "css/header-styles.css?v=10"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=11"),
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/main-styles.css?v=13"),
     # стиль календаря
     tags$link(rel = "stylesheet", type = "text/css", href = "css/calendar.css?v=9")
   ),

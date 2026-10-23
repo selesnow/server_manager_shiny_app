@@ -27,7 +27,14 @@ default_config <- function() {
       lockout_minutes              = 15,  # окно подсчёта и длительность блокировки, минут
       max_failed_logins_per_minute = 30,  # общий лимит неудачных попыток по всем логинам за минуту
       must_change_default          = TRUE, # пароль, который задал администратор, по умолчанию временный (смена при входе)
-      password_policy              = "warn" # слабые новые пароли: warn принять с предупреждением, reject отклонить, off не проверять
+      password_policy              = "warn", # слабые новые пароли: warn принять с предупреждением, reject отклонить, off не проверять
+      password_min                 = 6,   # минимальная длина нового пароля, символов
+      password_max                 = 128, # максимальная длина нового пароля, символов
+      autologin                    = TRUE, # автовход по cookie
+      session_days                 = 30,  # срок действия токена автовхода, дней
+      session_check_seconds        = 30,  # как часто проверять открытую сессию, секунд
+      attempts_retention_hours     = 24,  # сколько часов хранить попытки входа
+      token_retention_days         = 30   # сколько дней хранить просроченные токены автовхода
     ),
     access_managemet = list(
       "Задачи" = c("admin", "user", "viewer"),
