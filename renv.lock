@@ -409,7 +409,7 @@
     },
     "appauth": {
       "Package": "appauth",
-      "Version": "0.2.0",
+      "Version": "0.3.0",
       "Source": "GitLab",
       "Title": "Безопасная авторизация и управление пользователями для Shiny приложений",
       "Authors@R": "person(\"Alexey\", \"Seleznev\", , \"a.seleznev@netpeak.group\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-0410-7385\"))",
@@ -444,7 +444,7 @@
       "RemoteRepo": "appauth",
       "RemoteUsername": "netpeak_analytics",
       "RemoteRef": "HEAD",
-      "RemoteSha": "4e011104ab791c298258d3f1b99d68f1a5547777",
+      "RemoteSha": "9714d67bdf81ac1f339ab6a6956ae939dc2b9111",
       "NeedsCompilation": "no",
       "Author": "Alexey Seleznev [aut, cre] (ORCID: <https://orcid.org/0000-0003-0410-7385>)",
       "Maintainer": "Alexey Seleznev <a.seleznev@netpeak.group>"

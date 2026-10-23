@@ -41,7 +41,8 @@ AUTH_EVENT_ACTIONS <- c(
   user_blocked       = "User block",
   user_unblocked     = "User unblock",
   session_forced_logout = "Forced logout",
-  access_denied      = "Access denied"
+  access_denied      = "Access denied",
+  weak_password_set  = "Weak password"   # принят слабый пароль (password_policy = "warn"), в value «логин: причина»
 )
 
 #' Значение для колонки value лога
@@ -71,18 +72,15 @@ log_auth_event <- function(event, user, session_id, value) {
     try(session_log(session_id = session_id, user = user, action = "end"), silent = TRUE)
   }
 
-  func <- AUTH_EVENT_ACTIONS[event]
-  if (is.na(func)) return(invisible(NULL))
-
-  try(
-    write_action_log(
-      user       = user,
-      func       = unname(func),
-      session_id = session_id,
-      value      = auth_event_log_value(event, user, value)
-    ),
-    silent = TRUE
-  )
+  # отбор событий, названия действий и преобразование value делает обработчик пакета;
+  # он собирается при вызове, а не на верхнем уровне файла: файлы из R/ Shiny загружает до app.R
+  appauth::aa_event_logger(
+    function(action, user, session_id, value) {
+      try(write_action_log(user = user, func = action, session_id = session_id, value = value), silent = TRUE)
+    },
+    actions      = AUTH_EVENT_ACTIONS,
+    format_value = auth_event_log_value
+  )(event, user, session_id, value)
 
   invisible(NULL)
 }

@@ -68,6 +68,10 @@ s1 <- build_auth_settings(list(max_failed_logins = 3.0, lockout_minutes = 10.0, 
 chk("значения из config.yaml применяются (числа вида 3.0 тоже)", s1$max_failed_logins == 3 && s1$lockout_minutes == 10 && s1$max_failed_logins_per_minute == 7)
 chk("настройки по умолчанию из default_config() принимаются пакетом", inherits(build_auth_settings(d$security), "aa_settings") && isTRUE(build_auth_settings(d$security)$must_change_default))
 chk("must_change_default можно выключить в config.yaml", isFALSE(build_auth_settings(list(must_change_default = FALSE))$must_change_default))
+chk("password_policy по умолчанию warn (принять слабый пароль с предупреждением)", identical(d$security$password_policy, "warn") && identical(build_auth_settings(d$security)$password_policy, "warn"))
+chk("password_policy из config.yaml применяется, без значения берётся warn", identical(build_auth_settings(list(password_policy = "reject"))$password_policy, "reject") && identical(build_auth_settings(list())$password_policy, "warn"))
+chk("опечатка в password_policy не роняет приложение: настройки по умолчанию", suppressMessages(identical(build_auth_settings(list(password_policy = "strict"))$password_policy, "warn")))
+chk("установлен appauth не ниже 0.3.0 (даты, политика паролей, aa_event_logger)", utils::packageVersion("appauth") >= "0.3.0")
 msgs <- character(); s2 <- withCallingHandlers(build_auth_settings(list(max_failed_logins = 0)), message = function(m) { msgs <<- c(msgs, conditionMessage(m)); invokeRestart("muffleMessage") })
 chk("некорректный раздел security не роняет приложение: предупреждение и значения по умолчанию", s2$max_failed_logins == 5 && any(grepl("некорректный раздел security", msgs)))
 chk("неизвестные ключи в security игнорируются", build_auth_settings(list(unknown_key = 1, max_failed_logins = 4))$max_failed_logins == 4)
@@ -101,7 +105,8 @@ cases <- list(
   list("user_blocked",         "alsey", "olga",         "User block",           "alsey", "olga"),
   list("user_unblocked",       "alsey", "olga",         "User unblock",         "alsey", "olga"),
   list("session_forced_logout","olga",  "blocked",      "Forced logout",        "olga",  "blocked"),
-  list("access_denied",        "olga",  "Run",          "Access denied",        "olga",  "Run")
+  list("access_denied",        "olga",  "Run",          "Access denied",        "olga",  "Run"),
+  list("weak_password_set",    "alsey", "olga: password_common", "Weak password", "alsey", "olga: password_common")
 )
 for (cs in cases) {
   log_auth_event(cs[[1]], cs[[2]], "s1", cs[[3]])

@@ -26,7 +26,8 @@ default_config <- function() {
       max_failed_logins            = 5,   # неудачных попыток до блокировки логина
       lockout_minutes              = 15,  # окно подсчёта и длительность блокировки, минут
       max_failed_logins_per_minute = 30,  # общий лимит неудачных попыток по всем логинам за минуту
-      must_change_default          = TRUE # пароль, который задал администратор, по умолчанию временный (смена при входе)
+      must_change_default          = TRUE, # пароль, который задал администратор, по умолчанию временный (смена при входе)
+      password_policy              = "warn" # слабые новые пароли: warn принять с предупреждением, reject отклонить, off не проверять
     ),
     access_managemet = list(
       "Задачи" = c("admin", "user", "viewer"),
